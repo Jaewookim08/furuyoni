@@ -14,6 +14,7 @@ version = "0.1.0"
 dependencies = [
  "futures",
  "tailcall",
+ "tokio",
 ]
 
 [[package]]
@@ -179,6 +180,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tokio"
+version = "1.21.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9e03c497dc955702ba729190dc4aac6f2a0ce97f913e5b1b5912fc5039d9099"
+dependencies = [
+ "autocfg",
+ "pin-project-lite",
 ]
 
 [[package]]
