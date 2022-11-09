@@ -1,7 +1,19 @@
-use crate::furuyoni::game_runner::game::Phase::Beginning;
+use std::future::Future;
+use futures::future::BoxFuture;
+use super::cards::*;
 
 pub struct Game {
     state: GameState,
+}
+
+pub struct GameResult {
+    pub winner: PlayerPos,
+}
+
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub enum PlayerPos {
+    P1,
+    P2,
 }
 
 struct GameState {
@@ -10,33 +22,28 @@ struct GameState {
     phase: Phase,
 }
 
-struct GameResult {
-    winner: PlayerPos,
-}
-
 struct PlayerState {
-    hand: Vec<Card1>,
+    hand: Vec<Cards>,
 }
 
-#[derive(Eq, PartialEq)]
-enum PlayerPos {
-    P1,
-    P2,
+
+enum StepResult<'a> {
+    TailCall(BoxFuture<'a, StepResult<'a>>),
+    Result(GameResult),
+}
+
+fn rec_call<'a>(future: impl Future<Output=StepResult<'a>> + Send + 'a) -> StepResult<'a> {
+    StepResult::TailCall(Box::pin(future))
+}
+
+fn rec_ret<'a>(result: GameResult) -> StepResult<'a> {
+    StepResult::Result(result)
 }
 
 enum Phase {
     Beginning,
     Main,
     End,
-}
-
-struct Card1 {}
-
-struct Card2 {}
-
-enum Cards {
-    Card1(Card1),
-    Card2(Card2),
 }
 
 
@@ -70,37 +77,56 @@ impl Game {
     }
 
     pub async fn run(&mut self) -> GameResult {
-        self.next_turn().await
+        let mut next: BoxFuture<StepResult> = Box::pin(self.next_turn());
+
+        let result = loop {
+            let step_result = next.await;
+
+            match step_result {
+                StepResult::TailCall(future) => { next = future }
+                StepResult::Result(res) => { break res; }
+            }
+        };
+
+        result
     }
 }
 
 
+
+
 impl Game {
-    async fn next_turn(&mut self) -> GameResult {
+    async fn next_turn(&mut self) -> StepResult {
+        // increase turn number
         self.state.turn_number += 1;
+
+        // switch current player
         let next_player = if self.state.turn_player == PlayerPos::P1 { PlayerPos::P2 } else { PlayerPos::P1 };
         self.state.turn_player = next_player;
+
         const UNREACHABLE_CONT: Continuation = || panic!("This continuation should never be executed.\
              This indicates that the game has ended without a winner");
 
-        if self.state.turn_number <= 2 {
-            self.run_from_main_phase(UNREACHABLE_CONT).await
+        let step_result = if self.state.turn_number <= 2 {
+            rec_call(self.run_from_main_phase(UNREACHABLE_CONT))
         } else {
-            self.run_from_beginning_phase(UNREACHABLE_CONT).await
-        }
+            rec_call(self.run_from_beginning_phase(UNREACHABLE_CONT))
+        };
+
+        step_result
     }
 
-    async fn run_from_beginning_phase(&mut self, cont: Continuation) -> GameResult {
+    async fn run_from_beginning_phase(&mut self, cont: Continuation) -> StepResult {
         self.test_win(cont)
     }
 
-    async fn run_from_main_phase(&mut self, cont: Continuation) -> GameResult {
+    async fn run_from_main_phase(&mut self, cont: Continuation) -> StepResult {
         self.test_win(cont)
     }
 
-    fn test_win(&mut self, _cont: Continuation) -> GameResult {
+    fn test_win(&mut self, _cont: Continuation) -> StepResult {
         // ignore cont
-        GameResult::new(PlayerPos::P1)
+        rec_ret(GameResult::new(PlayerPos::P1))
     }
 }
 
