@@ -1,6 +1,6 @@
 
 
-pub mod furuyoni;
+mod furuyoni;
 
 fn main() {
     println!("Hello, world!");

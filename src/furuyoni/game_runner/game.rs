@@ -23,7 +23,7 @@ struct GameState {
 }
 
 struct PlayerState {
-    hand: Vec<Cards>,
+    hand: Vec<Card>,
 }
 
 
