@@ -1,9 +1,10 @@
-
-
 mod furuyoni;
 
 fn main() {
     println!("Hello, world!");
-    let a = furuyoni::game_runner::Game::new();
-    a.hello();
+    let mut a = furuyoni::game_runner::Game::new();
+    let res = futures::executor::block_on(
+        a.run()
+    );
+    println!("Game ended.");
 }

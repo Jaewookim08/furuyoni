@@ -1,3 +1,4 @@
+use std::cmp;
 use std::collections::VecDeque;
 use std::future::Future;
 use std::ops::{Index, IndexMut};
@@ -66,6 +67,7 @@ struct PlayerState {
     played_pile: Vec<Card>,
     discard_pile: Vec<Card>,
 
+    vigor: i32,
     aura: i32,
     life: i32,
     flare: i32,
@@ -79,6 +81,7 @@ impl Default for PlayerState {
             enhancements: vec![],
             played_pile: vec![],
             discard_pile: vec![],
+            vigor: 0,
             aura: 3,
             life: 10,
             flare: 0,
@@ -114,7 +117,7 @@ impl GameResult {
 }
 
 
-type Continuation = fn() -> GameResult;
+struct Continuation<'a>(StepResult<'a>);
 
 impl GameState {
     fn new(turn_number: u32, turn_player: PlayerPos, phase: Phase, player_states: PlayerStates) -> Self {
@@ -146,10 +149,6 @@ impl Game {
         }
     }
 
-    pub fn hello(&self) {
-        print!("Hello!!")
-    }
-
     pub async fn run(&mut self) -> GameResult {
         let mut next: BoxFuture<StepResult> = Box::pin(self.next_turn());
 
@@ -176,29 +175,48 @@ impl Game {
         let next_player = if self.state.turn_player == PlayerPos::P1 { PlayerPos::P2 } else { PlayerPos::P1 };
         self.state.turn_player = next_player;
 
-        const UNREACHABLE_CONT: Continuation = || panic!("This continuation should never be executed.\
+        let unreachable_cont: Continuation = Continuation(StepResult::TailCall(Box::pin(async {
+            panic!("This continuation should never be executed. \
              This indicates that the game has ended without a winner");
+        })));
 
         let step_result = if self.state.turn_number <= 2 {
-            rec_call(self.run_from_main_phase(UNREACHABLE_CONT))
+            rec_call(self.run_from_main_phase(unreachable_cont))
         } else {
-            rec_call(self.run_from_beginning_phase(UNREACHABLE_CONT))
+            rec_call(self.run_from_beginning_phase(unreachable_cont))
         };
 
         step_result
     }
 
-    async fn run_from_beginning_phase(&mut self, cont: Continuation) -> StepResult {
+    async fn run_from_beginning_phase<'a>(&mut self, cont: Continuation<'a>) -> StepResult<'a> {
+        self.state.phase = Phase::Beginning;
+
+        let current_player = self.state.turn_player;
+        self.add_to_vigor(current_player, 1);
+
+
         self.test_win(cont)
     }
 
-    async fn run_from_main_phase(&mut self, cont: Continuation) -> StepResult {
+    async fn run_from_main_phase<'a>(&mut self, cont: Continuation<'a>) -> StepResult<'a> {
+        self.state.phase = Phase::Main;
+
         self.test_win(cont)
     }
 
-    fn test_win(&mut self, _cont: Continuation) -> StepResult {
+    fn test_win<'a>(&mut self, _cont: Continuation<'a>) -> StepResult<'a> {
         // ignore cont
         rec_ret(GameResult::new(PlayerPos::P1))
+    }
+
+    fn add_to_vigor(&mut self, player: PlayerPos, diff: i32) {
+        const MAX_VIGOR: i32 = 2;
+        const MIN_VIGOR: i32 = 0;
+
+        let vigor = &mut self.state.player_states[player].vigor;
+
+        *vigor = cmp::min(MAX_VIGOR, cmp::max(MIN_VIGOR, *vigor));
     }
 }
 
