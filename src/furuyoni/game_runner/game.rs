@@ -1,4 +1,6 @@
+use std::collections::VecDeque;
 use std::future::Future;
+use std::ops::{Index, IndexMut};
 use futures::future::BoxFuture;
 use super::cards::*;
 
@@ -20,10 +22,68 @@ struct GameState {
     turn_number: u32,
     turn_player: PlayerPos,
     phase: Phase,
+    player_states: PlayerStates,
+}
+
+struct PlayerStates {
+    p1_state: PlayerState,
+    p2_state: PlayerState,
+}
+
+impl PlayerStates {
+    fn new(p1_state: PlayerState, p2_state: PlayerState) -> Self {
+        Self {
+            p1_state,
+            p2_state,
+        }
+    }
+}
+
+impl Index<PlayerPos> for PlayerStates {
+    type Output = PlayerState;
+
+    fn index(&self, index: PlayerPos) -> &Self::Output {
+        match index {
+            PlayerPos::P1 => { &self.p1_state }
+            PlayerPos::P2 => { &self.p2_state }
+        }
+    }
+}
+
+impl IndexMut<PlayerPos> for PlayerStates {
+    fn index_mut(&mut self, index: PlayerPos) -> &mut Self::Output {
+        match index {
+            PlayerPos::P1 => { &mut self.p1_state }
+            PlayerPos::P2 => { &mut self.p2_state }
+        }
+    }
 }
 
 struct PlayerState {
     hand: Vec<Card>,
+    deck: VecDeque<Card>,
+    enhancements: Vec<Card>,
+    played_pile: Vec<Card>,
+    discard_pile: Vec<Card>,
+
+    aura: i32,
+    life: i32,
+    flare: i32,
+}
+
+impl Default for PlayerState {
+    fn default() -> Self {
+        Self {
+            hand: vec![],
+            deck: VecDeque::default(),
+            enhancements: vec![],
+            played_pile: vec![],
+            discard_pile: vec![],
+            aura: 3,
+            life: 10,
+            flare: 0,
+        }
+    }
 }
 
 
@@ -57,11 +117,12 @@ impl GameResult {
 type Continuation = fn() -> GameResult;
 
 impl GameState {
-    fn new(turn_number: u32, turn_player: PlayerPos, phase: Phase) -> Self {
+    fn new(turn_number: u32, turn_player: PlayerPos, phase: Phase, player_states: PlayerStates) -> Self {
         GameState {
             turn_player,
             phase,
             turn_number,
+            player_states,
         }
     }
 }
@@ -69,7 +130,20 @@ impl GameState {
 
 impl Game {
     pub fn new() -> Self {
-        Game { state: GameState::new(0, PlayerPos::P2, Phase::Main) }
+        let p1_state = PlayerState {
+            deck: VecDeque::from([Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash]),
+            ..Default::default()
+        };
+
+        let p2_state = PlayerState {
+            deck: VecDeque::from([Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash]),
+            ..Default::default()
+        };
+
+        Game {
+            state: GameState::new(0, PlayerPos::P2, Phase::Main,
+                                  PlayerStates::new(p1_state, p2_state))
+        }
     }
 
     pub fn hello(&self) {
@@ -91,8 +165,6 @@ impl Game {
         result
     }
 }
-
-
 
 
 impl Game {
