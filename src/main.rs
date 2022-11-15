@@ -6,5 +6,9 @@ fn main() {
     let res = futures::executor::block_on(
         a.run()
     );
-    println!("Game ended.");
+    let winner_str = match res.winner {
+        furuyoni::game_runner::PlayerPos::P1 => { "P1" }
+        furuyoni::game_runner::PlayerPos::P2 => { "P2" }
+    };
+    println!("Game ended. Winner: {winner_str}");
 }
