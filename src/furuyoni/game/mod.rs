@@ -1,9 +1,17 @@
+
+mod cards;
+mod attack;
+mod effects;
+mod condition;
+mod player;
+
+
 use std::cmp;
 use std::collections::VecDeque;
 use std::future::Future;
 use std::ops::{Index, IndexMut};
 use futures::future::BoxFuture;
-use super::cards::*;
+use cards::Card;
 
 pub struct Game {
     state: GameState,
@@ -18,6 +26,20 @@ pub enum PlayerPos {
     P1,
     P2,
 }
+
+pub enum BasicAction {
+    MoveForward,
+    MoveBackward,
+    Recover,
+    Focus,
+}
+
+pub enum MainPhaseAction {
+    BasicAction(BasicAction),
+    PlayCard(Card),
+    End,
+}
+
 
 struct GameState {
     turn_number: u32,
@@ -194,13 +216,14 @@ impl Game {
 
         let current_player = self.state.turn_player;
         self.add_to_vigor(current_player, 1);
-
+        // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
 
         self.test_win(cont)
     }
 
     async fn run_from_main_phase<'a>(&mut self, cont: Continuation<'a>) -> StepResult<'a> {
         self.state.phase = Phase::Main;
+
 
         self.test_win(cont)
     }
@@ -216,7 +239,10 @@ impl Game {
 
         let vigor = &mut self.state.player_states[player].vigor;
 
-        *vigor = cmp::min(MAX_VIGOR, cmp::max(MIN_VIGOR, *vigor));
+        *vigor = cmp::min(MAX_VIGOR, cmp::max(MIN_VIGOR, *vigor + diff));
     }
 }
+
+
+
 

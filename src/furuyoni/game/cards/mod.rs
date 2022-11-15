@@ -1,8 +1,7 @@
 mod yurina;
 
 
-use super::Game;
-use crate::furuyoni::game_runner::attack::Attack;
+use crate::furuyoni::game::attack::Attack;
 
 
 pub enum Card {

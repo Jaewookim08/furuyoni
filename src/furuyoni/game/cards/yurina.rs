@@ -1,7 +1,5 @@
-use crate::furuyoni::game_runner::cards::*;
-use crate::furuyoni::game_runner::Game;
-use crate::furuyoni::game_runner::attack::*;
-use crate::furuyoni::game_runner::effects::Effect;
+use crate::furuyoni::game::cards::*;
+use crate::furuyoni::game::attack::*;
 
 pub const SLASH: CardData = CardData {
     basic_data: CardBasicData { card_back: CardBack::Normal, id_str: "NA-01-yurina-O-N1" },

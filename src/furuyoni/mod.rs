@@ -1,2 +1,2 @@
 
-pub mod game_runner;
+pub mod game;
