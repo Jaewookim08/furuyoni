@@ -8,11 +8,23 @@ use std::cmp;
 use std::collections::VecDeque;
 use std::future::Future;
 use std::ops::{Index, IndexMut};
+use enum_dispatch::enum_dispatch;
 use futures::future::BoxFuture;
 use cards::Card;
+use crate::furuyoni::Player;
+use std::marker::{Send, Sync};
 
-pub struct Game {
+#[enum_dispatch(Player)]
+enum GamePlayer<T1: Player, T2: Player> {
+    Player1(T1),
+    Player2(T2),
+}
+
+type Players<TPlayer1, TPlayer2> = PlayerData<GamePlayer<TPlayer1, TPlayer2>>;
+
+pub struct Game<TPlayer1: Player + Send, TPlayer2: Player + Send> {
     state: GameState,
+    players: Players<TPlayer1, TPlayer2>,
 }
 
 pub struct GameResult {
@@ -35,7 +47,7 @@ pub enum BasicAction {
 pub enum MainPhaseAction {
     BasicAction(BasicAction),
     PlayCard(&'static Card),
-    End,
+    EndMainPhase,
 }
 
 
@@ -167,8 +179,8 @@ impl GameState {
 }
 
 
-impl Game {
-    pub fn new() -> Self {
+impl<TPlayer1: Player + Send, TPlayer2: Player + Send> Game<TPlayer1, TPlayer2> {
+    pub fn new(player_1: TPlayer1, player_2: TPlayer2) -> Self {
         let p1_state = PlayerState {
             deck: VecDeque::from([Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash]),
             ..Default::default()
@@ -181,7 +193,8 @@ impl Game {
 
         Game {
             state: GameState::new(0, PlayerPos::P2, Phase::Main,
-                                  PlayerStates::new(p1_state, p2_state))
+                                  PlayerStates::new(p1_state, p2_state)),
+            players: Players::new(GamePlayer::Player1(player_1), GamePlayer::Player2(player_2)),
         }
     }
 
@@ -199,10 +212,6 @@ impl Game {
 
         result
     }
-}
-
-
-impl Game {
     async fn next_turn(&mut self) -> StepResult {
         // increase turn number
         self.state.turn_number += 1;
