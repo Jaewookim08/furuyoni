@@ -1,9 +1,7 @@
-
 mod cards;
 mod attack;
 mod effects;
 mod condition;
-mod player;
 
 
 use std::cmp;
@@ -36,7 +34,7 @@ pub enum BasicAction {
 
 pub enum MainPhaseAction {
     BasicAction(BasicAction),
-    PlayCard(Card),
+    PlayCard(&'static Card),
     End,
 }
 
@@ -46,6 +44,22 @@ struct GameState {
     turn_player: PlayerPos,
     phase: Phase,
     player_states: PlayerStates,
+}
+
+struct ViewablePlayerStates {
+    p1_state: ViewablePlayerState,
+    p2_state: ViewablePlayerState,
+}
+
+enum ViewablePlayerState {
+    Transparent(PlayerState)
+}
+
+pub struct ViewableState {
+    turn_number: u32,
+    turn_player: PlayerPos,
+    phase: Phase,
+    player_states: ViewablePlayerStates,
 }
 
 struct PlayerStates {
@@ -82,7 +96,7 @@ impl IndexMut<PlayerPos> for PlayerStates {
     }
 }
 
-struct PlayerState {
+pub struct PlayerState {
     hand: Vec<Card>,
     deck: VecDeque<Card>,
     enhancements: Vec<Card>,
@@ -125,7 +139,7 @@ fn rec_ret<'a>(result: GameResult) -> StepResult<'a> {
     StepResult::Result(result)
 }
 
-enum Phase {
+pub enum Phase {
     Beginning,
     Main,
     End,
