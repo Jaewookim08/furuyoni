@@ -22,7 +22,7 @@ enum GamePlayer<T1: Player, T2: Player> {
 
 type Players<TPlayer1, TPlayer2> = PlayerData<GamePlayer<TPlayer1, TPlayer2>>;
 
-pub struct Game<TPlayer1: Player + Send, TPlayer2: Player + Send> {
+pub struct Game<TPlayer1: Player + Send + 'static, TPlayer2: Player + Send + 'static> {
     state: GameState,
     players: Players<TPlayer1, TPlayer2>,
 }
@@ -138,16 +138,16 @@ impl Default for PlayerState {
 }
 
 
-enum StepResult<'a> {
-    TailCall(BoxFuture<'a, StepResult<'a>>),
+enum StepResult {
+    TailCall(BoxFuture<'static, StepResult>),
     Result(GameResult),
 }
 
-fn rec_call<'a>(future: impl Future<Output=StepResult<'a>> + Send + 'a) -> StepResult<'a> {
+fn rec_call(future: impl Future<Output=StepResult> + Send + 'static) -> StepResult {
     StepResult::TailCall(Box::pin(future))
 }
 
-fn rec_ret<'a>(result: GameResult) -> StepResult<'a> {
+fn rec_ret(result: GameResult) -> StepResult {
     StepResult::Result(result)
 }
 
@@ -165,7 +165,7 @@ impl GameResult {
 }
 
 
-struct Continuation<'a>(StepResult<'a>);
+struct Continuation(StepResult);
 
 impl GameState {
     fn new(turn_number: u32, turn_player: PlayerPos, phase: Phase, player_states: PlayerStates) -> Self {
@@ -179,7 +179,7 @@ impl GameState {
 }
 
 
-impl<TPlayer1: Player + Send, TPlayer2: Player + Send> Game<TPlayer1, TPlayer2> {
+impl<TPlayer1: Player + Send + 'static, TPlayer2: Player + Send + 'static> Game<TPlayer1, TPlayer2> {
     pub fn new(player_1: TPlayer1, player_2: TPlayer2) -> Self {
         let p1_state = PlayerState {
             deck: VecDeque::from([Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash]),
@@ -198,7 +198,7 @@ impl<TPlayer1: Player + Send, TPlayer2: Player + Send> Game<TPlayer1, TPlayer2> 
         }
     }
 
-    pub async fn run(&mut self) -> GameResult {
+    pub async fn run(self) -> GameResult {
         let mut next: BoxFuture<StepResult> = Box::pin(self.next_turn());
 
         let result = loop {
@@ -212,7 +212,7 @@ impl<TPlayer1: Player + Send, TPlayer2: Player + Send> Game<TPlayer1, TPlayer2> 
 
         result
     }
-    async fn next_turn(&mut self) -> StepResult {
+    async fn next_turn(mut self) -> StepResult {
         // increase turn number
         self.state.turn_number += 1;
 
@@ -234,24 +234,33 @@ impl<TPlayer1: Player + Send, TPlayer2: Player + Send> Game<TPlayer1, TPlayer2> 
         step_result
     }
 
-    async fn run_from_beginning_phase<'a>(&mut self, cont: Continuation<'a>) -> StepResult<'a> {
+    async fn run_from_beginning_phase(mut self, cont: Continuation) -> StepResult {
         self.state.phase = Phase::Beginning;
 
         let current_player = self.state.turn_player;
         self.add_to_vigor(current_player, 1);
         // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
 
-        self.test_win(cont)
+        rec_call(self.run_from_main_phase(cont))
     }
 
-    async fn run_from_main_phase<'a>(&mut self, cont: Continuation<'a>) -> StepResult<'a> {
+    async fn run_from_main_phase<'a>(mut self, cont: Continuation) -> StepResult {
         self.state.phase = Phase::Main;
 
 
         self.test_win(cont)
     }
 
-    fn test_win<'a>(&mut self, _cont: Continuation<'a>) -> StepResult<'a> {
+    async fn run_from_end_phase<'a>(mut self, cont: Continuation) -> StepResult {
+        todo!()
+    }
+
+    async fn turn_end(self, cont: Continuation) -> StepResult {
+        // Todo: move enhancements and in-use cards to the used pile.
+        rec_call(self.next_turn())
+    }
+
+    fn test_win(self, _cont: Continuation) -> StepResult {
         // ignore cont
         rec_ret(GameResult::new(PlayerPos::P1))
     }
