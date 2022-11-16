@@ -11,20 +11,16 @@ use std::ops::{Index, IndexMut};
 use enum_dispatch::enum_dispatch;
 use futures::future::BoxFuture;
 use cards::Card;
-use crate::furuyoni::Player;
 use std::marker::{Send, Sync};
+use crate::furuyoni;
+use crate::furuyoni::Player;
 
-#[enum_dispatch(Player)]
-enum GamePlayer<T1: Player, T2: Player> {
-    Player1(T1),
-    Player2(T2),
-}
 
-type Players<TPlayer1, TPlayer2> = PlayerData<GamePlayer<TPlayer1, TPlayer2>>;
+type Players = PlayerData<Box<dyn Player + Send>>;
 
-pub struct Game<TPlayer1: Player + Send + 'static, TPlayer2: Player + Send + 'static> {
+pub struct Game {
     state: GameState,
-    players: Players<TPlayer1, TPlayer2>,
+    players: Players,
 }
 
 pub struct GameResult {
@@ -179,8 +175,8 @@ impl GameState {
 }
 
 
-impl<TPlayer1: Player + Send + 'static, TPlayer2: Player + Send + 'static> Game<TPlayer1, TPlayer2> {
-    pub fn new(player_1: TPlayer1, player_2: TPlayer2) -> Self {
+impl Game {
+    pub fn new(player_1: Box<dyn Player + Send>, player_2: Box<dyn Player + Send>) -> Self {
         let p1_state = PlayerState {
             deck: VecDeque::from([Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash]),
             ..Default::default()
@@ -194,7 +190,7 @@ impl<TPlayer1: Player + Send + 'static, TPlayer2: Player + Send + 'static> Game<
         Game {
             state: GameState::new(0, PlayerPos::P2, Phase::Main,
                                   PlayerStates::new(p1_state, p2_state)),
-            players: Players::new(GamePlayer::Player1(player_1), GamePlayer::Player2(player_2)),
+            players: Players::new(player_1, player_2),
         }
     }
 
