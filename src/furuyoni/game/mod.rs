@@ -16,10 +16,9 @@ use crate::furuyoni;
 use crate::furuyoni::Player;
 
 
-type Players = PlayerData<Box<dyn Player + Send>>;
+type Players = PlayerData<Box<dyn Player + Send + Sync>>;
 
 pub struct Game {
-    state: GameState,
     players: Players,
 }
 
@@ -134,17 +133,16 @@ impl Default for PlayerState {
 }
 
 
-enum StepResult {
-    TailCall(BoxFuture<'static, StepResult>),
+enum StepResult<'a> {
+    TailCall(BoxFuture<'a, StepResult<'a>>),
     Result(GameResult),
 }
 
-fn rec_call(future: impl Future<Output=StepResult> + Send + 'static) -> StepResult {
-    StepResult::TailCall(Box::pin(future))
-}
 
-fn rec_ret(result: GameResult) -> StepResult {
-    StepResult::Result(result)
+fn rec_call<'a>(future: impl Future<Output=StepResult<'a>> + Send + 'a) -> StepResult<'a> {
+    StepResult::TailCall(
+        Box::pin(future)
+    )
 }
 
 pub enum Phase {
@@ -161,7 +159,7 @@ impl GameResult {
 }
 
 
-struct Continuation(StepResult);
+struct Continuation<'a>(StepResult<'a>);
 
 impl GameState {
     fn new(turn_number: u32, turn_player: PlayerPos, phase: Phase, player_states: PlayerStates) -> Self {
@@ -176,7 +174,13 @@ impl GameState {
 
 
 impl Game {
-    pub fn new(player_1: Box<dyn Player + Send>, player_2: Box<dyn Player + Send>) -> Self {
+    pub fn new(player_1: Box<dyn Player + Sync + Send>, player_2: Box<dyn Player + Sync + Send>) -> Self {
+        Game {
+            players: Players::new(player_1, player_2),
+        }
+    }
+
+    fn default_player_states() -> PlayerStates {
         let p1_state = PlayerState {
             deck: VecDeque::from([Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash]),
             ..Default::default()
@@ -187,15 +191,14 @@ impl Game {
             ..Default::default()
         };
 
-        Game {
-            state: GameState::new(0, PlayerPos::P2, Phase::Main,
-                                  PlayerStates::new(p1_state, p2_state)),
-            players: Players::new(player_1, player_2),
-        }
+        PlayerStates::new(p1_state, p2_state)
     }
 
-    pub async fn run(self) -> GameResult {
-        let mut next: BoxFuture<StepResult> = Box::pin(self.next_turn());
+    pub async fn run(&self) -> GameResult {
+        let mut state = GameState::new(0, PlayerPos::P2, Phase::Main,
+                                       Self::default_player_states());
+
+        let mut next: BoxFuture<StepResult> = Box::pin(self.next_turn(&mut state));
 
         let result = loop {
             let step_result = next.await;
@@ -208,64 +211,65 @@ impl Game {
 
         result
     }
-    async fn next_turn(mut self) -> StepResult {
+
+    async fn next_turn<'a>(&'a self, state: &'a mut GameState) -> StepResult {
         // increase turn number
-        self.state.turn_number += 1;
+        state.turn_number += 1;
 
         // switch current player
-        let next_player = if self.state.turn_player == PlayerPos::P1 { PlayerPos::P2 } else { PlayerPos::P1 };
-        self.state.turn_player = next_player;
+        let next_player = if state.turn_player == PlayerPos::P1 { PlayerPos::P2 } else { PlayerPos::P1 };
+        state.turn_player = next_player;
 
-        let unreachable_cont: Continuation = Continuation(StepResult::TailCall(Box::pin(async {
-            panic!("This continuation should never be executed. \
+        let unreachable_cont: Continuation = Continuation(StepResult::TailCall(
+            Box::pin(async {
+                panic!("This continuation should never be executed. \
              This indicates that the game has ended without a winner");
-        })));
+            })));
 
-        let step_result = if self.state.turn_number <= 2 {
-            rec_call(self.run_from_main_phase(unreachable_cont))
+        let step_result = if state.turn_number <= 2 {
+            rec_call(self.run_from_main_phase(state, unreachable_cont))
         } else {
-            rec_call(self.run_from_beginning_phase(unreachable_cont))
+            rec_call(self.run_from_beginning_phase(state, unreachable_cont))
         };
 
         step_result
     }
 
-    async fn run_from_beginning_phase(mut self, cont: Continuation) -> StepResult {
-        self.state.phase = Phase::Beginning;
+    async fn run_from_beginning_phase<'a>(&'a self, state: &'a mut GameState, cont: Continuation<'a>) -> StepResult {
+        state.phase = Phase::Beginning;
 
-        let current_player = self.state.turn_player;
-        self.add_to_vigor(current_player, 1);
+        let current_player = state.turn_player;
+        Self::add_to_vigor(state, current_player, 1);
         // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
 
-        rec_call(self.run_from_main_phase(cont))
+        rec_call(self.run_from_main_phase(state, cont))
     }
 
-    async fn run_from_main_phase<'a>(mut self, cont: Continuation) -> StepResult {
-        self.state.phase = Phase::Main;
+    async fn run_from_main_phase<'a>(&'a self, state: &'a mut GameState, cont: Continuation<'a>) -> StepResult {
+        state.phase = Phase::Main;
 
 
-        self.test_win(cont)
+        rec_call(self.test_win())
     }
 
-    async fn run_from_end_phase<'a>(mut self, cont: Continuation) -> StepResult {
+    async fn run_from_end_phase<'a>(&'a self, state: &mut GameState, cont: Continuation<'a>) -> StepResult {
         todo!()
     }
 
-    async fn turn_end(self, cont: Continuation) -> StepResult {
+    async fn turn_end<'a>(&'a self, state: &'a mut GameState, cont: Continuation<'a>) -> StepResult {
         // Todo: move enhancements and in-use cards to the used pile.
-        rec_call(self.next_turn())
+        rec_call(self.next_turn(state))
     }
 
-    fn test_win(self, _cont: Continuation) -> StepResult {
-        // ignore cont
-        rec_ret(GameResult::new(PlayerPos::P1))
+    async fn test_win(&self) -> StepResult {
+        StepResult::Result(GameResult::new(PlayerPos::P1))
     }
 
-    fn add_to_vigor(&mut self, player: PlayerPos, diff: i32) {
+    fn add_to_vigor(state: &mut GameState, player: PlayerPos, diff: i32) {
         const MAX_VIGOR: i32 = 2;
         const MIN_VIGOR: i32 = 0;
 
-        let vigor = &mut self.state.player_states[player].vigor;
+        let vigor = &mut state.player_states[player].vigor;
 
         *vigor = cmp::min(MAX_VIGOR, cmp::max(MIN_VIGOR, *vigor + diff));
     }
