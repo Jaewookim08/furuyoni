@@ -12,6 +12,7 @@ use enum_dispatch::enum_dispatch;
 use futures::future::BoxFuture;
 use cards::Card;
 use std::marker::{Send, Sync};
+use async_recursion::async_recursion;
 use crate::furuyoni;
 use crate::furuyoni::Player;
 
@@ -113,6 +114,12 @@ impl<T> PlayerData<T> {
     }
 }
 
+trait Continuation<'a, TArgs>: FnOnce(TArgs) -> StepResult<'a> + Send + 'a {}
+
+impl<'a, TArgs, T> Continuation<'a, TArgs> for T
+    where T: FnOnce(TArgs) -> StepResult<'a> + Send + 'a {}
+
+
 impl<T> Index<PlayerPos> for PlayerData<T> {
     type Output = T;
 
@@ -188,9 +195,6 @@ impl GameResult {
         Self { winner }
     }
 }
-
-
-struct Continuation<'a>(StepResult<'a>);
 
 impl GameState {
     fn new(turn_number: u32, turn_player: PlayerPos, phase: Phase, player_states: PlayerStates) -> Self {
@@ -270,14 +274,19 @@ impl Game {
         rec_call(self.run_from_main_phase(state))
     }
 
-    async fn run_from_main_phase<'a>(&'a self, state: &'a mut GameState) -> StepResult {
+    async fn run_from_main_phase<'a>(&'a self, state: &'a mut GameState) -> StepResult<'a> {
         state.phase = Phase::Main;
 
-
-        rec_call(self.test_win())
+        rec_call(self.do_main_phase_actions(state,
+                                            |s| {
+                                                rec_call(self.run_from_end_phase(s))
+                                            },
+        ))
     }
 
-    async fn do_main_phase_actions<'a>(&'a self, state: &'a mut GameState, cont: Continuation<'a>) -> StepResult<'a> {
+    #[async_recursion]
+    async fn do_main_phase_actions<'a>(&'a self, state: &'a mut GameState,
+                                       cont: impl Continuation<'a, (&'a mut GameState)>) -> StepResult<'a> {
         let turn_player = state.turn_player;
         let turn_player_data = &self.players[turn_player];
 
@@ -287,19 +296,19 @@ impl Game {
             &vec![MainPhaseAction::EndMainPhase],
         );
 
-        todo!()
-        // match action {
-        //     EndMainPhase => {
-        //         cont.0
-        //     }
-        //     _ => {
-        //         rec_call(self.do_main_phase_actions(state, cont))
-        //     }
-        // }
+        match action {
+            MainPhaseAction::EndMainPhase => {
+                cont(state)
+            }
+            _ => {
+                rec_call(self.do_main_phase_actions(state, cont))
+            }
+        }
     }
 
-    async fn run_from_end_phase(&self, state: &mut GameState) -> StepResult {
-        todo!()
+    #[async_recursion]
+    async fn run_from_end_phase<'a>(&'a self, state: &'a mut GameState) -> StepResult<'a> {
+        rec_call(self.turn_end(state))
     }
 
     async fn turn_end<'a>(&'a self, state: &'a mut GameState) -> StepResult {
