@@ -27,12 +27,13 @@ pub struct GameResult {
     pub winner: PlayerPos,
 }
 
-#[derive(Eq, PartialEq, Copy, Clone)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub enum PlayerPos {
     P1,
     P2,
 }
 
+#[derive(Debug)]
 pub enum BasicAction {
     MoveForward,
     MoveBackward,
@@ -40,6 +41,7 @@ pub enum BasicAction {
     Focus,
 }
 
+#[derive(Debug)]
 pub enum MainPhaseAction {
     BasicAction(BasicAction),
     PlayCard(&'static Card),
@@ -56,6 +58,8 @@ struct GameState {
 
 type ViewablePlayerStates<'a> = PlayerData<ViewablePlayerState<'a>>;
 
+
+#[derive(Debug)]
 struct ViewableEnemyState<'a> {
     hand_count: usize,
     deck_count: usize,
@@ -86,11 +90,13 @@ impl<'a> From<&'a PlayerState> for ViewableEnemyState<'a> {
     }
 }
 
+#[derive(Debug)]
 enum ViewablePlayerState<'a> {
     Transparent(&'a PlayerState),
     Enemy(ViewableEnemyState<'a>),
 }
 
+#[derive(Debug)]
 pub struct ViewableState<'a> {
     turn_number: u32,
     turn_player: PlayerPos,
@@ -98,6 +104,7 @@ pub struct ViewableState<'a> {
     player_states: ViewablePlayerStates<'a>,
 }
 
+#[derive(Debug)]
 struct PlayerData<TData> {
     p1_data: TData,
     p2_data: TData,
@@ -140,7 +147,7 @@ impl<T> IndexMut<PlayerPos> for PlayerData<T> {
     }
 }
 
-
+#[derive(Debug)]
 pub struct PlayerState {
     hand: Vec<Card>,
     deck: VecDeque<Card>,
@@ -183,6 +190,7 @@ fn rec_call<'a>(future: impl Future<Output=StepResult<'a>> + Send + 'a) -> StepR
     )
 }
 
+#[derive(Debug)]
 pub enum Phase {
     Beginning,
     Main,
@@ -290,11 +298,16 @@ impl Game {
         let turn_player = state.turn_player;
         let turn_player_data = &self.players[turn_player];
 
+        let available_actions = vec![MainPhaseAction::EndMainPhase];
 
         let action = turn_player_data.get_main_phase_action(
             &Self::get_player_viewable_state(&state, turn_player),
-            &vec![MainPhaseAction::EndMainPhase],
+            available_actions,
         ).await;
+
+        // Todo: handle when action_index is out of bounds
+
+
 
         match action {
             MainPhaseAction::EndMainPhase => {

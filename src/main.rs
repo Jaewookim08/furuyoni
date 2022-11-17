@@ -2,7 +2,7 @@ mod furuyoni;
 
 fn main() {
     println!("Hello, world!");
-    let mut a = furuyoni::game::Game::new(Box::new(furuyoni::players::IdlePlayer {}), Box::new(furuyoni::players::IdlePlayer {}));
+    let mut a = furuyoni::game::Game::new(Box::new(furuyoni::players::CliPlayer {}), Box::new(furuyoni::players::IdlePlayer {}));
     let res = futures::executor::block_on(
         a.run()
     );

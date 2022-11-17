@@ -7,7 +7,7 @@ pub struct IdlePlayer {}
 
 #[async_trait]
 impl furuyoni::Player for IdlePlayer {
-    async fn get_main_phase_action(&self, state: &ViewableState<'_>, available_actions: &Vec<MainPhaseAction>) -> MainPhaseAction {
+    async fn get_main_phase_action(&self, state: &ViewableState<'_>, available_actions: Vec<MainPhaseAction>) -> MainPhaseAction {
         MainPhaseAction::EndMainPhase
     }
 }

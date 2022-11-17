@@ -3,7 +3,7 @@ mod yurina;
 
 use crate::furuyoni::game::attack::Attack;
 
-
+#[derive(Debug)]
 pub enum Card {
     Slash,
     Brandish,
