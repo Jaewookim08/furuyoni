@@ -286,7 +286,7 @@ impl Game {
 
     #[async_recursion]
     async fn do_main_phase_actions<'a>(&'a self, state: &'a mut GameState,
-                                       cont: impl Continuation<'a, (&'a mut GameState)>) -> StepResult<'a> {
+                                       on_end: impl Continuation<'a, (&'a mut GameState)>) -> StepResult<'a> {
         let turn_player = state.turn_player;
         let turn_player_data = &self.players[turn_player];
 
@@ -294,14 +294,14 @@ impl Game {
         let action = turn_player_data.get_main_phase_action(
             &Self::get_player_viewable_state(&state, turn_player),
             &vec![MainPhaseAction::EndMainPhase],
-        );
+        ).await;
 
         match action {
             MainPhaseAction::EndMainPhase => {
-                cont(state)
+                on_end(state)
             }
             _ => {
-                rec_call(self.do_main_phase_actions(state, cont))
+                rec_call(self.do_main_phase_actions(state, on_end))
             }
         }
     }
