@@ -220,43 +220,38 @@ impl Game {
         let next_player = if state.turn_player == PlayerPos::P1 { PlayerPos::P2 } else { PlayerPos::P1 };
         state.turn_player = next_player;
 
-        let unreachable_cont: Continuation = Continuation(StepResult::TailCall(
-            Box::pin(async {
-                panic!("This continuation should never be executed. \
-             This indicates that the game has ended without a winner");
-            })));
-
         let step_result = if state.turn_number <= 2 {
-            rec_call(self.run_from_main_phase(state, unreachable_cont))
+            rec_call(self.run_from_main_phase(state))
         } else {
-            rec_call(self.run_from_beginning_phase(state, unreachable_cont))
+            rec_call(self.run_from_beginning_phase(state))
         };
 
         step_result
     }
 
-    async fn run_from_beginning_phase<'a>(&'a self, state: &'a mut GameState, cont: Continuation<'a>) -> StepResult {
+    async fn run_from_beginning_phase<'a>(&'a self, state: &'a mut GameState) -> StepResult {
         state.phase = Phase::Beginning;
 
         let current_player = state.turn_player;
         Self::add_to_vigor(state, current_player, 1);
         // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
 
-        rec_call(self.run_from_main_phase(state, cont))
+        rec_call(self.run_from_main_phase(state))
     }
 
-    async fn run_from_main_phase<'a>(&'a self, state: &'a mut GameState, cont: Continuation<'a>) -> StepResult {
+    async fn run_from_main_phase<'a>(&'a self, state: &'a mut GameState) -> StepResult {
         state.phase = Phase::Main;
 
 
         rec_call(self.test_win())
     }
 
-    async fn run_from_end_phase<'a>(&'a self, state: &mut GameState, cont: Continuation<'a>) -> StepResult {
+
+    async fn run_from_end_phase(&self, state: &mut GameState) -> StepResult {
         todo!()
     }
 
-    async fn turn_end<'a>(&'a self, state: &'a mut GameState, cont: Continuation<'a>) -> StepResult {
+    async fn turn_end<'a>(&'a self, state: &'a mut GameState) -> StepResult {
         // Todo: move enhancements and in-use cards to the used pile.
         rec_call(self.next_turn(state))
     }
