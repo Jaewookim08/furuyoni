@@ -53,17 +53,48 @@ struct GameState {
     player_states: PlayerStates,
 }
 
-type ViewablePlayerStates = PlayerData<ViewablePlayerState>;
+type ViewablePlayerStates<'a> = PlayerData<ViewablePlayerState<'a>>;
 
-enum ViewablePlayerState {
-    Transparent(PlayerState)
+struct ViewableEnemyState<'a> {
+    hand_count: usize,
+    deck_count: usize,
+    enhancements: &'a Vec<Card>,
+    played_pile: &'a Vec<Card>,
+    discard_pile_count: usize,
+
+    vigor: i32,
+    aura: i32,
+    life: i32,
+    flare: i32,
 }
 
-pub struct ViewableState {
+impl<'a> From<&'a PlayerState> for ViewableEnemyState<'a> {
+    fn from(player_state: &'a PlayerState) -> Self {
+        ViewableEnemyState {
+            hand_count: player_state.hand.len(),
+            deck_count: player_state.deck.len(),
+            enhancements: &player_state.enhancements,
+            played_pile: &player_state.played_pile,
+            discard_pile_count: player_state.discard_pile.len(),
+
+            vigor: player_state.vigor,
+            aura: player_state.aura,
+            life: player_state.life,
+            flare: player_state.flare,
+        }
+    }
+}
+
+enum ViewablePlayerState<'a> {
+    Transparent(&'a PlayerState),
+    Enemy(ViewableEnemyState<'a>),
+}
+
+pub struct ViewableState<'a> {
     turn_number: u32,
     turn_player: PlayerPos,
-    phase: Phase,
-    player_states: ViewablePlayerStates,
+    phase: &'a Phase,
+    player_states: ViewablePlayerStates<'a>,
 }
 
 struct PlayerData<TData> {
@@ -246,6 +277,26 @@ impl Game {
         rec_call(self.test_win())
     }
 
+    async fn do_main_phase_actions<'a>(&'a self, state: &'a mut GameState, cont: Continuation<'a>) -> StepResult<'a> {
+        let turn_player = state.turn_player;
+        let turn_player_data = &self.players[turn_player];
+
+
+        let action = turn_player_data.get_main_phase_action(
+            &Self::get_player_viewable_state(&state, turn_player),
+            &vec![MainPhaseAction::EndMainPhase],
+        );
+
+        todo!()
+        // match action {
+        //     EndMainPhase => {
+        //         cont.0
+        //     }
+        //     _ => {
+        //         rec_call(self.do_main_phase_actions(state, cont))
+        //     }
+        // }
+    }
 
     async fn run_from_end_phase(&self, state: &mut GameState) -> StepResult {
         todo!()
@@ -254,6 +305,30 @@ impl Game {
     async fn turn_end<'a>(&'a self, state: &'a mut GameState) -> StepResult {
         // Todo: move enhancements and in-use cards to the used pile.
         rec_call(self.next_turn(state))
+    }
+
+    fn get_player_viewable_state(state: &GameState, viewed_from: PlayerPos) -> ViewableState {
+        let player_states = &state.player_states;
+
+        let get_player_state = |player: PlayerPos| -> ViewablePlayerState {
+            let player_state = &player_states[player];
+            if player == viewed_from {
+                ViewablePlayerState::Transparent(player_state)
+            } else {
+                ViewablePlayerState::Enemy(ViewableEnemyState::from(player_state))
+            }
+        };
+
+        ViewableState {
+            turn_player: state.turn_player,
+            phase: &state.phase,
+            turn_number: state.turn_number,
+            player_states: ViewablePlayerStates::new(
+                get_player_state(PlayerPos::P1),
+                get_player_state(PlayerPos::P2),
+            ),
+
+        }
     }
 
     async fn test_win(&self) -> StepResult {
