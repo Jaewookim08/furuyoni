@@ -1,9 +1,7 @@
 pub mod game;
+pub mod players;
 mod player;
-mod idle_player;
-
 
 pub use {
-    player::Player,
-    idle_player::IdlePlayer,
+    player::Player as Player,
 };
