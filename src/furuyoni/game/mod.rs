@@ -63,6 +63,8 @@ struct GameState {
     turn_number: u32,
     turn_player: PlayerPos,
     phase: Phase,
+    distance: i32,
+    dust: i32,
     player_states: PlayerStates,
 }
 
@@ -110,6 +112,8 @@ pub struct ViewableState<'a> {
     turn_number: u32,
     turn_player: PlayerPos,
     phase: &'a Phase,
+    distance: i32,
+    dust: i32,
     player_states: ViewablePlayerStates<'a>,
 }
 
@@ -213,11 +217,15 @@ impl GameState {
         turn_number: u32,
         turn_player: PlayerPos,
         phase: Phase,
+        distance: i32,
+        dust: i32,
         player_states: PlayerStates,
     ) -> Self {
         GameState {
             turn_player,
             phase,
+            distance,
+            dust,
             turn_number,
             player_states,
         }
@@ -265,8 +273,14 @@ impl Game {
     }
 
     pub async fn run(&self) -> GameResult {
-        let mut state =
-            GameState::new(0, PlayerPos::P2, Phase::Main, Self::default_player_states());
+        let mut state = GameState::new(
+            0,
+            PlayerPos::P2,
+            Phase::Main,
+            10,
+            0,
+            Self::default_player_states(),
+        );
 
         let mut next: BoxFuture<StepResult> = Box::pin(self.next_turn(&mut state));
 
@@ -436,6 +450,8 @@ impl Game {
             turn_player: state.turn_player,
             phase: &state.phase,
             turn_number: state.turn_number,
+            distance: state.distance,
+            dust: state.dust,
             player_states: ViewablePlayerStates::new(
                 get_player_state(PlayerPos::P1),
                 get_player_state(PlayerPos::P2),
