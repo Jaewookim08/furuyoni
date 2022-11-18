@@ -318,15 +318,17 @@ impl Game {
     async fn run_from_main_phase<'a>(&'a self, state: &'a mut GameState) -> StepResult<'a> {
         state.phase = Phase::Main;
 
-        rec_call(self.do_main_phase_action(state, |s| rec_call(self.run_from_end_phase(s))))
+        rec_call(self.do_main_phase_actions(state, |s| rec_call(self.run_from_end_phase(s))))
     }
 
     #[async_recursion]
-    async fn do_main_phase_action<'a>(
+    async fn do_main_phase_actions<'a>(
         &'a self,
         state: &'a mut GameState,
         cont: impl Continuation<'a, (&'a mut GameState)>,
     ) -> StepResult<'a> {
+        const GET_ACTION_RETRY_TIMES: usize = 3;
+
         let turn_player = state.turn_player;
         let turn_player_data = &self.players[turn_player];
 
@@ -334,29 +336,43 @@ impl Game {
         let playable_cards = vec![PlayableCardSelector::Hand(HandSelector(0))];
         let available_costs = vec![BasicActionCost::Vigor(Vigor(0))];
 
-        let action = turn_player_data
-            .get_main_phase_action(
-                &Self::get_player_viewable_state(&state, turn_player),
-                &playable_cards,
-                &doable_basic_actions,
-                &available_costs,
-            )
-            .await;
+        let mut cnt = 0;
+        let action = loop {
+            let action = turn_player_data
+                .get_main_phase_action(
+                    &Self::get_player_viewable_state(&state, turn_player),
+                    &playable_cards,
+                    &doable_basic_actions,
+                    &available_costs,
+                )
+                .await;
 
-        match action {
-            MainPhaseAction::EndMainPhase => cont(state),
-            MainPhaseAction::PlayBasicAction(play_action) => {
-                if !doable_basic_actions.contains(&play_action.action)
-                    || !available_costs.contains(&play_action.cost)
-                {
-                    todo!("Handle case where unpermitted operation was received")
-                }
-                rec_call(self.play_basic_action(state, play_action))
+            if validate_main_phase_action(state, &action) {
+                break action;
             }
-            MainPhaseAction::PlayCard(_) => {
+            cnt += 1;
+            if cnt >= GET_ACTION_RETRY_TIMES {
                 todo!()
             }
+        };
+
+        let ret = match action {
+            MainPhaseAction::EndMainPhase => cont(state),
+            MainPhaseAction::PlayBasicAction(PlayBasicAction { action, cost }) => rec_call(
+                self.pay_basic_action_cost(state, turn_player, cost, |state| {
+                    rec_call(self.play_basic_action(state, action, |state| {
+                        rec_call(self.do_main_phase_actions(state, cont))
+                    }))
+                }),
+            ),
+            MainPhaseAction::PlayCard(_) => cont(state),
+        };
+
+        fn validate_main_phase_action(state: &GameState, action: &MainPhaseAction) -> bool {
+            true // Todo:
         }
+
+        ret
     }
 
     #[async_recursion]
