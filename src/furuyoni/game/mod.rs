@@ -1,31 +1,26 @@
-mod cards;
 mod attack;
-mod effects;
+mod cards;
 mod condition;
+mod effects;
 
 mod player_actions;
 
 pub use {
-    player_actions::PlayBasicAction,
-    player_actions::PlayableCardSelector,
-    player_actions::HandSelector,
-    player_actions::MainPhaseAction,
-    player_actions::BasicActionCost,
+    player_actions::BasicActionCost, player_actions::HandSelector, player_actions::MainPhaseAction,
+    player_actions::PlayBasicAction, player_actions::PlayableCardSelector,
 };
 
-
+use crate::furuyoni;
+use crate::furuyoni::Player;
+use async_recursion::async_recursion;
+use cards::Card;
+use enum_dispatch::enum_dispatch;
+use futures::future::BoxFuture;
 use std::cmp;
 use std::collections::VecDeque;
 use std::future::Future;
-use std::ops::{Index, IndexMut};
-use enum_dispatch::enum_dispatch;
-use futures::future::BoxFuture;
-use cards::Card;
 use std::marker::{Send, Sync};
-use async_recursion::async_recursion;
-use crate::furuyoni;
-use crate::furuyoni::Player;
-
+use std::ops::{Index, IndexMut};
 
 type Players = PlayerData<Box<dyn Player + Send + Sync>>;
 
@@ -43,7 +38,6 @@ pub enum PlayerPos {
     P2,
 }
 
-
 #[derive(Debug, PartialEq)]
 pub enum BasicAction {
     MoveForward,
@@ -55,7 +49,6 @@ pub enum BasicAction {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Vigor(i32);
 
-
 struct GameState {
     turn_number: u32,
     turn_player: PlayerPos,
@@ -64,7 +57,6 @@ struct GameState {
 }
 
 type ViewablePlayerStates<'a> = PlayerData<ViewablePlayerState<'a>>;
-
 
 #[derive(Debug)]
 struct ViewableEnemyState<'a> {
@@ -121,26 +113,22 @@ type PlayerStates = PlayerData<PlayerState>;
 
 impl<T> PlayerData<T> {
     fn new(p1_data: T, p2_data: T) -> Self {
-        Self {
-            p1_data,
-            p2_data,
-        }
+        Self { p1_data, p2_data }
     }
 }
 
 trait Continuation<'a, TArgs>: FnOnce(TArgs) -> StepResult<'a> + Send + 'a {}
 
-impl<'a, TArgs, T> Continuation<'a, TArgs> for T
-    where T: FnOnce(TArgs) -> StepResult<'a> + Send + 'a {}
-
+impl<'a, TArgs, T> Continuation<'a, TArgs> for T where T: FnOnce(TArgs) -> StepResult<'a> + Send + 'a
+{}
 
 impl<T> Index<PlayerPos> for PlayerData<T> {
     type Output = T;
 
     fn index(&self, index: PlayerPos) -> &Self::Output {
         match index {
-            PlayerPos::P1 => { &self.p1_data }
-            PlayerPos::P2 => { &self.p2_data }
+            PlayerPos::P1 => &self.p1_data,
+            PlayerPos::P2 => &self.p2_data,
         }
     }
 }
@@ -148,8 +136,8 @@ impl<T> Index<PlayerPos> for PlayerData<T> {
 impl<T> IndexMut<PlayerPos> for PlayerData<T> {
     fn index_mut(&mut self, index: PlayerPos) -> &mut Self::Output {
         match index {
-            PlayerPos::P1 => { &mut self.p1_data }
-            PlayerPos::P2 => { &mut self.p2_data }
+            PlayerPos::P1 => &mut self.p1_data,
+            PlayerPos::P2 => &mut self.p2_data,
         }
     }
 }
@@ -184,17 +172,13 @@ impl Default for PlayerState {
     }
 }
 
-
 enum StepResult<'a> {
     TailCall(BoxFuture<'a, StepResult<'a>>),
     Result(GameResult),
 }
 
-
-fn rec_call<'a>(future: impl Future<Output=StepResult<'a>> + Send + 'a) -> StepResult<'a> {
-    StepResult::TailCall(
-        Box::pin(future)
-    )
+fn rec_call<'a>(future: impl Future<Output = StepResult<'a>> + Send + 'a) -> StepResult<'a> {
+    StepResult::TailCall(Box::pin(future))
 }
 
 fn rec_ret<'a>(result: GameResult) -> StepResult<'a> {
@@ -208,7 +192,6 @@ pub enum Phase {
     End,
 }
 
-
 impl GameResult {
     pub fn new(winner: PlayerPos) -> Self {
         Self { winner }
@@ -216,7 +199,12 @@ impl GameResult {
 }
 
 impl GameState {
-    fn new(turn_number: u32, turn_player: PlayerPos, phase: Phase, player_states: PlayerStates) -> Self {
+    fn new(
+        turn_number: u32,
+        turn_player: PlayerPos,
+        phase: Phase,
+        player_states: PlayerStates,
+    ) -> Self {
         GameState {
             turn_player,
             phase,
@@ -226,9 +214,11 @@ impl GameState {
     }
 }
 
-
 impl Game {
-    pub fn new(player_1: Box<dyn Player + Sync + Send>, player_2: Box<dyn Player + Sync + Send>) -> Self {
+    pub fn new(
+        player_1: Box<dyn Player + Sync + Send>,
+        player_2: Box<dyn Player + Sync + Send>,
+    ) -> Self {
         Game {
             players: Players::new(player_1, player_2),
         }
@@ -236,12 +226,28 @@ impl Game {
 
     fn default_player_states() -> PlayerStates {
         let p1_state = PlayerState {
-            deck: VecDeque::from([Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash]),
+            deck: VecDeque::from([
+                Card::Slash,
+                Card::Slash,
+                Card::Slash,
+                Card::Slash,
+                Card::Slash,
+                Card::Slash,
+                Card::Slash,
+            ]),
             ..Default::default()
         };
 
         let p2_state = PlayerState {
-            deck: VecDeque::from([Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash, Card::Slash]),
+            deck: VecDeque::from([
+                Card::Slash,
+                Card::Slash,
+                Card::Slash,
+                Card::Slash,
+                Card::Slash,
+                Card::Slash,
+                Card::Slash,
+            ]),
             ..Default::default()
         };
 
@@ -249,8 +255,8 @@ impl Game {
     }
 
     pub async fn run(&self) -> GameResult {
-        let mut state = GameState::new(0, PlayerPos::P2, Phase::Main,
-                                       Self::default_player_states());
+        let mut state =
+            GameState::new(0, PlayerPos::P2, Phase::Main, Self::default_player_states());
 
         let mut next: BoxFuture<StepResult> = Box::pin(self.next_turn(&mut state));
 
@@ -258,8 +264,10 @@ impl Game {
             let step_result = next.await;
 
             match step_result {
-                StepResult::TailCall(future) => { next = future }
-                StepResult::Result(res) => { break res; }
+                StepResult::TailCall(future) => next = future,
+                StepResult::Result(res) => {
+                    break res;
+                }
             }
         };
 
@@ -271,7 +279,11 @@ impl Game {
         state.turn_number += 1;
 
         // switch current player
-        let next_player = if state.turn_player == PlayerPos::P1 { PlayerPos::P2 } else { PlayerPos::P1 };
+        let next_player = if state.turn_player == PlayerPos::P1 {
+            PlayerPos::P2
+        } else {
+            PlayerPos::P1
+        };
         state.turn_player = next_player;
 
         let step_result = if state.turn_number <= 2 {
@@ -296,16 +308,15 @@ impl Game {
     async fn run_from_main_phase<'a>(&'a self, state: &'a mut GameState) -> StepResult<'a> {
         state.phase = Phase::Main;
 
-        rec_call(self.do_main_phase_action(state,
-                                           |s| {
-                                               rec_call(self.run_from_end_phase(s))
-                                           },
-        ))
+        rec_call(self.do_main_phase_action(state, |s| rec_call(self.run_from_end_phase(s))))
     }
 
     #[async_recursion]
-    async fn do_main_phase_action<'a>(&'a self, state: &'a mut GameState,
-                                      cont: impl Continuation<'a, (&'a mut GameState)>) -> StepResult<'a> {
+    async fn do_main_phase_action<'a>(
+        &'a self,
+        state: &'a mut GameState,
+        cont: impl Continuation<'a, (&'a mut GameState)>,
+    ) -> StepResult<'a> {
         let turn_player = state.turn_player;
         let turn_player_data = &self.players[turn_player];
 
@@ -313,25 +324,28 @@ impl Game {
         let playable_cards = vec![PlayableCardSelector::Hand(HandSelector(0))];
         let available_costs = vec![BasicActionCost::Vigor(Vigor(0))];
 
-        let action = turn_player_data.get_main_phase_action(
-            &Self::get_player_viewable_state(&state, turn_player),
-            &playable_cards,
-            &doable_basic_actions,
-            &available_costs,
-        ).await;
-
+        let action = turn_player_data
+            .get_main_phase_action(
+                &Self::get_player_viewable_state(&state, turn_player),
+                &playable_cards,
+                &doable_basic_actions,
+                &available_costs,
+            )
+            .await;
 
         match action {
-            MainPhaseAction::EndMainPhase => {
-                cont(state)
-            }
+            MainPhaseAction::EndMainPhase => cont(state),
             MainPhaseAction::PlayBasicAction(play_action) => {
-                if !doable_basic_actions.contains(&play_action.action) || !available_costs.contains(&play_action.cost) {
+                if !doable_basic_actions.contains(&play_action.action)
+                    || !available_costs.contains(&play_action.cost)
+                {
                     todo!("Handle case where unpermitted operation was received")
                 }
                 rec_call(self.play_basic_action(state, play_action))
             }
-            MainPhaseAction::PlayCard(_) => { todo!() }
+            MainPhaseAction::PlayCard(_) => {
+                todo!()
+            }
         }
     }
 
@@ -340,8 +354,11 @@ impl Game {
         rec_call(self.turn_end(state))
     }
 
-    async fn play_basic_action<'a>(&'a self, state: &'a mut GameState, play_action: PlayBasicAction)
-                                   -> StepResult<'a> {
+    async fn play_basic_action<'a>(
+        &'a self,
+        state: &'a mut GameState,
+        play_action: PlayBasicAction,
+    ) -> StepResult<'a> {
         todo!()
     }
 
@@ -370,7 +387,6 @@ impl Game {
                 get_player_state(PlayerPos::P1),
                 get_player_state(PlayerPos::P2),
             ),
-
         }
     }
 
@@ -387,7 +403,3 @@ impl Game {
         vigor.0 = cmp::min(MAX_VIGOR, cmp::max(MIN_VIGOR, vigor.0 + diff.0));
     }
 }
-
-
-
-

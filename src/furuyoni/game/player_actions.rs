@@ -5,7 +5,7 @@ pub struct HandSelector(pub usize);
 
 #[derive(Debug)]
 pub enum PlayableCardSelector {
-    Hand(HandSelector)
+    Hand(HandSelector),
 }
 
 #[derive(Debug, PartialEq)]

@@ -1,17 +1,21 @@
-use async_trait::async_trait;
 use crate::furuyoni;
 use crate::furuyoni::game;
-use crate::furuyoni::game::{BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector, ViewableState};
-
+use crate::furuyoni::game::{
+    BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector, ViewableState,
+};
+use async_trait::async_trait;
 
 pub struct CliPlayer {}
 
 #[async_trait]
 impl furuyoni::Player for CliPlayer {
-    async fn get_main_phase_action(&self, state: &ViewableState<'_>,
-                                   playable_cards: &Vec<PlayableCardSelector>,
-                                   doable_basic_actions: &Vec<BasicAction>,
-                                   available_basic_action_costs: &Vec<BasicActionCost>) -> MainPhaseAction {
+    async fn get_main_phase_action(
+        &self,
+        state: &ViewableState<'_>,
+        playable_cards: &Vec<PlayableCardSelector>,
+        doable_basic_actions: &Vec<BasicAction>,
+        available_basic_action_costs: &Vec<BasicActionCost>,
+    ) -> MainPhaseAction {
         Self::print_state(state);
 
         todo!()
@@ -27,7 +31,6 @@ impl CliPlayer {
         println!(" =========== ");
     }
 
-
     fn get_input<T: std::str::FromStr>() -> Result<T, std::io::Error> {
         let val = loop {
             let mut line = String::new();
@@ -35,7 +38,9 @@ impl CliPlayer {
             let line = line.trim();
 
             match line.parse::<T>() {
-                Ok(v) => { break v; }
+                Ok(v) => {
+                    break v;
+                }
                 Err(_) => {
                     println!("Parse failed. Please try again:");
                 }

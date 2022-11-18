@@ -1,6 +1,5 @@
 mod yurina;
 
-
 use crate::furuyoni::game::attack::Attack;
 
 #[derive(Debug)]
@@ -12,8 +11,8 @@ pub enum Card {
 impl Card {
     fn data(&self) -> &'static CardData {
         match &self {
-            Card::Slash => { &yurina::SLASH }
-            Card::Brandish => { &yurina::BRANDISH }
+            Card::Slash => &yurina::SLASH,
+            Card::Brandish => &yurina::BRANDISH,
         }
     }
 }
@@ -22,7 +21,6 @@ pub enum CardBack {
     Normal,
     Special,
 }
-
 
 pub struct CardData {
     basic_data: CardBasicData,
@@ -37,7 +35,7 @@ struct CardBasicData {
 }
 
 enum CardPlayData {
-    AttackCard(AttackCard)
+    AttackCard(AttackCard),
 }
 
 struct AttackCard {

@@ -1,5 +1,1 @@
-
-pub enum Effect {
-
-}
-
+pub enum Effect {}

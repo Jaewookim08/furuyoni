@@ -1,7 +1,5 @@
 pub mod game;
-pub mod players;
 mod player;
+pub mod players;
 
-pub use {
-    player::Player as Player,
-};
+pub use player::Player;
