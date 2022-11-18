@@ -364,12 +364,39 @@ impl Game {
         rec_call(self.turn_end(state))
     }
 
+    #[async_recursion]
     async fn play_basic_action<'a>(
         &'a self,
         state: &'a mut GameState,
-        play_action: PlayBasicAction,
+        action: BasicAction,
+        cont: impl Continuation<'a, &'a mut GameState>,
     ) -> StepResult<'a> {
         todo!()
+    }
+
+    #[async_recursion]
+    async fn pay_basic_action_cost<'a>(
+        &'a self,
+        state: &'a mut GameState,
+        player: PlayerPos,
+        cost: BasicActionCost,
+        cont: impl Continuation<'a, &'a mut GameState>,
+    ) -> StepResult<'a> {
+        match cost {
+            BasicActionCost::Hand(selector) => {
+                let player_state = &mut state.player_states[player];
+                let hand = &mut player_state.hand;
+
+                if selector.0 > hand.len() {
+                    todo!("Call error continuation.")
+                }
+                let card = hand.remove(selector.0);
+
+                player_state.discard_pile.push(card)
+            }
+            BasicActionCost::Vigor(vigor_cost) => Self::add_to_vigor(state, player, -vigor_cost),
+        }
+        cont(state)
     }
 
     async fn turn_end<'a>(&'a self, state: &'a mut GameState) -> StepResult {

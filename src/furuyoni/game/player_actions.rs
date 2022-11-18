@@ -2,6 +2,7 @@ use crate::furuyoni::game;
 
 #[derive(Debug, PartialEq)]
 pub struct HandSelector(pub usize);
+// Todo: Implement Index<HandSelector> for Hands vector?
 
 #[derive(Debug)]
 pub enum PlayableCardSelector {
