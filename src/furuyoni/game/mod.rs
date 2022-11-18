@@ -48,7 +48,7 @@ pub enum PlayerPos {
     P2,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum BasicAction {
     MoveForward,
     MoveBackward,
@@ -334,7 +334,7 @@ impl Game {
 
         let doable_basic_actions = vec![BasicAction::MoveForward, BasicAction::MoveBackward];
         let playable_cards = vec![PlayableCardSelector::Hand(HandSelector(0))];
-        let available_costs = vec![BasicActionCost::Vigor(Vigor(0))];
+        let available_costs = vec![BasicActionCost::Vigor];
 
         let mut cnt = 0;
         let action = loop {
@@ -359,7 +359,7 @@ impl Game {
         let ret = match action {
             MainPhaseAction::EndMainPhase => cont(state),
             MainPhaseAction::PlayBasicAction(PlayBasicAction { action, cost }) => rec_call(
-                self.pay_basic_action_cost(state, turn_player, cost, |state| {
+                self.pay_basic_action_cost(state, turn_player, cost, move |state| {
                     rec_call(self.play_basic_action(state, action, |state| {
                         rec_call(self.do_main_phase_actions(state, cont))
                     }))
@@ -410,7 +410,7 @@ impl Game {
 
                 player_state.discard_pile.push(card)
             }
-            BasicActionCost::Vigor(vigor_cost) => Self::add_to_vigor(state, player, -vigor_cost),
+            BasicActionCost::Vigor => Self::add_to_vigor(state, player, -Vigor(1)),
         }
         cont(state)
     }

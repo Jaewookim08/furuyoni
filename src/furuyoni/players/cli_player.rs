@@ -1,7 +1,8 @@
 use crate::furuyoni;
 use crate::furuyoni::game;
 use crate::furuyoni::game::{
-    BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector, ViewableState,
+    BasicAction, BasicActionCost, MainPhaseAction, PlayBasicAction, PlayableCardSelector,
+    ViewableState,
 };
 use async_trait::async_trait;
 
@@ -18,9 +19,18 @@ impl furuyoni::Player for CliPlayer {
     ) -> MainPhaseAction {
         Self::print_state(state);
 
-        todo!()
-        // println!("actions: {available_actions:?}");
-        // let index = Self::get_index_lower_than(5).unwrap();
+        println!("actions: {doable_basic_actions:?}");
+
+        let index = Self::get_index_lower_than(doable_basic_actions.len() + 1).unwrap();
+
+        if index == doable_basic_actions.len() {
+            MainPhaseAction::EndMainPhase
+        } else {
+            MainPhaseAction::PlayBasicAction(PlayBasicAction::new(
+                doable_basic_actions[index],
+                BasicActionCost::Vigor,
+            ))
+        }
     }
 }
 
