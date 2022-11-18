@@ -346,7 +346,12 @@ impl Game {
         let turn_player = state.turn_player;
         let turn_player_data = &self.players[turn_player];
 
-        let doable_basic_actions = vec![BasicAction::MoveForward, BasicAction::MoveBackward];
+        let doable_basic_actions = vec![
+            BasicAction::MoveForward,
+            BasicAction::MoveBackward,
+            BasicAction::Focus,
+            BasicAction::Recover,
+        ];
         let playable_cards = vec![PlayableCardSelector::Hand(HandSelector(0))];
         let available_costs = vec![BasicActionCost::Vigor];
 
@@ -374,7 +379,7 @@ impl Game {
             MainPhaseAction::EndMainPhase => cont(state),
             MainPhaseAction::PlayBasicAction(PlayBasicAction { action, cost }) => rec_call(
                 self.pay_basic_action_cost(state, turn_player, cost, move |state| {
-                    rec_call(self.play_basic_action(state, action, |state| {
+                    rec_call(self.play_basic_action(state, turn_player, action, |state| {
                         rec_call(self.do_main_phase_actions(state, cont))
                     }))
                 }),
@@ -398,10 +403,31 @@ impl Game {
     async fn play_basic_action<'a>(
         &'a self,
         state: &'a mut GameState,
+        player: PlayerPos,
         action: BasicAction,
         cont: impl Continuation<'a, &'a mut GameState>,
     ) -> StepResult<'a> {
-        todo!()
+        let player_data = &mut state.player_states[player];
+
+        match action {
+            BasicAction::MoveForward => {
+                state.distance -= 1;
+                player_data.aura += 1;
+            }
+            BasicAction::MoveBackward => {
+                state.distance += 1;
+                player_data.aura -= 1;
+            }
+            BasicAction::Recover => {
+                state.dust -= 1;
+                player_data.aura += 1;
+            }
+            BasicAction::Focus => {
+                player_data.aura -= 1;
+                player_data.flare += 1;
+            }
+        }
+        cont(state)
     }
 
     #[async_recursion]
