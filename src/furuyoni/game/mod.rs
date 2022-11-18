@@ -14,6 +14,7 @@ use crate::furuyoni;
 use crate::furuyoni::Player;
 use async_recursion::async_recursion;
 use cards::Card;
+use derive_more::Neg;
 use enum_dispatch::enum_dispatch;
 use futures::future::BoxFuture;
 use std::cmp;
@@ -46,7 +47,7 @@ pub enum BasicAction {
     Focus,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Neg)]
 pub struct Vigor(i32);
 
 struct GameState {

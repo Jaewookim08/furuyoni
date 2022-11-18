@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate derive_more;
+
 mod furuyoni;
 
 fn main() {
