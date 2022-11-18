@@ -25,6 +25,15 @@ use std::ops::{Index, IndexMut};
 
 type Players = PlayerData<Box<dyn Player + Send + Sync>>;
 
+macro_rules! unwrap_or {
+    ( $e:expr, $el:expr ) => {
+        match $e {
+            Some(x) => x,
+            None => $el,
+        }
+    };
+}
+
 pub struct Game {
     players: Players,
 }
