@@ -1,19 +1,22 @@
 use async_trait::async_trait;
 use crate::furuyoni;
 use crate::furuyoni::game;
-use crate::furuyoni::game::{MainPhaseAction, ViewableState};
+use crate::furuyoni::game::{BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector, ViewableState};
 
 
 pub struct CliPlayer {}
 
 #[async_trait]
 impl furuyoni::Player for CliPlayer {
-    async fn get_main_phase_action(&self, state: &ViewableState<'_>, mut available_actions: Vec<MainPhaseAction>) -> MainPhaseAction {
+    async fn get_main_phase_action(&self, state: &ViewableState<'_>,
+                                   playable_cards: &Vec<PlayableCardSelector>,
+                                   doable_basic_actions: &Vec<BasicAction>,
+                                   available_basic_action_costs: &Vec<BasicActionCost>) -> MainPhaseAction {
         Self::print_state(state);
-        println!("actions: {available_actions:?}");
-        let index = Self::get_index_lower_than(available_actions.len()).unwrap();
 
-        available_actions.swap_remove(index)
+        todo!()
+        // println!("actions: {available_actions:?}");
+        // let index = Self::get_index_lower_than(5).unwrap();
     }
 }
 

@@ -3,6 +3,16 @@ mod attack;
 mod effects;
 mod condition;
 
+mod player_actions;
+
+pub use {
+    player_actions::PlayBasicAction,
+    player_actions::PlayableCardSelector,
+    player_actions::HandSelector,
+    player_actions::MainPhaseAction,
+    player_actions::BasicActionCost,
+};
+
 
 use std::cmp;
 use std::collections::VecDeque;
@@ -33,7 +43,8 @@ pub enum PlayerPos {
     P2,
 }
 
-#[derive(Debug)]
+
+#[derive(Debug, PartialEq)]
 pub enum BasicAction {
     MoveForward,
     MoveBackward,
@@ -41,12 +52,8 @@ pub enum BasicAction {
     Focus,
 }
 
-#[derive(Debug)]
-pub enum MainPhaseAction {
-    BasicAction(BasicAction),
-    PlayCard(&'static Card),
-    EndMainPhase,
-}
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct Vigor(i32);
 
 
 struct GameState {
@@ -67,7 +74,7 @@ struct ViewableEnemyState<'a> {
     played_pile: &'a Vec<Card>,
     discard_pile_count: usize,
 
-    vigor: i32,
+    vigor: Vigor,
     aura: i32,
     life: i32,
     flare: i32,
@@ -155,7 +162,7 @@ pub struct PlayerState {
     played_pile: Vec<Card>,
     discard_pile: Vec<Card>,
 
-    vigor: i32,
+    vigor: Vigor,
     aura: i32,
     life: i32,
     flare: i32,
@@ -169,7 +176,7 @@ impl Default for PlayerState {
             enhancements: vec![],
             played_pile: vec![],
             discard_pile: vec![],
-            vigor: 0,
+            vigor: Vigor(0),
             aura: 3,
             life: 10,
             flare: 0,
@@ -188,6 +195,10 @@ fn rec_call<'a>(future: impl Future<Output=StepResult<'a>> + Send + 'a) -> StepR
     StepResult::TailCall(
         Box::pin(future)
     )
+}
+
+fn rec_ret<'a>(result: GameResult) -> StepResult<'a> {
+    StepResult::Result(result)
 }
 
 #[derive(Debug)]
@@ -276,7 +287,7 @@ impl Game {
         state.phase = Phase::Beginning;
 
         let current_player = state.turn_player;
-        Self::add_to_vigor(state, current_player, 1);
+        Self::add_to_vigor(state, current_player, Vigor(1));
         // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
 
         rec_call(self.run_from_main_phase(state))
@@ -285,43 +296,53 @@ impl Game {
     async fn run_from_main_phase<'a>(&'a self, state: &'a mut GameState) -> StepResult<'a> {
         state.phase = Phase::Main;
 
-        rec_call(self.do_main_phase_actions(state,
-                                            |s| {
-                                                rec_call(self.run_from_end_phase(s))
-                                            },
+        rec_call(self.do_main_phase_action(state,
+                                           |s| {
+                                               rec_call(self.run_from_end_phase(s))
+                                           },
         ))
     }
 
     #[async_recursion]
-    async fn do_main_phase_actions<'a>(&'a self, state: &'a mut GameState,
-                                       on_end: impl Continuation<'a, (&'a mut GameState)>) -> StepResult<'a> {
+    async fn do_main_phase_action<'a>(&'a self, state: &'a mut GameState,
+                                      cont: impl Continuation<'a, (&'a mut GameState)>) -> StepResult<'a> {
         let turn_player = state.turn_player;
         let turn_player_data = &self.players[turn_player];
 
-        let available_actions = vec![MainPhaseAction::EndMainPhase];
+        let doable_basic_actions = vec![BasicAction::MoveForward, BasicAction::MoveBackward];
+        let playable_cards = vec![PlayableCardSelector::Hand(HandSelector(0))];
+        let available_costs = vec![BasicActionCost::Vigor(Vigor(0))];
 
         let action = turn_player_data.get_main_phase_action(
             &Self::get_player_viewable_state(&state, turn_player),
-            available_actions,
+            &playable_cards,
+            &doable_basic_actions,
+            &available_costs,
         ).await;
-
-        // Todo: handle when action_index is out of bounds
-
 
 
         match action {
             MainPhaseAction::EndMainPhase => {
-                on_end(state)
+                cont(state)
             }
-            _ => {
-                rec_call(self.do_main_phase_actions(state, on_end))
+            MainPhaseAction::PlayBasicAction(play_action) => {
+                if !doable_basic_actions.contains(&play_action.action) || !available_costs.contains(&play_action.cost) {
+                    todo!("Handle case where unpermitted operation was received")
+                }
+                rec_call(self.play_basic_action(state, play_action))
             }
+            MainPhaseAction::PlayCard(_) => { todo!() }
         }
     }
 
     #[async_recursion]
     async fn run_from_end_phase<'a>(&'a self, state: &'a mut GameState) -> StepResult<'a> {
         rec_call(self.turn_end(state))
+    }
+
+    async fn play_basic_action<'a>(&'a self, state: &'a mut GameState, play_action: PlayBasicAction)
+                                   -> StepResult<'a> {
+        todo!()
     }
 
     async fn turn_end<'a>(&'a self, state: &'a mut GameState) -> StepResult {
@@ -354,16 +375,16 @@ impl Game {
     }
 
     async fn test_win(&self) -> StepResult {
-        StepResult::Result(GameResult::new(PlayerPos::P1))
+        rec_ret(GameResult::new(PlayerPos::P1))
     }
 
-    fn add_to_vigor(state: &mut GameState, player: PlayerPos, diff: i32) {
+    fn add_to_vigor(state: &mut GameState, player: PlayerPos, diff: Vigor) {
         const MAX_VIGOR: i32 = 2;
         const MIN_VIGOR: i32 = 0;
 
         let vigor = &mut state.player_states[player].vigor;
 
-        *vigor = cmp::min(MAX_VIGOR, cmp::max(MIN_VIGOR, *vigor + diff));
+        vigor.0 = cmp::min(MAX_VIGOR, cmp::max(MIN_VIGOR, vigor.0 + diff.0));
     }
 }
 
