@@ -3,6 +3,8 @@ mod cards;
 mod condition;
 mod effects;
 
+mod petals;
+use petals::Petals;
 mod player_actions;
 
 pub use {
@@ -63,8 +65,8 @@ struct GameState {
     turn_number: u32,
     turn_player: PlayerPos,
     phase: Phase,
-    distance: i32,
-    dust: i32,
+    distance: Petals,
+    dust: Petals,
     player_states: PlayerStates,
 }
 
@@ -94,9 +96,9 @@ impl<'a> From<&'a PlayerState> for ViewableEnemyState<'a> {
             discard_pile_count: player_state.discard_pile.len(),
 
             vigor: player_state.vigor,
-            aura: player_state.aura,
-            life: player_state.life,
-            flare: player_state.flare,
+            aura: player_state.aura.get_count(),
+            life: player_state.life.get_count(),
+            flare: player_state.flare.get_count(),
         }
     }
 }
@@ -165,9 +167,9 @@ pub struct PlayerState {
     discard_pile: Vec<Card>,
 
     vigor: Vigor,
-    aura: i32,
-    life: i32,
-    flare: i32,
+    aura: Petals,
+    life: Petals,
+    flare: Petals,
 }
 
 impl Default for PlayerState {
@@ -179,9 +181,9 @@ impl Default for PlayerState {
             played_pile: vec![],
             discard_pile: vec![],
             vigor: Vigor(0),
-            aura: 3,
-            life: 10,
-            flare: 0,
+            aura: Petals::new(3),
+            life: Petals::new(10),
+            flare: Petals::new(0),
         }
     }
 }
@@ -217,8 +219,8 @@ impl GameState {
         turn_number: u32,
         turn_player: PlayerPos,
         phase: Phase,
-        distance: i32,
-        dust: i32,
+        distance: Petals,
+        dust: Petals,
         player_states: PlayerStates,
     ) -> Self {
         GameState {
@@ -277,8 +279,8 @@ impl Game {
             0,
             PlayerPos::P2,
             Phase::Main,
-            10,
-            0,
+            Petals::new(10),
+            Petals::new(0),
             Self::default_player_states(),
         );
 
@@ -411,20 +413,16 @@ impl Game {
 
         match action {
             BasicAction::MoveForward => {
-                state.distance -= 1;
-                player_data.aura += 1;
+                player_data.aura += state.distance.take(1);
             }
             BasicAction::MoveBackward => {
-                state.distance += 1;
-                player_data.aura -= 1;
+                state.distance += player_data.aura.take(1);
             }
             BasicAction::Recover => {
-                state.dust -= 1;
-                player_data.aura += 1;
+                player_data.aura += state.dust.take(1);
             }
             BasicAction::Focus => {
-                player_data.aura -= 1;
-                player_data.flare += 1;
+                player_data.flare += player_data.aura.take(1);
             }
         }
         cont(state)
@@ -476,8 +474,8 @@ impl Game {
             turn_player: state.turn_player,
             phase: &state.phase,
             turn_number: state.turn_number,
-            distance: state.distance,
-            dust: state.dust,
+            distance: state.distance.get_count(),
+            dust: state.dust.get_count(),
             player_states: ViewablePlayerStates::new(
                 get_player_state(PlayerPos::P1),
                 get_player_state(PlayerPos::P2),
