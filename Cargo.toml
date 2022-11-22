@@ -1,5 +1,6 @@
 [workspace]
 
 members = [
-    "furuyoni_server"
+    "furuyoni_server",
+    "furuyoni_lib"
 ]
