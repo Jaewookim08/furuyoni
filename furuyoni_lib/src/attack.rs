@@ -1,5 +1,5 @@
-use super::effects::Effect;
-use crate::furuyoni::game::condition::Condition;
+use crate::condition::Condition;
+use crate::effects::Effect;
 
 pub type Damage = Option<u32>;
 

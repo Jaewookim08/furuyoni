@@ -1,18 +1,20 @@
 #[macro_use]
 extern crate derive_more;
 
-mod furuyoni;
+extern crate furuyoni_lib;
+
+use furuyoni_lib::players::{CliPlayer, IdlePlayer};
+use furuyoni_lib::rules::PlayerPos;
+
+mod game;
 
 fn main() {
     println!("Hello, world!");
-    let mut a = furuyoni::game::Game::new(
-        Box::new(furuyoni::players::CliPlayer {}),
-        Box::new(furuyoni::players::IdlePlayer {}),
-    );
-    let res = futures::executor::block_on(a.run());
+    let game = game::Game::new(Box::new(CliPlayer {}), Box::new(IdlePlayer {}));
+    let res = futures::executor::block_on(game.run());
     let winner_str = match res.winner {
-        furuyoni::game::PlayerPos::P1 => "P1",
-        furuyoni::game::PlayerPos::P2 => "P2",
+        PlayerPos::P1 => "P1",
+        PlayerPos::P2 => "P2",
     };
     println!("Game ended. Winner: {winner_str}");
 }

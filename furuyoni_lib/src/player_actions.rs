@@ -1,8 +1,14 @@
-use crate::furuyoni::game;
-
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct HandSelector(pub usize);
 // Todo: Implement Index<HandSelector> for Hands vector?
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum BasicAction {
+    MoveForward,
+    MoveBackward,
+    Recover,
+    Focus,
+}
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum PlayableCardSelector {
@@ -17,11 +23,11 @@ pub enum BasicActionCost {
 
 #[derive(Debug)]
 pub struct PlayBasicAction {
-    pub(super) action: game::BasicAction,
-    pub(super) cost: BasicActionCost,
+    pub action: BasicAction,
+    pub cost: BasicActionCost,
 }
 impl PlayBasicAction {
-    pub fn new(action: game::BasicAction, cost: BasicActionCost) -> Self {
+    pub fn new(action: BasicAction, cost: BasicActionCost) -> Self {
         Self { action, cost }
     }
 }

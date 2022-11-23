@@ -82,6 +82,9 @@ dependencies = [
 [[package]]
 name = "furuyoni_lib"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+]
 
 [[package]]
 name = "furuyoni_server"
@@ -91,6 +94,7 @@ dependencies = [
  "async-trait",
  "derive_more",
  "enum_dispatch",
+ "furuyoni_lib",
  "futures",
  "tokio",
 ]

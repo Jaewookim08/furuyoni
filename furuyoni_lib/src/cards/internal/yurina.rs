@@ -1,5 +1,5 @@
-use crate::furuyoni::game::attack::*;
-use crate::furuyoni::game::cards::*;
+use super::*;
+use crate::attack::{Attack, AttackDamage};
 
 pub const SLASH: CardData = CardData {
     basic_data: CardBasicData {

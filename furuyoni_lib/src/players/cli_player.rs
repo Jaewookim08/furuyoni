@@ -1,21 +1,19 @@
-use crate::furuyoni;
-use crate::furuyoni::game;
-use crate::furuyoni::game::{
+use crate::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayBasicAction, PlayableCardSelector,
-    ViewableState,
 };
+use crate::rules::ViewableState;
 use async_trait::async_trait;
 
 pub struct CliPlayer {}
 
 #[async_trait]
-impl furuyoni::Player for CliPlayer {
+impl super::Player for CliPlayer {
     async fn get_main_phase_action(
         &self,
-        state: &ViewableState<'_>,
-        playable_cards: &Vec<PlayableCardSelector>,
+        state: &ViewableState,
+        _playable_cards: &Vec<PlayableCardSelector>,
         doable_basic_actions: &Vec<BasicAction>,
-        available_basic_action_costs: &Vec<BasicActionCost>,
+        _available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> MainPhaseAction {
         Self::print_state(state);
 
@@ -44,7 +42,7 @@ impl CliPlayer {
     fn get_input<T: std::str::FromStr>() -> Result<T, std::io::Error> {
         let val = loop {
             let mut line = String::new();
-            let b = std::io::stdin().read_line(&mut line)?;
+            let _ = std::io::stdin().read_line(&mut line)?;
             let line = line.trim();
 
             match line.parse::<T>() {

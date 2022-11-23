@@ -1,8 +1,8 @@
+use crate::attack::Attack;
+
 mod yurina;
 
-use crate::furuyoni::game::attack::Attack;
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Card {
     Slash,
     Brandish,
@@ -23,21 +23,19 @@ pub enum CardBack {
 }
 
 pub struct CardData {
-    basic_data: CardBasicData,
-    play_data: CardPlayData,
+    pub basic_data: CardBasicData,
+    pub play_data: CardPlayData,
 }
 
-struct Context {}
-
-struct CardBasicData {
-    card_back: CardBack,
-    id_str: &'static str,
+pub struct CardBasicData {
+    pub card_back: CardBack,
+    pub id_str: &'static str,
 }
 
-enum CardPlayData {
+pub enum CardPlayData {
     AttackCard(AttackCard),
 }
 
-struct AttackCard {
-    attack: Attack,
+pub struct AttackCard {
+    pub attack: Attack,
 }

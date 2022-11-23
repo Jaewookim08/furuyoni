@@ -1,29 +1,24 @@
-mod attack;
-mod cards;
-mod condition;
-mod effects;
-
 mod petals;
 use petals::Petals;
-mod player_actions;
 
-pub use {
-    player_actions::BasicActionCost, player_actions::HandSelector, player_actions::MainPhaseAction,
-    player_actions::PlayBasicAction, player_actions::PlayableCardSelector,
+use async_recursion::async_recursion;
+use derive_more::Neg;
+use furuyoni_lib::cards::Card;
+use furuyoni_lib::player_actions::{
+    BasicAction, BasicActionCost, HandSelector, MainPhaseAction, PlayBasicAction,
+    PlayableCardSelector,
+};
+use furuyoni_lib::players::{Player, PlayerData};
+use furuyoni_lib::rules::{
+    Phase, PlayerPos, ViewableOpponentState, ViewablePlayerState, ViewablePlayerStates,
+    ViewableSelfState, ViewableState,
 };
 
-use crate::furuyoni;
-use crate::furuyoni::Player;
-use async_recursion::async_recursion;
-use cards::Card;
-use derive_more::Neg;
-use enum_dispatch::enum_dispatch;
 use futures::future::BoxFuture;
 use std::cmp;
 use std::collections::VecDeque;
 use std::future::Future;
 use std::marker::{Send, Sync};
-use std::ops::{Index, IndexMut};
 
 type Players = PlayerData<Box<dyn Player + Send + Sync>>;
 
@@ -44,20 +39,6 @@ pub struct GameResult {
     pub winner: PlayerPos,
 }
 
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub enum PlayerPos {
-    P1,
-    P2,
-}
-
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub enum BasicAction {
-    MoveForward,
-    MoveBackward,
-    Recover,
-    Focus,
-}
-
 #[derive(Debug, Copy, Clone, PartialEq, Neg)]
 pub struct Vigor(i32);
 
@@ -70,32 +51,16 @@ struct GameState {
     player_states: PlayerStates,
 }
 
-type ViewablePlayerStates<'a> = PlayerData<ViewablePlayerState<'a>>;
-
-#[derive(Debug)]
-struct ViewableEnemyState<'a> {
-    hand_count: usize,
-    deck_count: usize,
-    enhancements: &'a Vec<Card>,
-    played_pile: &'a Vec<Card>,
-    discard_pile_count: usize,
-
-    vigor: Vigor,
-    aura: i32,
-    life: i32,
-    flare: i32,
-}
-
-impl<'a> From<&'a PlayerState> for ViewableEnemyState<'a> {
-    fn from(player_state: &'a PlayerState) -> Self {
-        ViewableEnemyState {
+impl From<&PlayerState> for ViewableOpponentState {
+    fn from(player_state: &PlayerState) -> Self {
+        ViewableOpponentState {
             hand_count: player_state.hand.len(),
             deck_count: player_state.deck.len(),
-            enhancements: &player_state.enhancements,
-            played_pile: &player_state.played_pile,
+            enhancements: player_state.enhancements.clone(),
+            played_pile: player_state.played_pile.clone(),
             discard_pile_count: player_state.discard_pile.len(),
 
-            vigor: player_state.vigor,
+            vigor: player_state.vigor.0,
             aura: player_state.aura.get_count(),
             life: player_state.life.get_count(),
             flare: player_state.flare.get_count(),
@@ -103,60 +68,29 @@ impl<'a> From<&'a PlayerState> for ViewableEnemyState<'a> {
     }
 }
 
-#[derive(Debug)]
-enum ViewablePlayerState<'a> {
-    Transparent(&'a PlayerState),
-    Enemy(ViewableEnemyState<'a>),
-}
+impl From<&PlayerState> for ViewableSelfState {
+    fn from(player_state: &PlayerState) -> Self {
+        ViewableSelfState {
+            hands: player_state.hand.clone(),
+            deck_count: player_state.deck.len(),
+            enhancements: player_state.enhancements.clone(),
+            played_pile: player_state.played_pile.clone(),
+            discard_pile: player_state.discard_pile.clone(),
 
-#[derive(Debug)]
-pub struct ViewableState<'a> {
-    turn_number: u32,
-    turn_player: PlayerPos,
-    phase: &'a Phase,
-    distance: i32,
-    dust: i32,
-    player_states: ViewablePlayerStates<'a>,
-}
-
-#[derive(Debug)]
-struct PlayerData<TData> {
-    p1_data: TData,
-    p2_data: TData,
+            vigor: player_state.vigor.0,
+            aura: player_state.aura.get_count(),
+            life: player_state.life.get_count(),
+            flare: player_state.flare.get_count(),
+        }
+    }
 }
 
 type PlayerStates = PlayerData<PlayerState>;
-
-impl<T> PlayerData<T> {
-    fn new(p1_data: T, p2_data: T) -> Self {
-        Self { p1_data, p2_data }
-    }
-}
 
 trait Continuation<'a, TArgs>: FnOnce(TArgs) -> StepResult<'a> + Send + 'a {}
 
 impl<'a, TArgs, T> Continuation<'a, TArgs> for T where T: FnOnce(TArgs) -> StepResult<'a> + Send + 'a
 {}
-
-impl<T> Index<PlayerPos> for PlayerData<T> {
-    type Output = T;
-
-    fn index(&self, index: PlayerPos) -> &Self::Output {
-        match index {
-            PlayerPos::P1 => &self.p1_data,
-            PlayerPos::P2 => &self.p2_data,
-        }
-    }
-}
-
-impl<T> IndexMut<PlayerPos> for PlayerData<T> {
-    fn index_mut(&mut self, index: PlayerPos) -> &mut Self::Output {
-        match index {
-            PlayerPos::P1 => &mut self.p1_data,
-            PlayerPos::P2 => &mut self.p2_data,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct PlayerState {
@@ -199,13 +133,6 @@ fn rec_call<'a>(future: impl Future<Output = StepResult<'a>> + Send + 'a) -> Ste
 
 fn rec_ret<'a>(result: GameResult) -> StepResult<'a> {
     StepResult::Result(result)
-}
-
-#[derive(Debug)]
-pub enum Phase {
-    Beginning,
-    Main,
-    End,
 }
 
 impl GameResult {
@@ -341,7 +268,7 @@ impl Game {
     async fn do_main_phase_actions<'a>(
         &'a self,
         state: &'a mut GameState,
-        cont: impl Continuation<'a, (&'a mut GameState)>,
+        cont: impl Continuation<'a, &'a mut GameState>,
     ) -> StepResult<'a> {
         const GET_ACTION_RETRY_TIMES: usize = 3;
 
@@ -389,7 +316,7 @@ impl Game {
             MainPhaseAction::PlayCard(_) => cont(state),
         };
 
-        fn validate_main_phase_action(state: &GameState, action: &MainPhaseAction) -> bool {
+        fn validate_main_phase_action(_state: &GameState, _action: &MainPhaseAction) -> bool {
             true // Todo:
         }
 
@@ -464,15 +391,15 @@ impl Game {
         let get_player_state = |player: PlayerPos| -> ViewablePlayerState {
             let player_state = &player_states[player];
             if player == viewed_from {
-                ViewablePlayerState::Transparent(player_state)
+                ViewablePlayerState::SelfState(ViewableSelfState::from(player_state))
             } else {
-                ViewablePlayerState::Enemy(ViewableEnemyState::from(player_state))
+                ViewablePlayerState::Opponent(ViewableOpponentState::from(player_state))
             }
         };
 
         ViewableState {
             turn_player: state.turn_player,
-            phase: &state.phase,
+            phase: state.phase,
             turn_number: state.turn_number,
             distance: state.distance.get_count(),
             dust: state.dust.get_count(),
