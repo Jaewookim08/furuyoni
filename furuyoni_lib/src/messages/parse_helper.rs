@@ -1,13 +1,6 @@
 use std::io::Cursor;
 
-#[derive(Debug)]
-pub enum Error {
-    /// Not enough data is available to parse a message
-    Incomplete,
-
-    /// Invalid message encoding
-    InvalidMessage(InvalidMessage),
-}
+use super::Error;
 
 #[derive(Debug)]
 pub struct InvalidMessage {

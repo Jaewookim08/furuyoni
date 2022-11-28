@@ -1,6 +1,7 @@
 use crate::player_actions::{BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector};
 use crate::rules::{PlayerPos, ViewableState};
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut};
 
 #[async_trait]
@@ -14,7 +15,7 @@ pub trait Player {
     ) -> MainPhaseAction;
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PlayerData<TData> {
     p1_data: TData,
     p2_data: TData,

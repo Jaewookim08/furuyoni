@@ -1,8 +1,10 @@
-#[derive(Debug, PartialEq, Copy, Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub struct HandSelector(pub usize);
 // Todo: Implement Index<HandSelector> for Hands vector?
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum BasicAction {
     MoveForward,
     MoveBackward,
@@ -10,18 +12,18 @@ pub enum BasicAction {
     Focus,
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum PlayableCardSelector {
     Hand(HandSelector),
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum BasicActionCost {
     Hand(HandSelector),
     Vigor,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PlayBasicAction {
     pub action: BasicAction,
     pub cost: BasicActionCost,
@@ -32,7 +34,7 @@ impl PlayBasicAction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum MainPhaseAction {
     PlayBasicAction(PlayBasicAction),
     PlayCard(PlayableCardSelector),

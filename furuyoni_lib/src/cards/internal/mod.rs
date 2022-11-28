@@ -1,8 +1,9 @@
 use crate::attack::Attack;
+use serde::{Deserialize, Serialize};
 
 mod yurina;
 
-#[derive(Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Card {
     Slash,
     Brandish,
