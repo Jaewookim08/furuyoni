@@ -13,4 +13,3 @@ enum_dispatch = "0.3.8"
 futures = "0.3.25"
 tokio = { version = "1.21.2", features = ["full"] }
 furuyoni_lib = { path = "../furuyoni_lib" }
-bytes = "1.3.0"

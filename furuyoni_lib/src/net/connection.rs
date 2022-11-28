@@ -1,19 +1,33 @@
+use crate::net::frames;
+use crate::net::frames::Frame;
 use bytes::{Buf, BytesMut};
-use furuyoni_lib::messages::{GameMessageFrame, PlayerMessageFrame};
 use std::io::Cursor;
-use tokio::io::AsyncReadExt;
+use std::marker::PhantomData;
+use tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
 use tokio::net::TcpStream;
 
-pub struct GameConnection {
-    stream: TcpStream,
+pub struct Connection<TOutput, TInput>
+where
+    TOutput: Frame,
+    TInput: Frame,
+{
+    stream: BufWriter<TcpStream>,
     buffer: BytesMut,
+    phantom_1: PhantomData<TOutput>,
+    phantom_2: PhantomData<TInput>,
 }
 
 #[derive(Debug)]
-pub enum Error {
+pub enum ReadError {
     IOError(std::io::Error),
     ParseError(ParseError),
     ConnectionClosed(ConnectionClosed),
+}
+
+#[derive(Debug)]
+pub enum WriteError {
+    IOError(std::io::Error),
+    FrameWriteError(frames::WriteError),
 }
 
 #[derive(Debug)]
@@ -26,21 +40,35 @@ pub struct ParseError {
     error_str: String,
 }
 
-impl From<std::io::Error> for Error {
+impl From<std::io::Error> for ReadError {
     fn from(io_error: std::io::Error) -> Self {
         Self::IOError(io_error)
     }
 }
 
-impl GameConnection {
+impl From<std::io::Error> for WriteError {
+    fn from(io_error: std::io::Error) -> Self {
+        Self::IOError(io_error)
+    }
+}
+
+impl From<frames::WriteError> for WriteError {
+    fn from(err: frames::WriteError) -> Self {
+        Self::FrameWriteError(err)
+    }
+}
+
+impl<TOutput: Frame + Sync, TInput: Frame + Sync> Connection<TOutput, TInput> {
     pub fn new(stream: TcpStream) -> Self {
         Self {
-            stream,
+            stream: BufWriter::new(stream),
             buffer: BytesMut::with_capacity(4096),
+            phantom_1: Default::default(),
+            phantom_2: Default::default(),
         }
     }
 
-    pub async fn read_frame(&mut self) -> Result<PlayerMessageFrame, Error> {
+    pub async fn read_frame(&mut self) -> Result<TInput, ReadError> {
         loop {
             // Attempt to parse a frame from the buffered data. If
             // enough data has been buffered, the frame is
@@ -59,28 +87,35 @@ impl GameConnection {
                 // a clean shutdown, there should be no data in the
                 // read buffer. If there is, this means that the
                 // peer closed the socket while sending a frame.
-                return Err(Error::ConnectionClosed(ConnectionClosed {
+                return Err(ReadError::ConnectionClosed(ConnectionClosed {
                     is_clean_shutdown: self.buffer.is_empty(),
                 }));
             }
         }
     }
 
-    fn parse_frame(&mut self) -> Result<Option<PlayerMessageFrame>, Error> {
+    fn parse_frame(&mut self) -> Result<Option<TInput>, ReadError> {
         // Create the `T: Buf` type.
         let mut buf = Cursor::new(&self.buffer[..]);
 
-        match PlayerMessageFrame::parse(&mut buf) {
+        match TInput::parse(&mut buf) {
             Ok(frame) => {
                 self.buffer.advance(buf.position() as usize);
                 Ok(Some(frame))
             }
-            Err(furuyoni_lib::messages::Error::Incomplete) => Ok(None),
-            Err(furuyoni_lib::messages::Error::InvalidMessage(invalid)) => {
-                Err(Error::ParseError(ParseError {
+            Err(frames::ParseError::Incomplete) => Ok(None),
+            Err(frames::ParseError::InvalidMessage(invalid)) => {
+                Err(ReadError::ParseError(ParseError {
                     error_str: invalid.err_str,
                 }))
             }
         }
+    }
+
+    async fn write_frame(&mut self, frame: &TOutput) -> Result<(), WriteError> {
+        frame.write_to(&mut self.stream).await?;
+        self.stream.flush().await?;
+
+        Ok(())
     }
 }

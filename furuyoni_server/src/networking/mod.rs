@@ -1,3 +1,4 @@
-mod game_connection;
+use furuyoni_lib::net::connection::Connection;
+use furuyoni_lib::net::frames::{GameMessageFrame, PlayerMessageFrame};
 
-pub use game_connection::GameConnection;
+pub type GameConnection = Connection<GameMessageFrame, PlayerMessageFrame>;
