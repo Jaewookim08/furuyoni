@@ -6,4 +6,5 @@ pub mod effects;
 pub mod player_actions;
 pub mod players;
 
+pub mod messages;
 pub mod rules;

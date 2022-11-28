@@ -9,7 +9,7 @@ pub trait Player {
         &self,
         state: &ViewableState,
         playable_cards: &Vec<PlayableCardSelector>,
-        doable_basic_actions: &Vec<BasicAction>,
+        performable_basic_actions: &Vec<BasicAction>,
         available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> MainPhaseAction;
 }
