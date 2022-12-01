@@ -2,5 +2,6 @@
 
 members = [
     "furuyoni_server",
-    "furuyoni_lib"
+    "furuyoni_lib",
+    "furuyoni_client"
 ]
