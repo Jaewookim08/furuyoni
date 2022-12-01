@@ -16,11 +16,11 @@ mod remote_player;
 async fn main() {
     println!("Hello, world!");
 
-    let listener = TcpListener::bind("127.0.0.1:4255").await.unwrap();
-    let (socket, _) = listener.accept().await.unwrap();
-    let p1 = RemotePlayer::new(todo!());
+    // let listener = TcpListener::bind("127.0.0.1:4255").await.unwrap();
+    // let (socket, _) = listener.accept().await.unwrap();
+    // let p1 = RemotePlayer::new(todo!());
 
-    let game = game::Game::new(Box::new(p1), Box::new(IdlePlayer {}));
+    let mut game = game::Game::new(Box::new(CliPlayer {}), Box::new(IdlePlayer {}));
     let res = futures::executor::block_on(game.run());
     let winner_str = match res.winner {
         PlayerPos::P1 => "P1",
