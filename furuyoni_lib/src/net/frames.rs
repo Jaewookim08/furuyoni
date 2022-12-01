@@ -148,10 +148,15 @@ async fn write_serialized(
 }
 
 fn get_line<'a>(src: &mut Cursor<&'a [u8]>) -> Result<&'a [u8], ParseError> {
+    let len = src.get_ref().len();
+    if len <= 1 {
+        return Err(ParseError::Incomplete);
+    }
+
     // Scan the bytes directly
     let start = src.position() as usize;
     // Scan to the second to last byte
-    let end = src.get_ref().len() - 1;
+    let end = len - 1;
 
     for i in start..end {
         if src.get_ref()[i] == b'\r' && src.get_ref()[i + 1] == b'\n' {
