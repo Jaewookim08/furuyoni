@@ -112,7 +112,7 @@ impl<TOutput: Frame + Sync, TInput: Frame + Sync> Connection<TOutput, TInput> {
         }
     }
 
-    async fn write_frame(&mut self, frame: &TOutput) -> Result<(), WriteError> {
+    pub async fn write_frame(&mut self, frame: &TOutput) -> Result<(), WriteError> {
         frame.write_to(&mut self.stream).await?;
         self.stream.flush().await?;
 

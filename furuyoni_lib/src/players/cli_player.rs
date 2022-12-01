@@ -9,23 +9,23 @@ pub struct CliPlayer {}
 #[async_trait]
 impl super::Player for CliPlayer {
     async fn get_main_phase_action(
-        &self,
+        &mut self,
         state: &ViewableState,
-        _playable_cards: &Vec<PlayableCardSelector>,
-        doable_basic_actions: &Vec<BasicAction>,
-        _available_basic_action_costs: &Vec<BasicActionCost>,
+        playable_cards: &Vec<PlayableCardSelector>,
+        performable_basic_actions: &Vec<BasicAction>,
+        available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> MainPhaseAction {
-        Self::print_state(state);
+        Self::print_state(&state);
 
-        println!("actions: {doable_basic_actions:?}");
+        println!("actions: {performable_basic_actions:?}");
 
-        let index = Self::get_index_lower_than(doable_basic_actions.len() + 1).unwrap();
+        let index = Self::get_index_lower_than(performable_basic_actions.len() + 1).unwrap();
 
-        if index == doable_basic_actions.len() {
+        if index == performable_basic_actions.len() {
             MainPhaseAction::EndMainPhase
         } else {
             MainPhaseAction::PlayBasicAction(PlayBasicAction::new(
-                doable_basic_actions[index],
+                performable_basic_actions[index],
                 BasicActionCost::Vigor,
             ))
         }

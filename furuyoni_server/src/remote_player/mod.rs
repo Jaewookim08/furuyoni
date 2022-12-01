@@ -1,5 +1,6 @@
 use crate::networking::GameConnection;
 use async_trait::async_trait;
+use furuyoni_lib::net::frames::{GameMessageFrame, RequestMainPhaseAction};
 use furuyoni_lib::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
@@ -19,12 +20,19 @@ impl RemotePlayer {
 #[async_trait]
 impl Player for RemotePlayer {
     async fn get_main_phase_action(
-        &self,
+        &mut self,
         state: &ViewableState,
         playable_cards: &Vec<PlayableCardSelector>,
-        doable_basic_actions: &Vec<BasicAction>,
+        performable_basic_actions: &Vec<BasicAction>,
         available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> MainPhaseAction {
+        let frame = GameMessageFrame::RequestMainPhaseAction(RequestMainPhaseAction {
+            state: state.clone(),
+            playable_cards: playable_cards.clone(),
+            performable_basic_actions: performable_basic_actions.clone(),
+            available_basic_action_costs: available_basic_action_costs.clone(),
+        });
+        self.connection.write_frame(&frame);
         todo!()
     }
 }

@@ -7,7 +7,7 @@ use std::ops::{Index, IndexMut};
 #[async_trait]
 pub trait Player {
     async fn get_main_phase_action(
-        &self,
+        &mut self,
         state: &ViewableState,
         playable_cards: &Vec<PlayableCardSelector>,
         performable_basic_actions: &Vec<BasicAction>,
@@ -15,7 +15,7 @@ pub trait Player {
     ) -> MainPhaseAction;
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlayerData<TData> {
     p1_data: TData,
     p2_data: TData,

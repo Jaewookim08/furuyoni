@@ -282,7 +282,7 @@ async fn do_main_phase_actions<'a>(
     let state = &mut game.state;
 
     let turn_player = state.turn_player;
-    let turn_player_data = &game.players[turn_player];
+    let turn_player_data = &mut game.players[turn_player];
 
     let doable_basic_actions = vec![
         BasicAction::MoveForward,

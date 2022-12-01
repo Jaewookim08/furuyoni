@@ -3,13 +3,13 @@ use crate::players::PlayerData;
 use crate::rules::{Phase, PlayerPos};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ViewablePlayerState {
     SelfState(ViewableSelfState),
     Opponent(ViewableOpponentState),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ViewableOpponentState {
     pub hand_count: usize,
     pub deck_count: usize,
@@ -23,7 +23,7 @@ pub struct ViewableOpponentState {
     pub flare: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ViewableSelfState {
     pub hands: Vec<Card>,
     pub deck_count: usize,
@@ -37,7 +37,7 @@ pub struct ViewableSelfState {
     pub flare: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ViewableState {
     pub turn_number: u32,
     pub turn_player: PlayerPos,
