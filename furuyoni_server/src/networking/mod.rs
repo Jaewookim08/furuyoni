@@ -1,5 +1,3 @@
-mod post_office;
-
 use furuyoni_lib::net::connection::Connection;
 use furuyoni_lib::net::frames::{ClientMessageFrame, ServerMessageFrame};
 
