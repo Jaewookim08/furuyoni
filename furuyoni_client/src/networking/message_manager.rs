@@ -1,10 +1,10 @@
 use crate::networking::GameMessageHandler;
 use furuyoni_lib::net::connection;
 use furuyoni_lib::net::connection::Connection;
-use furuyoni_lib::net::frames::{GameMessageFrame, PlayerMessageFrame};
+use furuyoni_lib::net::frames::{ClientMessageFrame, ServerMessageFrame};
 use tokio::sync::oneshot;
 
-pub type GameConnection = Connection<PlayerMessageFrame, GameMessageFrame>;
+pub type GameConnection = Connection<ClientMessageFrame, ServerMessageFrame>;
 
 pub struct MessageManager {
     connection: GameConnection,

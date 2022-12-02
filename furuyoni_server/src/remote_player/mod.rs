@@ -1,6 +1,6 @@
 use crate::networking::GameConnection;
 use async_trait::async_trait;
-use furuyoni_lib::net::frames::{GameMessageFrame, PlayerMessageFrame, RequestMainPhaseAction};
+use furuyoni_lib::net::frames::{ClientMessageFrame, RequestMainPhaseAction, ServerMessageFrame};
 use furuyoni_lib::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
@@ -26,19 +26,21 @@ impl Player for RemotePlayer {
         performable_basic_actions: &Vec<BasicAction>,
         available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> MainPhaseAction {
-        let frame = GameMessageFrame::RequestMainPhaseAction(RequestMainPhaseAction {
-            state: state.clone(),
-            playable_cards: playable_cards.clone(),
-            performable_basic_actions: performable_basic_actions.clone(),
-            available_basic_action_costs: available_basic_action_costs.clone(),
-        });
-        self.connection.write_frame(&frame).await.expect("Todo");
-        let response = self.connection.read_frame().await.expect("Todo");
+        todo!()
 
-        if let PlayerMessageFrame::ResponseMainPhaseAction(response) = response {
-            response.action
-        } else {
-            todo!()
-        }
+        // let frame = ServerMessageFrame::RequestMainPhaseAction(RequestMainPhaseAction {
+        //     state: state.clone(),
+        //     playable_cards: playable_cards.clone(),
+        //     performable_basic_actions: performable_basic_actions.clone(),
+        //     available_basic_action_costs: available_basic_action_costs.clone(),
+        // });
+        // self.connection.write_frame(&frame).await.expect("Todo");
+        // let response = self.connection.read_frame().await.expect("Todo");
+        //
+        // if let ClientMessageFrame::ResponseMainPhaseAction(response) = response {
+        //     response.action
+        // } else {
+        //     todo!()
+        // }
     }
 }

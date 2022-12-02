@@ -76,12 +76,37 @@ pub trait Frame: OutputFrame + InputFrame {}
 impl<T> Frame for T where T: OutputFrame + InputFrame {}
 
 #[derive(Serialize, Deserialize, Debug)]
+pub enum ServerMessageFrame {
+    GameMessage(GameMessageFrame),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub enum GameMessageFrame {
+    Request(GameRequestFrame),
+    Notify(GameNotification),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GameRequestFrame {
+    pub id: u32,
+    pub data: GameRequest,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum GameNotification {}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum GameRequest {
     RequestMainPhaseAction(RequestMainPhaseAction),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum PlayerMessageFrame {
+pub enum ClientMessageFrame {
+    PlayerResponse(PlayerResponse),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PlayerResponse {
     ResponseMainPhaseAction(ResponseMainPhaseAction),
 }
 
@@ -99,7 +124,7 @@ pub struct ResponseMainPhaseAction {
 }
 
 #[async_trait]
-impl OutputFrame for GameMessageFrame {
+impl OutputFrame for ServerMessageFrame {
     async fn write_to(
         &self,
         writer: &mut (impl AsyncWriteExt + Unpin + Send),
@@ -108,14 +133,14 @@ impl OutputFrame for GameMessageFrame {
     }
 }
 
-impl InputFrame for GameMessageFrame {
+impl InputFrame for ServerMessageFrame {
     fn parse(src: &mut Cursor<&[u8]>) -> Result<Self, ParseError> {
         parse::<Self>(src)
     }
 }
 
 #[async_trait]
-impl OutputFrame for PlayerMessageFrame {
+impl OutputFrame for ClientMessageFrame {
     async fn write_to(
         &self,
         writer: &mut (impl AsyncWriteExt + Unpin + Send),
@@ -124,7 +149,7 @@ impl OutputFrame for PlayerMessageFrame {
     }
 }
 
-impl InputFrame for PlayerMessageFrame {
+impl InputFrame for ClientMessageFrame {
     fn parse(src: &mut Cursor<&[u8]>) -> Result<Self, ParseError> {
         parse::<Self>(src)
     }

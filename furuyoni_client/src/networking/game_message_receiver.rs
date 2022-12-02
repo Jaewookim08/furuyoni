@@ -1,4 +1,4 @@
-use furuyoni_lib::net::frames::{GameMessageFrame, PlayerMessageFrame, ResponseMainPhaseAction};
+use furuyoni_lib::net::frames::{ClientMessageFrame, ResponseMainPhaseAction, ServerMessageFrame};
 use furuyoni_lib::players::Player;
 
 pub struct GameMessageHandler {
@@ -10,20 +10,21 @@ impl GameMessageHandler {
         Self { player }
     }
 
-    pub async fn handle(&mut self, message: GameMessageFrame) -> PlayerMessageFrame {
-        match message {
-            GameMessageFrame::RequestMainPhaseAction(req) => {
-                let action = self
-                    .player
-                    .get_main_phase_action(
-                        &req.state,
-                        &req.playable_cards,
-                        &req.performable_basic_actions,
-                        &req.available_basic_action_costs,
-                    )
-                    .await;
-                PlayerMessageFrame::ResponseMainPhaseAction(ResponseMainPhaseAction { action })
-            }
-        }
+    pub async fn handle(&mut self, message: ServerMessageFrame) -> ClientMessageFrame {
+        todo!()
+        // match message {
+        //     ServerMessageFrame::RequestMainPhaseAction(req) => {
+        //         let action = self
+        //             .player
+        //             .get_main_phase_action(
+        //                 &req.state,
+        //                 &req.playable_cards,
+        //                 &req.performable_basic_actions,
+        //                 &req.available_basic_action_costs,
+        //             )
+        //             .await;
+        //         ClientMessageFrame::ResponseMainPhaseAction(ResponseMainPhaseAction { action })
+        //     }
+        // }
     }
 }

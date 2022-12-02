@@ -1,4 +1,6 @@
-use furuyoni_lib::net::connection::Connection;
-use furuyoni_lib::net::frames::{GameMessageFrame, PlayerMessageFrame};
+mod post_office;
 
-pub type GameConnection = Connection<GameMessageFrame, PlayerMessageFrame>;
+use furuyoni_lib::net::connection::Connection;
+use furuyoni_lib::net::frames::{ClientMessageFrame, ServerMessageFrame};
+
+pub type GameConnection = Connection<ServerMessageFrame, ClientMessageFrame>;
