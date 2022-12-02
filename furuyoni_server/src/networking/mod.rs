@@ -1,4 +1,5 @@
-use furuyoni_lib::net::connection::Connection;
+use furuyoni_lib::net::connection::{ConnectionReader, ConnectionWriter};
 use furuyoni_lib::net::frames::{ClientMessageFrame, ServerMessageFrame};
 
-pub type GameConnection = Connection<ServerMessageFrame, ClientMessageFrame>;
+pub type GameConnectionReader = ConnectionReader<ClientMessageFrame>;
+pub type GameConnectionWriter = ConnectionWriter<ServerMessageFrame>;

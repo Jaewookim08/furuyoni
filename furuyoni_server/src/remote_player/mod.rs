@@ -1,4 +1,3 @@
-use crate::networking::GameConnection;
 use async_trait::async_trait;
 use furuyoni_lib::net::frames::{ClientMessageFrame, RequestMainPhaseAction, ServerMessageFrame};
 use furuyoni_lib::player_actions::{
@@ -8,12 +7,12 @@ use furuyoni_lib::players::Player;
 use furuyoni_lib::rules::ViewableState;
 
 pub struct RemotePlayer {
-    connection: GameConnection,
+    // connection: GameConnection,
 }
 
 impl RemotePlayer {
-    pub fn new(connection: GameConnection) -> Self {
-        Self { connection }
+    pub fn new() -> Self {
+        Self {}
     }
 }
 

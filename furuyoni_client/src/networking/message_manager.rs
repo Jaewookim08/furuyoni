@@ -1,13 +1,12 @@
 use crate::networking::GameMessageHandler;
 use furuyoni_lib::net::connection;
-use furuyoni_lib::net::connection::Connection;
 use furuyoni_lib::net::frames::{ClientMessageFrame, ServerMessageFrame};
 use tokio::sync::oneshot;
 
-pub type GameConnection = Connection<ClientMessageFrame, ServerMessageFrame>;
+pub type GameConnectionWriter = connection::ConnectionWriter<ClientMessageFrame>;
+pub type GameConnectionReader = connection::ConnectionWriter<ServerMessageFrame>;
 
 pub struct MessageManager {
-    connection: GameConnection,
     game_message_handler: GameMessageHandler,
 }
 
@@ -29,18 +28,18 @@ impl From<connection::WriteError> for Error {
 }
 
 impl MessageManager {
-    pub fn new(connection: GameConnection, game_message_handler: GameMessageHandler) -> Self {
+    pub fn new(game_message_handler: GameMessageHandler) -> Self {
         Self {
-            connection,
             game_message_handler,
         }
     }
 
     pub async fn run(&mut self) -> Result<(), Error> {
         loop {
-            let frame = self.connection.read_frame().await?;
-            let response = self.game_message_handler.handle(frame).await;
-            self.connection.write_frame(&response).await?;
+            todo!()
+            // let frame = self.connection.read_frame().await?;
+            // let response = self.game_message_handler.handle(frame).await;
+            // self.connection.write_frame(&response).await?;
         }
     }
 }

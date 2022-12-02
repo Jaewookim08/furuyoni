@@ -3,31 +3,23 @@ use crate::net::frames::Frame;
 use bytes::{Buf, BytesMut};
 use std::io::Cursor;
 use std::marker::PhantomData;
-use tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
+use tokio::io::{AsyncReadExt, ReadHalf};
 use tokio::net::TcpStream;
 
-pub struct Connection<TOutput, TInput>
+pub struct ConnectionReader<TInput>
 where
-    TOutput: Frame,
     TInput: Frame,
 {
-    stream: BufWriter<TcpStream>,
+    stream: ReadHalf<TcpStream>,
     buffer: BytesMut,
-    phantom_1: PhantomData<TOutput>,
-    phantom_2: PhantomData<TInput>,
+    phantom: PhantomData<TInput>,
 }
 
 #[derive(Debug)]
-pub enum ReadError {
+pub enum Error {
     IOError(std::io::Error),
     ParseError(ParseError),
     ConnectionClosed(ConnectionClosed),
-}
-
-#[derive(Debug)]
-pub enum WriteError {
-    IOError(std::io::Error),
-    FrameWriteError(frames::WriteError),
 }
 
 #[derive(Debug)]
@@ -40,35 +32,26 @@ pub struct ParseError {
     error_str: String,
 }
 
-impl From<std::io::Error> for ReadError {
+impl From<std::io::Error> for Error {
     fn from(io_error: std::io::Error) -> Self {
         Self::IOError(io_error)
     }
 }
 
-impl From<std::io::Error> for WriteError {
-    fn from(io_error: std::io::Error) -> Self {
-        Self::IOError(io_error)
-    }
-}
-
-impl From<frames::WriteError> for WriteError {
-    fn from(err: frames::WriteError) -> Self {
-        Self::FrameWriteError(err)
-    }
-}
-
-impl<TOutput: Frame + Sync, TInput: Frame + Sync> Connection<TOutput, TInput> {
-    pub fn new(stream: TcpStream) -> Self {
+impl<TInput: Frame> ConnectionReader<TInput> {
+    pub fn new(
+        stream: ReadHalf<TcpStream>,
+        buffer: BytesMut,
+        phantom: PhantomData<TInput>,
+    ) -> Self {
         Self {
-            stream: BufWriter::new(stream),
-            buffer: BytesMut::with_capacity(4096),
-            phantom_1: Default::default(),
-            phantom_2: Default::default(),
+            stream,
+            buffer,
+            phantom,
         }
     }
 
-    pub async fn read_frame(&mut self) -> Result<TInput, ReadError> {
+    pub async fn read_frame(&mut self) -> Result<TInput, Error> {
         loop {
             // Attempt to parse a frame from the buffered data. If
             // enough data has been buffered, the frame is
@@ -87,14 +70,14 @@ impl<TOutput: Frame + Sync, TInput: Frame + Sync> Connection<TOutput, TInput> {
                 // a clean shutdown, there should be no data in the
                 // read buffer. If there is, this means that the
                 // peer closed the socket while sending a frame.
-                return Err(ReadError::ConnectionClosed(ConnectionClosed {
+                return Err(Error::ConnectionClosed(ConnectionClosed {
                     is_clean_shutdown: self.buffer.is_empty(),
                 }));
             }
         }
     }
 
-    fn parse_frame(&mut self) -> Result<Option<TInput>, ReadError> {
+    fn parse_frame(&mut self) -> Result<Option<TInput>, Error> {
         // Create the `T: Buf` type.
         let mut buf = Cursor::new(&self.buffer[..]);
 
@@ -105,17 +88,10 @@ impl<TOutput: Frame + Sync, TInput: Frame + Sync> Connection<TOutput, TInput> {
             }
             Err(frames::ParseError::Incomplete) => Ok(None),
             Err(frames::ParseError::InvalidMessage(invalid)) => {
-                Err(ReadError::ParseError(ParseError {
+                Err(Error::ParseError(ParseError {
                     error_str: invalid.err_str,
                 }))
             }
         }
-    }
-
-    pub async fn write_frame(&mut self, frame: &TOutput) -> Result<(), WriteError> {
-        frame.write_to(&mut self.stream).await?;
-        self.stream.flush().await?;
-
-        Ok(())
     }
 }
