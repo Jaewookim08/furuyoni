@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate derive_more;
-
 extern crate furuyoni_lib;
 
 use crate::networking::{GameConnectionReader, GameConnectionWriter};

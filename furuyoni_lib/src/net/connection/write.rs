@@ -2,13 +2,15 @@ use crate::net::frames;
 use crate::net::frames::Frame;
 use bytes::BytesMut;
 use std::marker::PhantomData;
+use thiserror::Error;
 use tokio::io::{AsyncWriteExt, WriteHalf};
 use tokio::net::TcpStream;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
+#[error("Write failed.")]
 pub enum Error {
-    IOError(std::io::Error),
-    FrameWriteError(frames::WriteError),
+    IOError(#[from] std::io::Error),
+    FrameWriteError(#[from] frames::WriteError),
 }
 
 pub struct ConnectionWriter<TOutput>
@@ -17,18 +19,6 @@ where
 {
     stream: WriteHalf<TcpStream>,
     phantom: PhantomData<TOutput>,
-}
-
-impl From<std::io::Error> for Error {
-    fn from(io_error: std::io::Error) -> Self {
-        Self::IOError(io_error)
-    }
-}
-
-impl From<frames::WriteError> for Error {
-    fn from(err: frames::WriteError) -> Self {
-        Self::FrameWriteError(err)
-    }
 }
 
 impl<TOutput: Frame> ConnectionWriter<TOutput> {

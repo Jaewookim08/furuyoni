@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::io::{Cursor, Error, Write};
 use std::string::FromUtf8Error;
+use thiserror::Error;
 use tokio::io::AsyncWriteExt;
 
 #[derive(Debug)]
@@ -41,7 +42,8 @@ impl From<FromUtf8Error> for ParseError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
+#[error("Writing a frame failed.")]
 pub enum WriteError {
     IOError(std::io::Error),
     SerializationError(serde_json::Error),
@@ -102,7 +104,13 @@ pub enum GameRequest {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ClientMessageFrame {
-    PlayerResponse(PlayerResponse),
+    PlayerResponse(PlayerResponseFrame),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PlayerResponseFrame {
+    pub responding_request_id: u32,
+    pub data: PlayerResponse,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

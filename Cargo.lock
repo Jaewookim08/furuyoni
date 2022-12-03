@@ -95,6 +95,7 @@ dependencies = [
  "bytes",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
 ]
 
