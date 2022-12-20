@@ -3,14 +3,16 @@ use crate::net::frames::Frame;
 use bytes::{Buf, BytesMut};
 use std::io::Cursor;
 use std::marker::PhantomData;
-use tokio::io::{AsyncReadExt, ReadHalf};
+use tokio::io::{AsyncRead, AsyncReadExt};
+use tokio::net::tcp::ReadHalf;
 use tokio::net::TcpStream;
 
-pub struct ConnectionReader<TInput>
+pub struct ConnectionReader<TRead, TInput>
 where
     TInput: Frame,
+    TRead: AsyncRead + Unpin,
 {
-    stream: ReadHalf<TcpStream>,
+    stream: TRead,
     buffer: BytesMut,
     phantom: PhantomData<TInput>,
 }
@@ -38,16 +40,12 @@ impl From<std::io::Error> for Error {
     }
 }
 
-impl<TInput: Frame> ConnectionReader<TInput> {
-    pub fn new(
-        stream: ReadHalf<TcpStream>,
-        buffer: BytesMut,
-        phantom: PhantomData<TInput>,
-    ) -> Self {
+impl<TRead: AsyncRead + Unpin, TInput: Frame> ConnectionReader<TRead, TInput> {
+    pub fn new(stream: TRead) -> Self {
         Self {
             stream,
-            buffer,
-            phantom,
+            buffer: BytesMut::with_capacity(4096),
+            phantom: Default::default(),
         }
     }
 

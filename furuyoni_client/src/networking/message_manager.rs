@@ -3,8 +3,8 @@ use furuyoni_lib::net::connection;
 use furuyoni_lib::net::frames::{ClientMessageFrame, ServerMessageFrame};
 use tokio::sync::oneshot;
 
-pub type GameConnectionWriter = connection::ConnectionWriter<ClientMessageFrame>;
-pub type GameConnectionReader = connection::ConnectionWriter<ServerMessageFrame>;
+pub type ClientConnectionWriter<TWrite> = connection::ConnectionWriter<TWrite, ClientMessageFrame>;
+pub type ClientConnectionReader<TRead> = connection::ConnectionWriter<TRead, ServerMessageFrame>;
 
 pub struct MessageManager {
     game_message_handler: GameMessageHandler,
