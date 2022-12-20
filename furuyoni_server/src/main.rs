@@ -1,7 +1,7 @@
 extern crate furuyoni_lib;
 
 use crate::networking::{
-    game_player_connection, GameCommunicationManager, ServerConnectionReader,
+    GameCommunicationManager, MessageReceiver, MessageSender, ServerConnectionReader,
     ServerConnectionWriter,
 };
 
@@ -18,8 +18,6 @@ mod remote_player;
 
 #[tokio::main]
 async fn main() {
-    use crate::networking::game_player_connection;
-
     println!("Hello, world!");
 
     let listener = TcpListener::bind("127.0.0.1:4255").await.unwrap();
@@ -57,8 +55,8 @@ fn spawn_post_office(mut stream: TcpStream) -> (GameCommunicationManager, JoinHa
         ()
     });
 
-    let player_message_receiver = game_player_connection::Receiver::new(player_message_rx);
-    let game_message_sender = game_player_connection::Sender::new(game_message_tx);
+    let player_message_receiver = MessageReceiver::new(player_message_rx);
+    let game_message_sender = MessageSender::new(game_message_tx);
 
     let game_communication_manager =
         GameCommunicationManager::new(game_message_sender, player_message_receiver);

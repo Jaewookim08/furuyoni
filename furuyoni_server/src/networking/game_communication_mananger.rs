@@ -1,31 +1,36 @@
-use crate::networking::game_player_connection;
-use furuyoni_lib::net::frames::{GameMessageFrame, GameRequest, GameRequestFrame, PlayerResponse};
+use crate::networking::{MessageReceiver, MessageRecvError, MessageSendError, MessageSender};
+use furuyoni_lib::net::frames::{
+    GameMessageFrame, GameRequest, GameRequestFrame, PlayerResponse, PlayerResponseFrame,
+};
 use thiserror::Error;
 
 pub struct GameCommunicationManager {
-    sender: game_player_connection::Sender,
-    receiver: game_player_connection::Receiver,
+    request_sender: MessageSender<GameMessageFrame>,
+    response_receiver: MessageReceiver<PlayerResponseFrame>,
 }
 
 #[derive(Error, Debug)]
 #[error("Send failed.")]
 pub enum Error {
-    SenderError(#[from] game_player_connection::SendError),
-    ReceiverError(#[from] game_player_connection::RecvError),
+    SenderError(#[from] MessageSendError<GameMessageFrame>),
+    ReceiverError(#[from] MessageRecvError),
 }
 
 impl GameCommunicationManager {
     pub fn new(
-        sender: game_player_connection::Sender,
-        receiver: game_player_connection::Receiver,
+        request_sender: MessageSender<GameMessageFrame>,
+        response_receiver: MessageReceiver<PlayerResponseFrame>,
     ) -> Self {
-        Self { sender, receiver }
+        Self {
+            request_sender,
+            response_receiver,
+        }
     }
 
     pub async fn request(&mut self, request: GameRequest) -> Result<PlayerResponse, Error> {
         let id = 0; // Todo: random
 
-        self.sender
+        self.request_sender
             .send(GameMessageFrame::Request(GameRequestFrame {
                 id,
                 data: request,
@@ -33,7 +38,7 @@ impl GameCommunicationManager {
             .await?;
 
         // Todo:
-        let response = self.receiver.receive().await?;
+        let response = self.response_receiver.receive().await?;
 
         Ok(response.data)
     }
