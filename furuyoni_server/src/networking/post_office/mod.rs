@@ -37,7 +37,7 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
         match reader.read_frame().await {
             Err(err) => {
                 println!("Error occurred while reading a frame. Err: {:?}", err);
-                continue;
+                return;
             }
             Ok(client_message_frame) => match client_message_frame {
                 ClientMessageFrame::PlayerResponse(response) => {

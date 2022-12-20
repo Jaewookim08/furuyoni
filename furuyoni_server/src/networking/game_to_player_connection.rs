@@ -4,7 +4,7 @@ use furuyoni_lib::net::frames::{
 };
 use thiserror::Error;
 
-pub struct GameCommunicationManager {
+pub struct GameToPlayerConnection {
     request_sender: MessageSender<GameMessageFrame>,
     response_receiver: MessageReceiver<PlayerResponseFrame>,
 }
@@ -18,7 +18,7 @@ pub enum Error {
     RequestIdMismatch,
 }
 
-impl GameCommunicationManager {
+impl GameToPlayerConnection {
     pub fn new(
         request_sender: MessageSender<GameMessageFrame>,
         response_receiver: MessageReceiver<PlayerResponseFrame>,

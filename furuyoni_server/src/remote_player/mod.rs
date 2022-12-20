@@ -1,5 +1,8 @@
+use crate::networking::GameToPlayerConnection;
 use async_trait::async_trait;
-use furuyoni_lib::net::frames::{ClientMessageFrame, RequestMainPhaseAction, ServerMessageFrame};
+use furuyoni_lib::net::frames::{
+    ClientMessageFrame, GameRequest, PlayerResponse, RequestMainPhaseAction, ServerMessageFrame,
+};
 use furuyoni_lib::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
@@ -7,12 +10,12 @@ use furuyoni_lib::players::Player;
 use furuyoni_lib::rules::ViewableState;
 
 pub struct RemotePlayer {
-    // connection: GameConnection,
+    game_to_player: GameToPlayerConnection,
 }
 
 impl RemotePlayer {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(game_to_player: GameToPlayerConnection) -> Self {
+        Self { game_to_player }
     }
 }
 
@@ -25,21 +28,23 @@ impl Player for RemotePlayer {
         performable_basic_actions: &Vec<BasicAction>,
         available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> MainPhaseAction {
-        todo!()
+        let response = self
+            .game_to_player
+            .request(GameRequest::RequestMainPhaseAction(
+                RequestMainPhaseAction {
+                    state: state.clone(),
+                    playable_cards: playable_cards.clone(),
+                    performable_basic_actions: performable_basic_actions.clone(),
+                    available_basic_action_costs: available_basic_action_costs.clone(),
+                },
+            ))
+            .await
+            .expect("Todo");
 
-        // let frame = ServerMessageFrame::RequestMainPhaseAction(RequestMainPhaseAction {
-        //     state: state.clone(),
-        //     playable_cards: playable_cards.clone(),
-        //     performable_basic_actions: performable_basic_actions.clone(),
-        //     available_basic_action_costs: available_basic_action_costs.clone(),
-        // });
-        // self.connection.write_frame(&frame).await.expect("Todo");
-        // let response = self.connection.read_frame().await.expect("Todo");
-        //
-        // if let ClientMessageFrame::ResponseMainPhaseAction(response) = response {
-        //     response.action
-        // } else {
-        //     todo!()
-        // }
+        if let PlayerResponse::ResponseMainPhaseAction(response) = response {
+            response.action
+        } else {
+            todo!()
+        }
     }
 }

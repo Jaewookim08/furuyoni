@@ -6,11 +6,11 @@ pub use {message_sender::MessageSender, message_sender::SendError as MessageSend
 mod message_receiver;
 pub use {message_receiver::MessageReceiver, message_receiver::RecvError as MessageRecvError};
 
-mod game_communication_mananger;
+mod game_to_player_connection;
 
 pub use {
-    game_communication_mananger::Error as GameCommunicationError,
-    game_communication_mananger::GameCommunicationManager,
+    game_to_player_connection::Error as GameCommunicationError,
+    game_to_player_connection::GameToPlayerConnection,
 };
 
 use furuyoni_lib::net::connection::{ConnectionReader, ConnectionWriter};

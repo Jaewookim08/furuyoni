@@ -1,7 +1,7 @@
 extern crate furuyoni_lib;
 
 use crate::networking::{
-    GameCommunicationManager, MessageReceiver, MessageSender, ServerConnectionReader,
+    GameToPlayerConnection, MessageReceiver, MessageSender, ServerConnectionReader,
     ServerConnectionWriter,
 };
 
@@ -23,9 +23,9 @@ async fn main() {
     let listener = TcpListener::bind("127.0.0.1:4255").await.unwrap();
     let (mut socket, _) = listener.accept().await.unwrap();
 
-    let (game_communication_manager, post_office_task) = spawn_post_office(socket);
+    let (game_to_player_connection, post_office_task) = spawn_post_office(socket);
 
-    let p1 = RemotePlayer::new();
+    let p1 = RemotePlayer::new(game_to_player_connection);
 
     let mut game = game::Game::new(Box::new(p1), Box::new(IdlePlayer {}));
     let res = futures::executor::block_on(game.run());
@@ -38,7 +38,7 @@ async fn main() {
     post_office_task.abort();
 }
 
-fn spawn_post_office(mut stream: TcpStream) -> (GameCommunicationManager, JoinHandle<()>) {
+fn spawn_post_office(mut stream: TcpStream) -> (GameToPlayerConnection, JoinHandle<()>) {
     let (read_half, write_half) = stream.into_split();
 
     let reader = ServerConnectionReader::new(read_half);
@@ -58,8 +58,8 @@ fn spawn_post_office(mut stream: TcpStream) -> (GameCommunicationManager, JoinHa
     let player_message_receiver = MessageReceiver::new(player_message_rx);
     let game_message_sender = MessageSender::new(game_message_tx);
 
-    let game_communication_manager =
-        GameCommunicationManager::new(game_message_sender, player_message_receiver);
+    let game_to_player_connection =
+        GameToPlayerConnection::new(game_message_sender, player_message_receiver);
 
-    return (game_communication_manager, post_office_joinhandle);
+    return (game_to_player_connection, post_office_joinhandle);
 }
