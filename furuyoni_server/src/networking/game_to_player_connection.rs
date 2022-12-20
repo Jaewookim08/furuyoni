@@ -30,7 +30,7 @@ impl GameCommunicationManager {
     }
 
     pub async fn request(&mut self, request: GameRequest) -> Result<PlayerResponse, Error> {
-        let id = 0; // Todo: random
+        let id = rand::random();
 
         self.request_sender
             .send(GameMessageFrame::Request(GameRequestFrame {
