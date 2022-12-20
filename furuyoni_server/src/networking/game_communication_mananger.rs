@@ -14,6 +14,8 @@ pub struct GameCommunicationManager {
 pub enum Error {
     SenderError(#[from] MessageSendError<GameMessageFrame>),
     ReceiverError(#[from] MessageRecvError),
+    #[error("The request id sent is not matched with the response.")]
+    RequestIdMismatch,
 }
 
 impl GameCommunicationManager {
@@ -37,9 +39,12 @@ impl GameCommunicationManager {
             }))
             .await?;
 
-        // Todo:
         let response = self.response_receiver.receive().await?;
 
-        Ok(response.data)
+        if response.responding_request_id != id {
+            Err(Error::RequestIdMismatch)
+        } else {
+            Ok(response.data)
+        }
     }
 }
