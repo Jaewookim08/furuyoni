@@ -84,6 +84,8 @@ name = "furuyoni_client"
 version = "0.1.0"
 dependencies = [
  "furuyoni_lib",
+ "rand",
+ "thiserror",
  "tokio",
 ]
 

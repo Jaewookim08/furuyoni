@@ -1,7 +1,7 @@
-use crate::networking::{MessageReceiver, MessageRecvError, MessageSendError, MessageSender};
 use furuyoni_lib::net::frames::{
     GameMessageFrame, GameRequest, GameRequestFrame, PlayerResponse, PlayerResponseFrame,
 };
+use furuyoni_lib::net::{MessageReceiver, MessageRecvError, MessageSendError, MessageSender};
 use thiserror::Error;
 
 pub struct GameToPlayerConnection {

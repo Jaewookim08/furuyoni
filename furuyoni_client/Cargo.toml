@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.21.2", features = ["full"] }
 furuyoni_lib = { path = "../furuyoni_lib" }
+rand = "0.8.5"
+thiserror = "1.0.37"

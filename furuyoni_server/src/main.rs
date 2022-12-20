@@ -1,10 +1,8 @@
 extern crate furuyoni_lib;
 
-use crate::networking::{
-    GameToPlayerConnection, MessageReceiver, MessageSender, ServerConnectionReader,
-    ServerConnectionWriter,
-};
+use crate::networking::{GameToPlayerConnection, ServerConnectionReader, ServerConnectionWriter};
 
+use furuyoni_lib::net::{MessageReceiver, MessageSender};
 use furuyoni_lib::players::{CliPlayer, IdlePlayer};
 use furuyoni_lib::rules::PlayerPos;
 use networking::post_office;

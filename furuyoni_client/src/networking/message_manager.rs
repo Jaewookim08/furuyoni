@@ -4,7 +4,7 @@ use furuyoni_lib::net::frames::{ClientMessageFrame, ServerMessageFrame};
 use tokio::sync::oneshot;
 
 pub type ClientConnectionWriter<TWrite> = connection::ConnectionWriter<TWrite, ClientMessageFrame>;
-pub type ClientConnectionReader<TRead> = connection::ConnectionWriter<TRead, ServerMessageFrame>;
+pub type ClientConnectionReader<TRead> = connection::ConnectionReader<TRead, ServerMessageFrame>;
 
 pub struct MessageManager {
     game_message_handler: GameMessageHandler,

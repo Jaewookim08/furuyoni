@@ -4,30 +4,12 @@ use furuyoni_lib::net::frames::{
     ClientMessageFrame, GameMessageFrame, GameNotification, GameRequest, GameRequestFrame,
     PlayerResponse, PlayerResponseFrame, ServerMessageFrame,
 };
+use furuyoni_lib::net::with_send_callback::WithSendCallback;
 use rand::Rng;
 use std::sync::atomic::AtomicU32;
 use std::sync::MutexGuard;
-use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::{mpsc, oneshot, Mutex};
-
-#[derive(Debug)]
-pub struct WithSendCallback<T> {
-    callback: oneshot::Sender<Result<(), SendError>>,
-    data: T,
-}
-
-impl<T> WithSendCallback<T> {
-    pub fn new(callback: oneshot::Sender<Result<(), SendError>>, data: T) -> Self {
-        Self { callback, data }
-    }
-}
-
-#[derive(Error, Debug)]
-#[error("Send failed.")]
-pub enum SendError {
-    WriteError(#[from] connection::WriteError),
-}
 
 pub async fn receive_posts<T: AsyncRead + Unpin>(
     mut reader: ServerConnectionReader<T>,
@@ -60,5 +42,5 @@ pub async fn handle_send_requests<TWrite: AsyncWrite + Unpin + Send>(
         let _ = request.callback.send(res.map_err(|e| e.into()));
     }
 
-    println!("[PostOffice] 'handle_send_requests' has ended.")
+    println!("[PostOffice] No more messages to send. 'handle_send_requests' has ended.")
 }

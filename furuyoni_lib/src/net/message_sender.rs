@@ -1,9 +1,5 @@
-use crate::networking::post_office;
-use crate::networking::post_office::WithSendCallback;
-use furuyoni_lib::net::connection;
-use furuyoni_lib::net::frames::{
-    GameMessageFrame, GameNotification, GameRequest, PlayerResponse, PlayerResponseFrame,
-};
+use crate::net::with_send_callback;
+use crate::net::with_send_callback::WithSendCallback;
 use thiserror::Error;
 use tokio::sync::{mpsc, oneshot};
 
@@ -14,7 +10,7 @@ pub struct MessageSender<TMessage> {
 #[derive(Error, Debug)]
 #[error("Send failed.")]
 pub enum SendError<TMessage> {
-    PostOfficeError(#[from] post_office::SendError),
+    SendError(#[from] with_send_callback::SendError),
     ChannelSendError(#[from] mpsc::error::SendError<WithSendCallback<TMessage>>),
     ChannelReceiveError(#[from] oneshot::error::RecvError),
 }
