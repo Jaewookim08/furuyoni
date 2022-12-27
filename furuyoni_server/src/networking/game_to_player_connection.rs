@@ -33,18 +33,15 @@ impl GameToPlayerConnection {
         let id = rand::random();
 
         self.request_sender
-            .send(GameMessageFrame::Request(GameRequestFrame {
-                id,
-                data: request,
-            }))
+            .send(GameMessageFrame::Request(GameRequestFrame::new(
+                id, request,
+            )))
             .await?;
 
-        let response = self.response_receiver.receive().await?;
+        let response_frame = self.response_receiver.receive().await?;
 
-        if response.responding_request_id != id {
-            Err(Error::RequestIdMismatch)
-        } else {
-            Ok(response.data)
-        }
+        let response = response_frame.try_get(id).ok_or(Error::RequestIdMismatch)?;
+
+        Ok(response)
     }
 }

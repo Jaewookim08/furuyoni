@@ -78,6 +78,25 @@ pub trait Frame: OutputFrame + InputFrame {}
 impl<T> Frame for T where T: OutputFrame + InputFrame {}
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct WithRequestId<T> {
+    request_id: u32,
+    data: T,
+}
+impl<T> WithRequestId<T> {
+    pub fn new(request_id: u32, data: T) -> Self {
+        Self { request_id, data }
+    }
+
+    pub fn try_get(self, request_id: u32) -> Option<T> {
+        if self.request_id == request_id {
+            Some(self.data)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub enum ServerMessageFrame {
     GameMessage(GameMessageFrame),
 }
@@ -88,11 +107,7 @@ pub enum GameMessageFrame {
     Notify(GameNotification),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GameRequestFrame {
-    pub id: u32,
-    pub data: GameRequest,
-}
+pub type GameRequestFrame = WithRequestId<GameRequest>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameNotification {}
@@ -107,11 +122,7 @@ pub enum ClientMessageFrame {
     PlayerResponse(PlayerResponseFrame),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PlayerResponseFrame {
-    pub responding_request_id: u32,
-    pub data: PlayerResponse,
-}
+pub type PlayerResponseFrame = WithRequestId<PlayerResponse>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PlayerResponse {
