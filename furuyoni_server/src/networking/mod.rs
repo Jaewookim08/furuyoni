@@ -2,10 +2,7 @@ pub mod post_office;
 
 mod game_to_player_connection;
 
-pub use {
-    game_to_player_connection::Error as GameCommunicationError,
-    game_to_player_connection::GameToPlayerConnection,
-};
+pub use game_to_player_connection::GameToPlayerConnection;
 
 use furuyoni_lib::net::connection::{ConnectionReader, ConnectionWriter};
 use furuyoni_lib::net::frames::{ClientMessageFrame, ServerMessageFrame};

@@ -1,3 +1,4 @@
+use crate::furuyoni_lib::net::Requester;
 use crate::networking::GameToPlayerConnection;
 use async_trait::async_trait;
 use furuyoni_lib::net::frames::{
