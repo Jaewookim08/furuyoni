@@ -5,3 +5,5 @@ members = [
     "furuyoni_lib",
     "furuyoni_client"
 ]
+
+resolver = "2" # Important! wgpu/Bevy needs this!

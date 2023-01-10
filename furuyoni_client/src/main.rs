@@ -1,15 +1,15 @@
 mod networking;
 
-use crate::networking::{GameMessageHandler, MessageManager};
-use furuyoni_lib::players::CliPlayer;
-use tokio::net::TcpStream;
+use bevy::prelude::{App, Component};
+// use crate::networking::{GameMessageHandler, MessageManager};
+// use furuyoni_lib::players::CliPlayer;
+// use tokio::net::TcpStream;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let mut socket = TcpStream::connect("127.0.0.1:4255").await?;
-    let (read_half, write_half) = socket.split();
+    // let mut socket = TcpStream::connect("127.0.0.1:4255").await?;
+    // let (read_half, write_half) = socket.split();
 
-    todo!();
     // let connection = ::new(socket);
     // let game_message_handler = GameMessageHandler::new(Box::new(CliPlayer {}));
     //
@@ -17,5 +17,16 @@ async fn main() -> std::io::Result<()> {
     //
     // message_manager.run().await.expect("Error");
 
+    App::new().add_system(hello_world_system).run();
     Ok(())
+}
+
+fn hello_world_system() {
+    println!("hello world");
+}
+
+#[derive(Component)]
+struct Player{
+    movement_speed: f32,
+    rotation_speed: f32,
 }
