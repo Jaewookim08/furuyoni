@@ -17,12 +17,12 @@ pub enum SendError<TMessage> {
 
 impl<TMessage> MessageSender<TMessage> {
     pub async fn send(&self, message: TMessage) -> Result<(), SendError<TMessage>> {
-        let (send_result_tx, send_result_rx) = oneshot::channel();
+        let (send_result_tx, _) = oneshot::channel();
         self.message_tx
             .send(WithSendCallback::new(send_result_tx, message))
             .await?;
 
-        send_result_rx.await??;
+        // Do not wait for the callback to be called. The callback is currently not used anywhere.
 
         Ok(())
     }
