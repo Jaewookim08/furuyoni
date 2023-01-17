@@ -1,7 +1,9 @@
 extern crate furuyoni_lib;
 
 use crate::networking::{GameToPlayerConnection, ServerConnectionReader, ServerConnectionWriter};
+use std::sync::Arc;
 
+use furuyoni_lib::net::frames::{GameMessageFrame, PlayerResponseFrame};
 use furuyoni_lib::net::{MessageReceiver, MessageSender};
 use furuyoni_lib::players::{CliPlayer, IdlePlayer};
 use furuyoni_lib::rules::PlayerPos;
@@ -19,11 +21,15 @@ async fn main() {
     println!("Hello, world!");
 
     let listener = TcpListener::bind("127.0.0.1:4255").await.unwrap();
-    let (mut socket, _) = listener.accept().await.unwrap();
+    let (socket, _) = listener.accept().await.unwrap();
 
-    let (game_to_player_connection, post_office_task) = spawn_post_office(socket);
+    let (player_message_receiver, game_message_sender, post_office_task) =
+        spawn_post_office(socket);
 
-    let p1 = RemotePlayer::new(game_to_player_connection);
+    let sender = Arc::new(game_message_sender);
+    let connection = GameToPlayerConnection::new(sender.clone(), player_message_receiver);
+
+    let p1 = RemotePlayer::new(connection);
 
     let mut game = game::Game::new(Box::new(p1), Box::new(IdlePlayer {}));
     let res = futures::executor::block_on(game.run());
@@ -36,7 +42,13 @@ async fn main() {
     post_office_task.abort();
 }
 
-fn spawn_post_office(mut stream: TcpStream) -> (GameToPlayerConnection, JoinHandle<()>) {
+fn spawn_post_office<'a>(
+    mut stream: TcpStream,
+) -> (
+    MessageReceiver<PlayerResponseFrame>,
+    MessageSender<GameMessageFrame>,
+    JoinHandle<()>,
+) {
     let (read_half, write_half) = stream.into_split();
 
     let reader = ServerConnectionReader::new(read_half);
@@ -56,8 +68,9 @@ fn spawn_post_office(mut stream: TcpStream) -> (GameToPlayerConnection, JoinHand
     let player_message_receiver = MessageReceiver::new(player_message_rx);
     let game_message_sender = MessageSender::new(game_message_tx);
 
-    let game_to_player_connection =
-        GameToPlayerConnection::new(game_message_sender, player_message_receiver);
-
-    return (game_to_player_connection, post_office_joinhandle);
+    return (
+        player_message_receiver,
+        game_message_sender,
+        post_office_joinhandle,
+    );
 }

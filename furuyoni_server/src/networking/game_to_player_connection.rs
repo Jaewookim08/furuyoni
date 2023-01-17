@@ -6,9 +6,10 @@ use furuyoni_lib::net::{
     request_by_messages, MessageReceiver, MessageRecvError, MessageSendError, MessageSender,
     RequestError, Requester,
 };
+use std::sync::Arc;
 
 pub struct GameToPlayerConnection {
-    request_sender: MessageSender<GameMessageFrame>,
+    request_sender: Arc<MessageSender<GameMessageFrame>>,
     response_receiver: MessageReceiver<PlayerResponseFrame>,
 }
 
@@ -29,7 +30,7 @@ impl Requester<GameRequest, PlayerResponse> for GameToPlayerConnection {
 
 impl GameToPlayerConnection {
     pub fn new(
-        request_sender: MessageSender<GameMessageFrame>,
+        request_sender: Arc<MessageSender<GameMessageFrame>>,
         response_receiver: MessageReceiver<PlayerResponseFrame>,
     ) -> Self {
         Self {
