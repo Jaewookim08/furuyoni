@@ -27,9 +27,7 @@ pub async fn request_by_messages<TSendFrame, TRequest, TResponse>(
 ) -> Result<TResponse, RequestError<TSendFrame>> {
     let id = rand::random();
 
-    sender
-        .send(request_to_frame(WithRequestId::new(id, request)))
-        .await?;
+    sender.send(request_to_frame(WithRequestId::new(id, request)))?;
 
     let response_frame = receiver.receive().await?;
 
@@ -56,7 +54,7 @@ pub async fn notify_by_message<TSendFrame, TNotification, TResponse>(
     notification_to_frame: impl Fn(TNotification) -> TSendFrame,
     notification: TNotification,
 ) -> Result<(), NotifyError<TSendFrame>> {
-    sender.send(notification_to_frame(notification)).await?;
+    sender.send(notification_to_frame(notification))?;
 
     Ok(())
 }
