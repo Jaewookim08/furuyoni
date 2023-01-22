@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use furuyoni_lib::net::frames::{
-    GameMessageFrame, GameRequest, GameRequestFrame, PlayerResponse, PlayerResponseFrame,
+    GameMessageFrame, GameRequest, GameToPlayerRequestData, PlayerResponse, PlayerResponseFrame,
 };
 use furuyoni_lib::net::{
     request_by_messages, MessageReceiver, MessageRecvError, MessageSendError, MessageSender,
@@ -8,33 +8,39 @@ use furuyoni_lib::net::{
 };
 use std::sync::Arc;
 
-pub struct GameToPlayerConnection {
-    request_sender: Arc<MessageSender<GameMessageFrame>>,
+/// Note: This struct receives [Arc<MessageSender<GameMessageFrame>>] instead of a
+/// MessageSender<GameRequest>. This is to guarantee ordering between the response and request of
+/// the game, since they both can contain data of a same state.
+pub struct GameToPlayerRequester {
+    message_sender: Arc<MessageSender<GameMessageFrame>>,
     response_receiver: MessageReceiver<PlayerResponseFrame>,
 }
 
 #[async_trait]
-impl Requester<GameRequest, PlayerResponse> for GameToPlayerConnection {
+impl Requester<GameToPlayerRequestData, PlayerResponse> for GameToPlayerRequester {
     type TError = RequestError<GameMessageFrame>;
 
-    async fn request(&mut self, request: GameRequest) -> Result<PlayerResponse, Self::TError> {
+    async fn request(
+        &mut self,
+        request: GameToPlayerRequestData,
+    ) -> Result<PlayerResponse, Self::TError> {
         request_by_messages(
-            &self.request_sender,
+            &self.message_sender,
             &mut self.response_receiver,
-            |req| GameMessageFrame::Request(req),
+            |req| GameMessageFrame::Request(GameRequest::RequestData(req)),
             request,
         )
         .await
     }
 }
 
-impl GameToPlayerConnection {
+impl GameToPlayerRequester {
     pub fn new(
         request_sender: Arc<MessageSender<GameMessageFrame>>,
         response_receiver: MessageReceiver<PlayerResponseFrame>,
     ) -> Self {
         Self {
-            request_sender,
+            message_sender: request_sender,
             response_receiver,
         }
     }

@@ -1,8 +1,9 @@
 use crate::furuyoni_lib::net::Requester;
-use crate::networking::GameToPlayerConnection;
+use crate::networking::GameToPlayerRequester;
 use async_trait::async_trait;
 use furuyoni_lib::net::frames::{
-    ClientMessageFrame, GameRequest, PlayerResponse, RequestMainPhaseAction, ServerMessageFrame,
+    ClientMessageFrame, GameRequest, GameToPlayerRequestData, PlayerResponse,
+    RequestMainPhaseAction, ServerMessageFrame,
 };
 use furuyoni_lib::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
@@ -11,11 +12,11 @@ use furuyoni_lib::players::Player;
 use furuyoni_lib::rules::ViewableState;
 
 pub struct RemotePlayer {
-    game_to_player: GameToPlayerConnection,
+    game_to_player: GameToPlayerRequester,
 }
 
 impl RemotePlayer {
-    pub fn new(game_to_player: GameToPlayerConnection) -> Self {
+    pub fn new(game_to_player: GameToPlayerRequester) -> Self {
         Self { game_to_player }
     }
 }
@@ -31,7 +32,7 @@ impl Player for RemotePlayer {
     ) -> MainPhaseAction {
         let response = self
             .game_to_player
-            .request(GameRequest::RequestMainPhaseAction(
+            .request(GameToPlayerRequestData::RequestMainPhaseAction(
                 RequestMainPhaseAction {
                     state: state.clone(),
                     playable_cards: playable_cards.clone(),

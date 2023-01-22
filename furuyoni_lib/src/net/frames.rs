@@ -103,23 +103,35 @@ pub enum ServerMessageFrame {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameMessageFrame {
-    Request(GameRequestFrame),
-    Notify(GameNotification),
+    Request(GameRequest),
+    Response(GameToPlayerResponseFrame),
 }
 
-pub type GameRequestFrame = WithRequestId<GameRequest>;
+#[derive(Serialize, Deserialize, Debug)]
+pub enum GameRequest {
+    RequestData(GameToPlayerRequestDataFrame),
+    Notify(GameNotification),
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameNotification {}
 
+pub type GameToPlayerRequestDataFrame = WithRequestId<GameToPlayerRequestData>;
+
 #[derive(Serialize, Deserialize, Debug)]
-pub enum GameRequest {
+pub enum GameToPlayerRequestData {
     RequestMainPhaseAction(RequestMainPhaseAction),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ClientMessageFrame {
-    PlayerResponse(PlayerResponseFrame),
+    PlayerMessage(PlayerMessageFrame),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PlayerMessageFrame {
+    Response(PlayerResponseFrame),
+    Request(PlayerToGameRequestFrame),
 }
 
 pub type PlayerResponseFrame = WithRequestId<PlayerResponse>;
@@ -141,6 +153,22 @@ pub struct RequestMainPhaseAction {
 pub struct ResponseMainPhaseAction {
     pub action: MainPhaseAction,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PlayerToGameRequest {
+    RequestState,
+    Surrender,
+}
+
+pub type PlayerToGameRequestFrame = WithRequestId<PlayerToGameRequest>;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum GameToPlayerResponse {
+    State(ViewableState),
+    Ack,
+}
+
+pub type GameToPlayerResponseFrame = WithRequestId<GameToPlayerResponse>;
 
 #[async_trait]
 impl OutputFrame for ServerMessageFrame {
