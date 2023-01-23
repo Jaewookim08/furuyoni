@@ -1,30 +1,36 @@
 use crate::furuyoni_lib::net::Requester;
 use async_trait::async_trait;
 use furuyoni_lib::net::frames::{
-    ClientMessageFrame, GameRequest, GameToPlayerRequestData, PlayerResponse,
+    ClientMessageFrame, GameNotification, GameRequest, GameToPlayerRequestData, PlayerResponse,
     RequestMainPhaseAction, ServerMessageFrame,
 };
 use furuyoni_lib::net::message_channel::MessageChannel;
+use furuyoni_lib::net::message_sender::MessageSender;
 use furuyoni_lib::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
 use furuyoni_lib::players::Player;
 use furuyoni_lib::rules::ViewableState;
 
-pub struct RemotePlayer<TRequester> {
-    game_to_player: TRequester,
+pub struct RemotePlayer<TRequester, TSender> {
+    requester: TRequester,
+    notifier: TSender,
 }
 
-impl<TRequester> RemotePlayer<TRequester> {
-    pub fn new(game_to_player: TRequester) -> Self {
-        Self { game_to_player }
+impl<TRequester, TSender> RemotePlayer<TRequester, TSender> {
+    pub fn new(requester: TRequester, notifier: TSender) -> Self {
+        Self {
+            requester,
+            notifier,
+        }
     }
 }
 
 #[async_trait]
-impl<TRequester> Player for RemotePlayer<TRequester>
+impl<TRequester, TSender> Player for RemotePlayer<TRequester, TSender>
 where
     TRequester: Requester<GameToPlayerRequestData, Response = PlayerResponse> + Send,
+    TSender: MessageSender<GameNotification> + Send,
 {
     async fn get_main_phase_action(
         &mut self,
@@ -34,7 +40,7 @@ where
         available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> MainPhaseAction {
         let response = self
-            .game_to_player
+            .requester
             .request(GameToPlayerRequestData::RequestMainPhaseAction(
                 RequestMainPhaseAction {
                     state: state.clone(),

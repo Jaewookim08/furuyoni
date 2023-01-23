@@ -31,11 +31,11 @@ async fn main() {
 
     let (
         game_to_player_requester,
-        game_to_plsyer_notifier,
+        game_to_player_notifier,
         game_to_player_responser,
         post_office_task,
     ) = spawn_post_office(socket);
-    let p1 = RemotePlayer::new(game_to_player_requester);
+    let p1 = RemotePlayer::new(game_to_player_requester, game_to_player_notifier);
 
     let mut game = game::Game::new(Box::new(p1), Box::new(IdlePlayer {}));
     let res = futures::executor::block_on(game.run());
