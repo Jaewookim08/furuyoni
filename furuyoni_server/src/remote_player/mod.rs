@@ -1,28 +1,31 @@
 use crate::furuyoni_lib::net::Requester;
-use crate::networking::GameToPlayerRequester;
 use async_trait::async_trait;
 use furuyoni_lib::net::frames::{
     ClientMessageFrame, GameRequest, GameToPlayerRequestData, PlayerResponse,
     RequestMainPhaseAction, ServerMessageFrame,
 };
+use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
 use furuyoni_lib::players::Player;
 use furuyoni_lib::rules::ViewableState;
 
-pub struct RemotePlayer {
-    game_to_player: GameToPlayerRequester,
+pub struct RemotePlayer<TRequester> {
+    game_to_player: TRequester,
 }
 
-impl RemotePlayer {
-    pub fn new(game_to_player: GameToPlayerRequester) -> Self {
+impl<TRequester> RemotePlayer<TRequester> {
+    pub fn new(game_to_player: TRequester) -> Self {
         Self { game_to_player }
     }
 }
 
 #[async_trait]
-impl Player for RemotePlayer {
+impl<TRequester> Player for RemotePlayer<TRequester>
+where
+    TRequester: Requester<GameToPlayerRequestData, Response = PlayerResponse> + Send,
+{
     async fn get_main_phase_action(
         &mut self,
         state: &ViewableState,

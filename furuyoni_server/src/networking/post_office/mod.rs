@@ -1,11 +1,12 @@
 use crate::networking::post_office::ReceivePostsError::{ChannelSendError, FrameReadError};
 use crate::networking::{ServerConnectionReader, ServerConnectionWriter};
 use furuyoni_lib::net::connection;
+use furuyoni_lib::net::connection::WriteError;
 use furuyoni_lib::net::frames::{
     ClientMessageFrame, GameMessageFrame, GameNotification, GameRequest, PlayerMessageFrame,
     PlayerResponse, PlayerResponseFrame, PlayerToGameRequestFrame, ServerMessageFrame,
 };
-use furuyoni_lib::net::with_send_callback::WithSendCallback;
+use furuyoni_lib::net::with_send_callback::WithCallback;
 use rand::Rng;
 use std::sync::atomic::AtomicU32;
 use std::sync::MutexGuard;
@@ -52,7 +53,7 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
 }
 
 pub async fn handle_send_requests<TWrite: AsyncWrite + Unpin + Send>(
-    mut send_game_message_mailbox: mpsc::Receiver<WithSendCallback<GameMessageFrame>>,
+    mut send_game_message_mailbox: mpsc::Receiver<WithCallback<GameMessageFrame, WriteError>>,
     mut writer: ServerConnectionWriter<TWrite>,
 ) {
     while let Some(request) = send_game_message_mailbox.recv().await {

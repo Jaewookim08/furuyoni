@@ -1,60 +1,35 @@
 use crate::net::frames::WithRequestId;
-use crate::net::{MessageReceiver, MessageRecvError, MessageSendError, MessageSender};
+use crate::net::message_sender::{MessageSendError, MessageSender};
+use crate::net::{MessageReceiver, MessageRecvError};
 use async_trait::async_trait;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 #[error("Request failed.")]
-pub enum RequestError<TRequestFrame> {
-    SenderError(#[from] MessageSendError<TRequestFrame>),
+pub enum RequestError {
+    SenderError(#[from] MessageSendError),
     ReceiverError(#[from] MessageRecvError),
     #[error("The request id sent is not matched with the response.")]
     RequestIdMismatch,
 }
 
 #[async_trait]
-pub trait Requester<TRequest, TResponse> {
-    type TError;
+pub trait Requester<Request> {
+    type Response;
+    type Error: std::error::Error;
 
-    async fn request(&mut self, request: TRequest) -> Result<TResponse, Self::TError>;
-}
-
-pub async fn request_by_messages<TSendFrame, TRequest, TResponse>(
-    sender: &MessageSender<TSendFrame>,
-    receiver: &mut MessageReceiver<WithRequestId<TResponse>>,
-    request_to_frame: impl Fn(WithRequestId<TRequest>) -> TSendFrame,
-    request: TRequest,
-) -> Result<TResponse, RequestError<TSendFrame>> {
-    let id = rand::random();
-
-    sender.send(request_to_frame(WithRequestId::new(id, request)))?;
-
-    let response_frame = receiver.receive().await?;
-
-    let response = response_frame
-        .try_get(id)
-        .ok_or(RequestError::RequestIdMismatch)?;
-
-    Ok(response)
+    async fn request(&mut self, request: Request) -> Result<Self::Response, Self::Error>;
 }
 
 #[derive(Error, Debug)]
 #[error("Notify failed.")]
-pub enum NotifyError<TSendFrame> {
-    SenderError(#[from] MessageSendError<TSendFrame>),
+pub enum NotifyError {
+    SenderError(#[from] MessageSendError),
 }
 
 #[async_trait]
-pub trait Notifier<TSendFrame, TNotification, TError = NotifyError<TSendFrame>> {
-    async fn notify(&mut self, data: TNotification) -> Result<(), TError>;
-}
+pub trait Notifier<TNotification> {
+    type Error: std::error::Error;
 
-pub async fn notify_by_message<TSendFrame, TNotification, TResponse>(
-    sender: &MessageSender<TSendFrame>,
-    notification_to_frame: impl Fn(TNotification) -> TSendFrame,
-    notification: TNotification,
-) -> Result<(), NotifyError<TSendFrame>> {
-    sender.send(notification_to_frame(notification))?;
-
-    Ok(())
+    async fn notify(&mut self, data: TNotification) -> Result<(), Self::Error>;
 }

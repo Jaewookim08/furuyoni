@@ -1,21 +1,20 @@
-use crate::net::connection;
 use thiserror::Error;
 use tokio::sync::oneshot;
 
 #[derive(Error, Debug)]
-#[error("Send failed.")]
-pub enum SendError {
-    WriteError(#[from] connection::WriteError),
+#[error("Callback returned an error")]
+pub enum CallbackError<TInner> {
+    Inner(#[from] TInner),
 }
 
 #[derive(Debug)]
-pub struct WithSendCallback<T> {
-    pub callback: oneshot::Sender<Result<(), SendError>>,
-    pub data: T,
+pub struct WithCallback<TData, TError> {
+    pub callback: oneshot::Sender<Result<(), CallbackError<TError>>>,
+    pub data: TData,
 }
 
-impl<T> WithSendCallback<T> {
-    pub fn new(callback: oneshot::Sender<Result<(), SendError>>, data: T) -> Self {
+impl<TData, TError> WithCallback<TData, TError> {
+    pub fn new(callback: oneshot::Sender<Result<(), CallbackError<TError>>>, data: TData) -> Self {
         Self { callback, data }
     }
 }

@@ -1,10 +1,15 @@
 extern crate furuyoni_lib;
 
-use crate::networking::{GameToPlayerRequester, ServerConnectionReader, ServerConnectionWriter};
+use crate::networking::{ServerConnectionReader, ServerConnectionWriter};
 use std::sync::Arc;
 
-use furuyoni_lib::net::frames::{GameMessageFrame, PlayerResponseFrame};
-use furuyoni_lib::net::{MessageReceiver, MessageSender};
+use furuyoni_lib::net::frames::{
+    GameMessageFrame, GameRequest, GameToPlayerRequestData, GameToPlayerRequestDataFrame,
+    PlayerResponse, PlayerResponseFrame, RequestMainPhaseAction, WriteError,
+};
+use furuyoni_lib::net::message_channel::MessageChannel;
+use furuyoni_lib::net::message_sender::{IntoMessageMap, MessageSender};
+use furuyoni_lib::net::{MessageReceiver, RequestError, Requester};
 use furuyoni_lib::players::{CliPlayer, IdlePlayer};
 use furuyoni_lib::rules::PlayerPos;
 use networking::post_office;
@@ -23,13 +28,8 @@ async fn main() {
     let listener = TcpListener::bind("127.0.0.1:4255").await.unwrap();
     let (socket, _) = listener.accept().await.unwrap();
 
-    let (player_response_receiver, game_message_sender, post_office_task) =
-        spawn_post_office(socket);
-
-    let sender = Arc::new(game_message_sender);
-    let connection = GameToPlayerRequester::new(sender.clone(), player_response_receiver);
-
-    let p1 = RemotePlayer::new(connection);
+    let (game_to_player_requester, post_office_task) = spawn_post_office(socket);
+    let p1 = RemotePlayer::new(game_to_player_requester);
 
     let mut game = game::Game::new(Box::new(p1), Box::new(IdlePlayer {}));
     let res = futures::executor::block_on(game.run());
@@ -45,8 +45,7 @@ async fn main() {
 fn spawn_post_office<'a>(
     stream: TcpStream,
 ) -> (
-    MessageReceiver<PlayerResponseFrame>,
-    MessageSender<GameMessageFrame>,
+    impl Requester<GameToPlayerRequestData, Response = PlayerResponse>,
     JoinHandle<()>,
 ) {
     let (read_half, write_half) = stream.into_split();
@@ -66,12 +65,14 @@ fn spawn_post_office<'a>(
         ()
     });
 
-    let player_response_receiver = MessageReceiver::new(player_response_rx);
-    let game_message_sender = MessageSender::new(game_message_tx);
+    let game_message_sender = Arc::new(game_message_tx);
 
-    return (
-        player_response_receiver,
-        game_message_sender,
-        post_office_joinhandle,
-    );
+    let game_to_player_req_sender = game_message_sender
+        .clone()
+        .with_map(|request_data| GameMessageFrame::Request(GameRequest::RequestData(request_data)));
+
+    let game_to_player_requester =
+        MessageChannel::new(game_to_player_req_sender, player_response_rx);
+
+    return (game_to_player_requester, post_office_joinhandle);
 }

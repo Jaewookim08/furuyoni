@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use thiserror::Error;
 use tokio::sync::mpsc;
 
@@ -7,16 +8,18 @@ pub enum RecvError {
     ChannelClosed,
 }
 
-pub struct MessageReceiver<TMessage> {
-    message_rx: mpsc::Receiver<TMessage>,
+#[async_trait]
+pub trait MessageReceiver {
+    type Message;
+
+    async fn receive(&mut self) -> Result<Self::Message, RecvError>;
 }
 
-impl<TMessage> MessageReceiver<TMessage> {
-    pub async fn receive(&mut self) -> Result<TMessage, RecvError> {
-        self.message_rx.recv().await.ok_or(RecvError::ChannelClosed)
-    }
+#[async_trait]
+impl<TMessage: Send> MessageReceiver for mpsc::Receiver<TMessage> {
+    type Message = TMessage;
 
-    pub fn new(message_rx: mpsc::Receiver<TMessage>) -> MessageReceiver<TMessage> {
-        MessageReceiver { message_rx }
+    async fn receive(&mut self) -> Result<TMessage, RecvError> {
+        self.recv().await.ok_or(RecvError::ChannelClosed)
     }
 }
