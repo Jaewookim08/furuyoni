@@ -1,15 +1,10 @@
-use crate::networking::post_office::ReceivePostsError::{ChannelSendError, FrameReadError};
 use crate::networking::{ServerConnectionReader, ServerConnectionWriter};
-use furuyoni_lib::net::connection;
 use furuyoni_lib::net::connection::WriteError;
 use furuyoni_lib::net::frames::{
     ClientMessageFrame, GameMessageFrame, GameNotification, GameRequest, PlayerMessageFrame,
     PlayerResponse, PlayerResponseFrame, PlayerToGameRequestFrame, ServerMessageFrame,
 };
 use furuyoni_lib::net::with_send_callback::WithCallback;
-use rand::Rng;
-use std::sync::atomic::AtomicU32;
-use std::sync::MutexGuard;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::{mpsc, oneshot, Mutex};
@@ -29,22 +24,21 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
 ) -> Result<(), ReceivePostsError> {
     loop {
         match reader.read_frame().await {
-            Err(err) => {
-                println!("Error occurred while reading a frame. Err: {:?}", err);
+            Err(_) => {
                 // Todo: Ignore error when the error is from a parsing failure.
-                return Err(FrameReadError);
+                return Err(ReceivePostsError::FrameReadError);
             }
             Ok(client_message_frame) => match client_message_frame {
                 ClientMessageFrame::PlayerMessage(message) => match message {
                     PlayerMessageFrame::Response(response) => {
                         player_response_tx
                             .try_send(response)
-                            .map_err(|_| ChannelSendError)?;
+                            .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
                     PlayerMessageFrame::Request(request) => {
                         player_request_tx
                             .try_send(request)
-                            .map_err(|_| ChannelSendError)?;
+                            .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
                 },
             },
@@ -60,6 +54,10 @@ pub async fn handle_send_requests<TWrite: AsyncWrite + Unpin + Send>(
         let res = writer
             .write_frame(&ServerMessageFrame::GameMessage(request.data))
             .await;
+
+        if let Err(_) = res {
+            panic!("Todo");
+        }
 
         let _ = request.callback.send(res.map_err(|e| e.into()));
     }

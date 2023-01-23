@@ -1,9 +1,7 @@
-mod game_message_receiver;
-mod message_manager;
+use furuyoni_lib::net::connection;
+use furuyoni_lib::net::frames::{ClientMessageFrame, ServerMessageFrame};
 
 pub mod post_office;
 
-pub use {
-    game_message_receiver::GameMessageHandler, message_manager::ClientConnectionReader,
-    message_manager::ClientConnectionWriter, message_manager::MessageManager,
-};
+pub type ClientConnectionReader<TRead> = connection::ConnectionReader<TRead, ServerMessageFrame>;
+pub type ClientConnectionWriter<TWrite> = connection::ConnectionWriter<TWrite, ClientMessageFrame>;

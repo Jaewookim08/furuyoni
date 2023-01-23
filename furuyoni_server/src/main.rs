@@ -48,7 +48,7 @@ async fn main() {
     post_office_task.abort();
 }
 
-fn spawn_post_office<'a>(
+fn spawn_post_office(
     stream: TcpStream,
 ) -> (
     impl Requester<GameToPlayerRequestData, Response = PlayerResponse>,
@@ -66,11 +66,12 @@ fn spawn_post_office<'a>(
     let (game_message_tx, game_message_rx) = tokio::sync::mpsc::channel(20);
 
     let post_office_joinhandle = tokio::spawn(async {
-        let (_, _) = tokio::join!(
-            post_office::receive_posts(reader, player_response_tx, player_request_tx),
-            post_office::handle_send_requests(game_message_rx, writer),
+        tokio::select!(
+            res = post_office::receive_posts(reader, player_response_tx, player_request_tx) =>
+                println!("receive_posts has ended with result: {:?}", res),
+            () = post_office::handle_send_requests(game_message_rx, writer) =>
+                println!("handle_send_request has ended."),
         );
-        ()
     });
 
     let game_to_player_req_sender = game_message_tx
