@@ -73,23 +73,20 @@ fn spawn_post_office<'a>(
         ()
     });
 
-    let game_message_sender = Arc::new(game_message_tx);
-
-    let game_to_player_req_sender = game_message_sender
+    let game_to_player_req_sender = game_message_tx
         .clone()
         .with_map(|request_data| GameMessageFrame::Request(GameRequest::RequestData(request_data)));
 
     let game_to_player_requester =
         MessageChannel::new(game_to_player_req_sender, player_response_rx);
 
-    let game_to_player_response_sender = game_message_sender
-        .clone()
-        .with_map(GameMessageFrame::Response);
+    let game_to_player_response_sender =
+        game_message_tx.clone().with_map(GameMessageFrame::Response);
 
     let game_to_player_responser =
         MessageChannel::new(game_to_player_response_sender, player_request_rx);
 
-    let game_to_player_notifier = game_message_sender
+    let game_to_player_notifier = game_message_tx
         .clone()
         .with_map(|m| GameMessageFrame::Request(GameRequest::Notify(m)));
 
