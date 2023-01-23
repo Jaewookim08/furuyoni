@@ -33,13 +33,13 @@ where
 
         self.sender.send_message(WithRequestId::new(id, request))?;
 
-        let response_frame = self.receiver.receive().await?;
+        let WithRequestId { request_id, data } = self.receiver.receive().await?;
 
-        let response = response_frame
-            .try_get(id)
-            .ok_or(RequestError::RequestIdMismatch)?;
-
-        Ok(response)
+        if request_id != id {
+            Err(RequestError::RequestIdMismatch)
+        } else {
+            Ok(data)
+        }
     }
 }
 
