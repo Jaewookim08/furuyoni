@@ -7,9 +7,12 @@ mod message_receiver;
 pub use {message_receiver::MessageReceiver, message_receiver::RecvError as MessageRecvError};
 
 mod requester;
+
 pub use {
     requester::Notifier, requester::NotifyError, requester::RequestError, requester::Requester,
 };
+mod responser;
+pub use responser::Responser;
 
 pub mod message_channel;
 pub mod with_send_callback;
