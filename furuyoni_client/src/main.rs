@@ -13,14 +13,19 @@ use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::net::message_sender::IntoMessageMap;
 use furuyoni_lib::net::{Requester, Responser};
 use furuyoni_lib::players::{CliPlayer, Player};
+use iyes_loopless::prelude::*;
 use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
 
+fn hello_world() {
+    println!("Hello world!")
+}
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(EditorPlugin)
+        .add_system(hello_world.run_if(|| true))
         .run();
 
     // let socket = TcpStream::connect("127.0.0.1:4255").await?;
