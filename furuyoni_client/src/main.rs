@@ -2,6 +2,8 @@ mod networking;
 
 use crate::networking::{post_office, ClientConnectionReader, ClientConnectionWriter};
 use bevy::prelude::{App, Component};
+use bevy::DefaultPlugins;
+use bevy_editor_pls::prelude::*;
 use furuyoni_lib::net::frames::{
     ClientMessageFrame, GameRequest, GameToPlayerRequestData, GameToPlayerRequestDataFrame,
     GameToPlayerResponse, GameToPlayerResponseFrame, PlayerMessageFrame, PlayerResponse,
@@ -16,16 +18,21 @@ use tokio::task::JoinHandle;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let socket = TcpStream::connect("127.0.0.1:4255").await?;
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugin(EditorPlugin)
+        .run();
 
-    let (player_to_game_requester, mut player_to_game_responser, post_office_task) =
-        spawn_post_office(socket);
-
-    let player = CliPlayer {};
-
-    run_responser(player, player_to_game_responser).await;
-
-    post_office_task.abort();
+    // let socket = TcpStream::connect("127.0.0.1:4255").await?;
+    //
+    // let (player_to_game_requester, mut player_to_game_responser, post_office_task) =
+    //     spawn_post_office(socket);
+    //
+    // let player = CliPlayer {};
+    //
+    // run_responser(player, player_to_game_responser).await;
+    //
+    // post_office_task.abort();
     Ok(())
 }
 

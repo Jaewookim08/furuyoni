@@ -11,6 +11,7 @@ furuyoni_lib = { path = "../furuyoni_lib" }
 rand = "0.8.5"
 thiserror = "1.0.37"
 bevy = { version = "0.9.1", features = ["dynamic"] }
+bevy_editor_pls = "0.2.0"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
