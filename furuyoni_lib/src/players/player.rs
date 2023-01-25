@@ -37,8 +37,28 @@ impl<T> Index<PlayerPos> for PlayerData<T> {
     }
 }
 
+impl<T> Index<&PlayerPos> for PlayerData<T> {
+    type Output = T;
+
+    fn index(&self, index: &PlayerPos) -> &Self::Output {
+        match index {
+            PlayerPos::P1 => &self.p1_data,
+            PlayerPos::P2 => &self.p2_data,
+        }
+    }
+}
+
 impl<T> IndexMut<PlayerPos> for PlayerData<T> {
     fn index_mut(&mut self, index: PlayerPos) -> &mut Self::Output {
+        match index {
+            PlayerPos::P1 => &mut self.p1_data,
+            PlayerPos::P2 => &mut self.p2_data,
+        }
+    }
+}
+
+impl<T> IndexMut<&PlayerPos> for PlayerData<T> {
+    fn index_mut(&mut self, index: &PlayerPos) -> &mut Self::Output {
         match index {
             PlayerPos::P1 => &mut self.p1_data,
             PlayerPos::P2 => &mut self.p2_data,

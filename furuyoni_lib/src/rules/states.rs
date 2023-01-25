@@ -36,6 +36,7 @@ pub struct ViewableSelfState {
     pub life: i32,
     pub flare: i32,
 }
+// Todo: Divide Self-Opponent state correctly so that no properties are repeated.
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ViewableState {

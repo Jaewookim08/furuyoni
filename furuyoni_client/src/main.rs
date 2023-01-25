@@ -1,7 +1,11 @@
 mod networking;
+mod systems;
 
 use crate::networking::{post_office, ClientConnectionReader, ClientConnectionWriter};
-use bevy::prelude::{App, Component};
+use crate::systems::display_board::{display_board, StateLabel, StateStringPicker};
+use bevy::prelude::*;
+use bevy::text::TextStyle;
+use bevy::ui::PositionType;
 use bevy::DefaultPlugins;
 use bevy_editor_pls::prelude::*;
 use furuyoni_lib::net::frames::{
@@ -13,19 +17,70 @@ use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::net::message_sender::IntoMessageMap;
 use furuyoni_lib::net::{Requester, Responser};
 use furuyoni_lib::players::{CliPlayer, Player};
+use furuyoni_lib::rules::{
+    Phase, PlayerPos, ViewableOpponentState, ViewablePlayerState, ViewablePlayerStates,
+    ViewableSelfState, ViewableState,
+};
 use iyes_loopless::prelude::*;
 use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
 
+#[derive(Resource, Debug)]
+pub struct GameState {
+    state: ViewableState,
+}
+
+// Todo: remove. GameState should not be constructed in client.
+impl Default for GameState {
+    fn default() -> Self {
+        Self {
+            state: ViewableState {
+                turn_number: 0,
+                turn_player: PlayerPos::P1,
+                phase: Phase::Beginning,
+                distance: 0,
+                dust: 0,
+                player_states: ViewablePlayerStates::new(
+                    ViewablePlayerState::SelfState(ViewableSelfState {
+                        hands: vec![],
+                        deck_count: 0,
+                        enhancements: vec![],
+                        played_pile: vec![],
+                        discard_pile: vec![],
+                        vigor: 0,
+                        aura: 0,
+                        life: 0,
+                        flare: 0,
+                    }),
+                    ViewablePlayerState::Opponent(ViewableOpponentState {
+                        hand_count: 0,
+                        deck_count: 0,
+                        enhancements: vec![],
+                        played_pile: vec![],
+                        discard_pile_count: 0,
+                        vigor: 0,
+                        aura: 0,
+                        life: 0,
+                        flare: 0,
+                    }),
+                ),
+            },
+        }
+    }
+}
+
 fn hello_world() {
     println!("Hello world!")
 }
+
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     App::new()
+        .init_resource::<GameState>()
         .add_plugins(DefaultPlugins)
         .add_plugin(EditorPlugin)
-        .add_system(hello_world.run_if(|| true))
+        .add_system(display_board)
+        .add_startup_system(setup)
         .run();
 
     // let socket = TcpStream::connect("127.0.0.1:4255").await?;
@@ -39,6 +94,43 @@ async fn main() -> std::io::Result<()> {
     //
     // post_office_task.abort();
     Ok(())
+}
+
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn(Camera2dBundle::default());
+
+    let font = asset_server.load("fonts/Fira_Sans/FiraSans-Regular.ttf");
+    commands.spawn((
+        TextBundle::from_sections([
+            TextSection::new(
+                "Hello world!: ",
+                TextStyle {
+                    font: font.clone(),
+                    font_size: 50.0,
+                    ..default()
+                },
+            ),
+            TextSection::new(
+                "Empty",
+                TextStyle {
+                    font: font.clone(),
+                    font_size: 50.0,
+                    color: Color::GREEN,
+                },
+            ),
+        ])
+        .with_text_alignment(TextAlignment::CENTER_LEFT)
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            position: UiRect {
+                top: Val::Px(100.0),
+                left: Val::Px(100.0),
+                ..default()
+            },
+            ..default()
+        }),
+        StateLabel::new(1, StateStringPicker::Distance),
+    ));
 }
 
 async fn run_responser(
