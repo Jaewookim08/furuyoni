@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 pub struct HandSelector(pub usize);
 // Todo: Implement Index<HandSelector> for Hands vector?
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone, Eq, Hash)]
 pub enum BasicAction {
     MoveForward,
     MoveBackward,

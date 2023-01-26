@@ -3,6 +3,7 @@ mod systems;
 
 use crate::networking::{post_office, ClientConnectionReader, ClientConnectionWriter};
 use crate::systems::display_board::{display_board, StateLabel, StateStringPicker};
+use crate::systems::picker::{PickerPlugin, RequestPick, SkipButton};
 use bevy::prelude::*;
 use bevy::text::TextStyle;
 use bevy::ui::PositionType;
@@ -16,6 +17,7 @@ use furuyoni_lib::net::frames::{
 use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::net::message_sender::IntoMessageMap;
 use furuyoni_lib::net::{Requester, Responser};
+use furuyoni_lib::player_actions::BasicAction;
 use furuyoni_lib::players::{CliPlayer, Player};
 use furuyoni_lib::rules::{
     Phase, PlayerPos, ViewableOpponentState, ViewablePlayerState, ViewablePlayerStates,
@@ -79,8 +81,10 @@ async fn main() -> std::io::Result<()> {
         .init_resource::<GameState>()
         .add_plugins(DefaultPlugins)
         .add_plugin(EditorPlugin)
+        .add_plugin(PickerPlugin)
         .add_system(display_board)
         .add_startup_system(setup)
+        .add_startup_system(test_pick_start)
         .run();
 
     // let socket = TcpStream::connect("127.0.0.1:4255").await?;
@@ -94,6 +98,10 @@ async fn main() -> std::io::Result<()> {
     //
     // post_office_task.abort();
     Ok(())
+}
+
+fn test_pick_start(mut ev: EventWriter<RequestPick>) {
+    ev.send(RequestPick::new([BasicAction::MoveBackward].into(), true));
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -130,6 +138,24 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..default()
         }),
         StateLabel::new(1, StateStringPicker::Distance),
+    ));
+
+    commands.spawn((
+        ButtonBundle {
+            style: Style {
+                size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                // center button
+                margin: UiRect::all(Val::Auto),
+                // horizontally center child text
+                justify_content: JustifyContent::Center,
+                // vertically center child text
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            background_color: Color::rgb(0.2, 0.5, 0.3).into(),
+            ..default()
+        },
+        SkipButton,
     ));
 }
 
