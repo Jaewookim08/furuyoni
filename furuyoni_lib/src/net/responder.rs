@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait Responser<Response> {
+pub trait Responder<Response> {
     type Request;
     type Error: std::error::Error;
 

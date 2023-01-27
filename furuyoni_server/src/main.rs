@@ -10,7 +10,7 @@ use furuyoni_lib::net::frames::{
 };
 use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::net::message_sender::{IntoMessageMap, MessageSender};
-use furuyoni_lib::net::{MessageReceiver, RequestError, Requester, Responser};
+use furuyoni_lib::net::{MessageReceiver, RequestError, Requester, Responder};
 use furuyoni_lib::players::{CliPlayer, IdlePlayer};
 use furuyoni_lib::rules::PlayerPos;
 use networking::post_office;
@@ -32,7 +32,7 @@ async fn main() {
     let (
         game_to_player_requester,
         game_to_player_notifier,
-        game_to_player_responser,
+        game_to_player_responder,
         post_office_task,
     ) = spawn_post_office(socket);
     let p1 = RemotePlayer::new(game_to_player_requester, game_to_player_notifier);
@@ -53,7 +53,7 @@ fn spawn_post_office(
 ) -> (
     impl Requester<GameToPlayerRequestData, Response = PlayerResponse>,
     impl MessageSender<GameNotification>,
-    impl Responser<GameToPlayerResponseFrame, Request = PlayerToGameRequestFrame>,
+    impl Responder<GameToPlayerResponseFrame, Request = PlayerToGameRequestFrame>,
     JoinHandle<()>,
 ) {
     let (read_half, write_half) = stream.into_split();
@@ -84,7 +84,7 @@ fn spawn_post_office(
     let game_to_player_response_sender =
         game_message_tx.clone().with_map(GameMessageFrame::Response);
 
-    let game_to_player_responser =
+    let game_to_player_responder =
         MessageChannel::new(game_to_player_response_sender, player_request_rx);
 
     let game_to_player_notifier = game_message_tx
@@ -94,7 +94,7 @@ fn spawn_post_office(
     return (
         game_to_player_requester,
         game_to_player_notifier,
-        game_to_player_responser,
+        game_to_player_responder,
         post_office_joinhandle,
     );
 }

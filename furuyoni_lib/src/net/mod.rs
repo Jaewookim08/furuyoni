@@ -11,8 +11,8 @@ mod requester;
 pub use {
     requester::Notifier, requester::NotifyError, requester::RequestError, requester::Requester,
 };
-mod responser;
-pub use responser::Responser;
+mod responder;
+pub use responder::Responder;
 
 pub mod message_channel;
 pub mod with_send_callback;

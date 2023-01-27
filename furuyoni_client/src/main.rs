@@ -16,7 +16,7 @@ use furuyoni_lib::net::frames::{
 };
 use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::net::message_sender::IntoMessageMap;
-use furuyoni_lib::net::{Requester, Responser};
+use furuyoni_lib::net::{Requester, Responder};
 use furuyoni_lib::player_actions::BasicAction;
 use furuyoni_lib::players::{CliPlayer, Player};
 use furuyoni_lib::rules::{
@@ -89,12 +89,12 @@ async fn main() -> std::io::Result<()> {
 
     // let socket = TcpStream::connect("127.0.0.1:4255").await?;
     //
-    // let (player_to_game_requester, mut player_to_game_responser, post_office_task) =
+    // let (player_to_game_requester, mut player_to_game_responder, post_office_task) =
     //     spawn_post_office(socket);
     //
     // let player = CliPlayer {};
     //
-    // run_responser(player, player_to_game_responser).await;
+    // run_responder(player, player_to_game_responder).await;
     //
     // post_office_task.abort();
     Ok(())
@@ -159,12 +159,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 }
 
-async fn run_responser(
+async fn run_responder(
     mut player: impl Player,
-    mut responser: impl Responser<PlayerResponseFrame, Request = GameRequest>,
+    mut responder: impl Responder<PlayerResponseFrame, Request = GameRequest>,
 ) {
     loop {
-        let req = responser.recv().await.unwrap();
+        let req = responder.recv().await.unwrap();
         match req {
             GameRequest::RequestData(GameToPlayerRequestDataFrame {
                 request_id,
@@ -185,7 +185,7 @@ async fn run_responser(
                     }
                 };
 
-                responser
+                responder
                     .response(PlayerResponseFrame::new(request_id, response))
                     .unwrap();
             }
@@ -198,7 +198,7 @@ fn spawn_post_office(
     stream: TcpStream,
 ) -> (
     impl Requester<PlayerToGameRequest, Response = GameToPlayerResponse>,
-    impl Responser<PlayerResponseFrame, Request = GameRequest>,
+    impl Responder<PlayerResponseFrame, Request = GameRequest>,
     JoinHandle<()>,
 ) {
     let (read_half, write_half) = stream.into_split();
@@ -231,12 +231,12 @@ fn spawn_post_office(
         .clone()
         .with_map(|r| ClientMessageFrame::PlayerMessage(PlayerMessageFrame::Response(r)));
 
-    let player_to_game_responser =
+    let player_to_game_responder =
         MessageChannel::new(player_to_game_response_sender, game_request_rx);
 
     return (
         player_to_game_requester,
-        player_to_game_responser,
+        player_to_game_responder,
         post_office_joinhandle,
     );
 }

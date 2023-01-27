@@ -1,6 +1,6 @@
 use crate::net::frames::WithRequestId;
 use crate::net::message_sender::{MessageSendError, MessageSender};
-use crate::net::responser::Responser;
+use crate::net::responder::Responder;
 use crate::net::{MessageReceiver, MessageRecvError, RequestError, Requester};
 use async_trait::async_trait;
 use thiserror::Error;
@@ -44,14 +44,14 @@ where
 }
 
 #[derive(Error, Debug)]
-#[error("Responser failed.")]
+#[error("Responder failed.")]
 pub enum MessageChannelResponseError {
     SenderError(#[from] MessageSendError),
     ReceiverError(#[from] MessageRecvError),
 }
 
 #[async_trait]
-impl<Sender, Receiver, RecvMessage, SendMessage> Responser<SendMessage>
+impl<Sender, Receiver, RecvMessage, SendMessage> Responder<SendMessage>
     for MessageChannel<Sender, Receiver>
 where
     Sender: MessageSender<SendMessage> + Send,
