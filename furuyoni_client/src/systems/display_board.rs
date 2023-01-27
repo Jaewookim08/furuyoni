@@ -12,7 +12,7 @@ pub fn display_board(state: Res<GameState>, mut query: Query<(&mut Text, &StateL
     if state.is_changed() {
         for (mut text, state_label) in &mut query {
             text.sections[state_label.text_section_index].value =
-                get_string(&state.state, &state_label.picker);
+                get_string(&state.0, &state_label.picker);
         }
     }
 }

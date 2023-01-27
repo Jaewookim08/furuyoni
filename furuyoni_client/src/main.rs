@@ -4,6 +4,8 @@ mod systems;
 use crate::networking::{post_office, ClientConnectionReader, ClientConnectionWriter};
 use crate::systems::display_board::{display_board, StateLabel, StateStringPicker};
 use crate::systems::picker::{PickerPlugin, RequestPick, SkipButton};
+use crate::systems::player;
+use crate::systems::player::PlayerPlugin;
 use bevy::prelude::*;
 use bevy::text::TextStyle;
 use bevy::ui::PositionType;
@@ -14,9 +16,9 @@ use furuyoni_lib::net::frames::{
     GameToPlayerResponse, GameToPlayerResponseFrame, PlayerMessageFrame, PlayerResponse,
     PlayerResponseFrame, PlayerToGameRequest, ResponseMainPhaseAction,
 };
-use furuyoni_lib::net::message_channel::MessageChannel;
+use furuyoni_lib::net::message_channel::{MessageChannel, MessageChannelResponseError};
 use furuyoni_lib::net::message_sender::IntoMessageMap;
-use furuyoni_lib::net::{Requester, Responder};
+use furuyoni_lib::net::{RequestError, Requester, Responder};
 use furuyoni_lib::player_actions::BasicAction;
 use furuyoni_lib::players::{CliPlayer, Player};
 use furuyoni_lib::rules::{
@@ -28,15 +30,13 @@ use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
 
 #[derive(Resource, Debug)]
-pub struct GameState {
-    state: ViewableState,
-}
+pub struct GameState(pub ViewableState);
 
 // Todo: remove. GameState should not be constructed in client.
 impl Default for GameState {
     fn default() -> Self {
         Self {
-            state: ViewableState {
+            0: ViewableState {
                 turn_number: 0,
                 turn_player: PlayerPos::P1,
                 phase: Phase::Beginning,
@@ -71,32 +71,32 @@ impl Default for GameState {
     }
 }
 
-fn hello_world() {
-    println!("Hello world!")
-}
-
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    let socket = TcpStream::connect("127.0.0.1:4255").await?;
+
+    let (player_to_game_requester, player_to_game_responder, post_office_task) =
+        spawn_post_office(socket);
+
     App::new()
         .init_resource::<GameState>()
+        .insert_resource(player::PlayerToGameResponder::new(Box::new(
+            player_to_game_responder,
+        )))
         .add_plugins(DefaultPlugins)
         .add_plugin(EditorPlugin)
         .add_plugin(PickerPlugin)
+        .add_plugin(PlayerPlugin)
         .add_system(display_board)
         .add_startup_system(setup)
-        .add_startup_system(test_pick_start)
+        // .add_startup_system(test_pick_start)
         .run();
 
-    // let socket = TcpStream::connect("127.0.0.1:4255").await?;
-    //
-    // let (player_to_game_requester, mut player_to_game_responder, post_office_task) =
-    //     spawn_post_office(socket);
-    //
     // let player = CliPlayer {};
-    //
+
     // run_responder(player, player_to_game_responder).await;
-    //
-    // post_office_task.abort();
+
+    post_office_task.abort();
     Ok(())
 }
 
@@ -197,8 +197,12 @@ async fn run_responder(
 fn spawn_post_office(
     stream: TcpStream,
 ) -> (
-    impl Requester<PlayerToGameRequest, Response = GameToPlayerResponse>,
-    impl Responder<PlayerResponseFrame, Request = GameRequest>,
+    impl Requester<PlayerToGameRequest, Response = GameToPlayerResponse, Error = RequestError>
+        + Send
+        + Sync,
+    impl Responder<PlayerResponseFrame, Request = GameRequest, Error = MessageChannelResponseError>
+        + Send
+        + Sync,
     JoinHandle<()>,
 ) {
     let (read_half, write_half) = stream.into_split();

@@ -36,8 +36,9 @@ async fn main() {
         post_office_task,
     ) = spawn_post_office(socket);
     let p1 = RemotePlayer::new(game_to_player_requester, game_to_player_notifier);
+    let p2 = CliPlayer {};
 
-    let mut game = game::Game::new(Box::new(p1), Box::new(IdlePlayer {}));
+    let mut game = game::Game::new(Box::new(p1), Box::new(p2));
     let res = futures::executor::block_on(game.run());
     let winner_str = match res.winner {
         PlayerPos::P1 => "P1",

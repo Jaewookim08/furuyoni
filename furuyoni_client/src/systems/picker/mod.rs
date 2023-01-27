@@ -37,7 +37,7 @@ impl Plugin for PickerPlugin {
             .add_event::<RequestPick>()
             .add_event::<PickedEvent>()
             .add_enter_system(PickingState::Idle, disable_picker_buttons)
-            .add_system(start_request_on_request.run_in_state(PickingState::Idle))
+            .add_system(start_picker_on_request.run_in_state(PickingState::Idle))
             .add_system(poll_pickers.run_in_state(PickingState::Picking));
     }
 }
@@ -51,12 +51,13 @@ enum PickingState {
 fn disable_picker_buttons(
     mut buttons: Query<(&mut Visibility), Or<(With<SkipButton>, With<BasicActionButton>)>>,
 ) {
+    println!("12312312K");
     for mut v in buttons.iter_mut() {
         v.is_visible = false;
     }
 }
 
-fn start_request_on_request(
+fn start_picker_on_request(
     mut commands: Commands,
     mut request: EventReader<RequestPick>,
     mut set: ParamSet<(
@@ -65,6 +66,7 @@ fn start_request_on_request(
     )>,
 ) {
     if let Some(req) = request.iter().next() {
+        println!("request received");
         if req.skip {
             for mut v in set.p0().iter_mut() {
                 v.is_visible = true;
@@ -76,8 +78,8 @@ fn start_request_on_request(
                 v.is_visible = true;
             }
         }
+        commands.insert_resource(NextState(PickingState::Picking));
     }
-    commands.insert_resource(NextState(PickingState::Picking));
 }
 
 fn poll_pickers(
