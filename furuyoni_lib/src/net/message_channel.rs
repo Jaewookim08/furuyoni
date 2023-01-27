@@ -64,6 +64,10 @@ where
         self.receiver.receive().await.map_err(|e| e.into())
     }
 
+    fn try_recv(&mut self) -> Result<Option<Self::Request>, Self::Error> {
+        self.receiver.try_receive().map_err(|e| e.into())
+    }
+
     fn response(&self, message: SendMessage) -> Result<(), Self::Error> {
         self.sender.send_message(message)?;
         Ok(())
