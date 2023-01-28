@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use furuyoni_lib::player_actions::BasicAction;
 use iyes_loopless::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 pub struct PickerPlugin;
@@ -18,22 +19,36 @@ impl RequestPick {
     }
 }
 
+#[derive(Reflect, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[reflect_value(Serialize, Deserialize)]
 pub enum PickedEvent {
     BasicAction(BasicAction),
     Skip,
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
 pub struct SkipButton;
 
-#[derive(Component)]
+#[derive(Component, Reflect, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[reflect_value(Serialize, Deserialize, Component)]
 pub struct BasicActionButton {
     pub action: BasicAction,
+}
+
+impl Default for BasicActionButton {
+    fn default() -> Self {
+        Self {
+            action: BasicAction::MoveForward,
+        }
+    }
 }
 
 impl Plugin for PickerPlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state(PickingState::Idle)
+            .register_type::<SkipButton>()
+            .register_type::<BasicActionButton>()
             .add_event::<RequestPick>()
             .add_event::<PickedEvent>()
             .add_enter_system(PickingState::Idle, disable_picker_buttons)
@@ -51,7 +66,6 @@ enum PickingState {
 fn disable_picker_buttons(
     mut buttons: Query<(&mut Visibility), Or<(With<SkipButton>, With<BasicActionButton>)>>,
 ) {
-    println!("12312312K");
     for mut v in buttons.iter_mut() {
         v.is_visible = false;
     }
@@ -66,7 +80,6 @@ fn start_picker_on_request(
     )>,
 ) {
     if let Some(req) = request.iter().next() {
-        println!("request received");
         if req.skip {
             for mut v in set.p0().iter_mut() {
                 v.is_visible = true;

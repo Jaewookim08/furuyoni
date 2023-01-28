@@ -1,11 +1,29 @@
+use crate::systems;
 use bevy::prelude::*;
 use bevy::text::Text;
 use furuyoni_lib::rules::{
     PlayerPos, ViewableOpponentState, ViewablePlayerState, ViewableSelfState, ViewableState,
 };
+use iyes_loopless::prelude::*;
 
 use crate::systems::player::{GameState, SelfPlayerPos};
-use bevy::prelude::Component;
+
+pub struct BoardPlugin;
+
+impl Plugin for BoardPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<StateLabel>()
+            .register_type::<StateStringPicker>()
+            .register_type::<PlayerValuePicker>()
+            .register_type::<PlayerRelativePos>()
+            .register_type::<PlayerValuePickerType>()
+            .add_system(
+                display_board
+                    .run_if_resource_exists::<GameState>()
+                    .run_if_resource_exists::<SelfPlayerPos>(),
+            );
+    }
+}
 
 pub fn display_board(
     state: Res<GameState>,
@@ -13,6 +31,7 @@ pub fn display_board(
     mut query: Query<(&mut Text, &StateLabel)>,
 ) {
     if state.is_changed() {
+        println!("!!!!");
         for (mut text, state_label) in &mut query {
             text.sections[state_label.text_section_index].value =
                 get_string(self_pos.0, &state.0, &state_label.picker);
@@ -20,32 +39,54 @@ pub fn display_board(
     }
 }
 
+#[derive(Debug, Reflect, FromReflect)]
 pub enum PlayerRelativePos {
     Me,
     Opponent,
 }
 
+#[derive(Debug, Reflect, FromReflect)]
+pub struct PlayerValuePicker {
+    pos: PlayerRelativePos,
+    value_type: PlayerValuePickerType,
+}
+
+impl PlayerValuePicker {
+    pub fn new(pos: PlayerRelativePos, value_type: PlayerValuePickerType) -> Self {
+        Self { pos, value_type }
+    }
+}
+
+#[derive(Debug, Reflect)]
 pub enum StateStringPicker {
     Dust,
     Distance,
     Turn,
-    PlayerValue {
-        pos: PlayerRelativePos,
-        picker: PlayerStringPicker,
-    },
+    PlayerValue(PlayerValuePicker),
 }
 
-pub enum PlayerStringPicker {
+#[derive(Debug, Reflect, FromReflect)]
+pub enum PlayerValuePickerType {
     Life,
     Flare,
     Aura,
     Vigor,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component)]
 pub struct StateLabel {
     text_section_index: usize,
     picker: StateStringPicker,
+}
+
+impl Default for StateLabel {
+    fn default() -> Self {
+        StateLabel {
+            text_section_index: 0,
+            picker: StateStringPicker::Dust,
+        }
+    }
 }
 
 impl StateLabel {
@@ -62,7 +103,7 @@ fn get_string(self_pos: PlayerPos, state: &ViewableState, picker: &StateStringPi
         StateStringPicker::Dust => state.dust.to_string(),
         StateStringPicker::Distance => state.distance.to_string(),
         StateStringPicker::Turn => state.turn_number.to_string(),
-        StateStringPicker::PlayerValue { pos, picker } => {
+        StateStringPicker::PlayerValue(PlayerValuePicker { pos, value_type }) => {
             let pos = match pos {
                 PlayerRelativePos::Me => self_pos,
                 PlayerRelativePos::Opponent => self_pos.other(),
@@ -70,30 +111,33 @@ fn get_string(self_pos: PlayerPos, state: &ViewableState, picker: &StateStringPi
             let player = &state.player_states[pos];
 
             match player {
-                ViewablePlayerState::SelfState(p) => get_string_from_self_player(p, picker),
-                ViewablePlayerState::Opponent(p) => get_string_from_opponent_player(p, picker),
+                ViewablePlayerState::SelfState(p) => get_string_from_self_player(p, value_type),
+                ViewablePlayerState::Opponent(p) => get_string_from_opponent_player(p, value_type),
             }
         }
     }
 }
 
-fn get_string_from_self_player(state: &ViewableSelfState, picker: &PlayerStringPicker) -> String {
+fn get_string_from_self_player(
+    state: &ViewableSelfState,
+    picker: &PlayerValuePickerType,
+) -> String {
     match picker {
-        PlayerStringPicker::Life => state.life.to_string(),
-        PlayerStringPicker::Flare => state.flare.to_string(),
-        PlayerStringPicker::Aura => state.aura.to_string(),
-        PlayerStringPicker::Vigor => state.vigor.to_string(),
+        PlayerValuePickerType::Life => state.life.to_string(),
+        PlayerValuePickerType::Flare => state.flare.to_string(),
+        PlayerValuePickerType::Aura => state.aura.to_string(),
+        PlayerValuePickerType::Vigor => state.vigor.to_string(),
     }
 }
 
 fn get_string_from_opponent_player(
     state: &ViewableOpponentState,
-    picker: &PlayerStringPicker,
+    picker: &PlayerValuePickerType,
 ) -> String {
     match picker {
-        PlayerStringPicker::Life => state.life.to_string(),
-        PlayerStringPicker::Flare => state.flare.to_string(),
-        PlayerStringPicker::Aura => state.aura.to_string(),
-        PlayerStringPicker::Vigor => state.vigor.to_string(),
+        PlayerValuePickerType::Life => state.life.to_string(),
+        PlayerValuePickerType::Flare => state.flare.to_string(),
+        PlayerValuePickerType::Aura => state.aura.to_string(),
+        PlayerValuePickerType::Vigor => state.vigor.to_string(),
     }
 }

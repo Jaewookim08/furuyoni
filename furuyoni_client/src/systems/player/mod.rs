@@ -1,5 +1,4 @@
 use crate::systems::picker::{PickedEvent, RequestPick};
-use crate::systems::player::PlayerState::Idle;
 use bevy::prelude::*;
 use furuyoni_lib::net::frames::{
     GameRequest, GameToPlayerRequestData, PlayerResponse, PlayerResponseFrame,
@@ -197,6 +196,6 @@ fn wait_for_main_phase_action(
             .expect("Todo");
 
         commands.remove_resource::<MainPhaseActionPickRequest>();
-        commands.insert_resource(NextState(Idle));
+        commands.insert_resource(NextState(PlayerState::Idle));
     }
 }

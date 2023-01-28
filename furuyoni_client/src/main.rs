@@ -2,8 +2,11 @@ mod networking;
 mod systems;
 
 use crate::networking::{post_office, ClientConnectionReader, ClientConnectionWriter};
-use crate::systems::display_board::{display_board, StateLabel, StateStringPicker};
-use crate::systems::picker::{PickerPlugin, RequestPick, SkipButton};
+use crate::systems::display_board::{
+    display_board, BoardPlugin, PlayerRelativePos, PlayerValuePicker, PlayerValuePickerType,
+    StateLabel, StateStringPicker,
+};
+use crate::systems::picker::{BasicActionButton, PickerPlugin, RequestPick, SkipButton};
 use crate::systems::player;
 use crate::systems::player::PlayerPlugin;
 use bevy::prelude::*;
@@ -11,20 +14,12 @@ use bevy::text::TextStyle;
 use bevy::ui::PositionType;
 use bevy::DefaultPlugins;
 use bevy_editor_pls::prelude::*;
-use furuyoni_lib::net::frames::{
-    ClientMessageFrame, GameRequest, GameToPlayerRequestData, GameToPlayerRequestDataFrame,
-    GameToPlayerResponse, GameToPlayerResponseFrame, PlayerMessageFrame, PlayerResponse,
-    PlayerResponseFrame, PlayerToGameRequest, ResponseMainPhaseAction,
-};
+use furuyoni_lib::net::frames::*;
 use furuyoni_lib::net::message_channel::{MessageChannel, MessageChannelResponseError};
 use furuyoni_lib::net::message_sender::IntoMessageMap;
 use furuyoni_lib::net::{RequestError, Requester, Responder};
 use furuyoni_lib::player_actions::BasicAction;
 use furuyoni_lib::players::{CliPlayer, Player};
-use furuyoni_lib::rules::{
-    Phase, PlayerPos, ViewableOpponentState, ViewablePlayerState, ViewablePlayerStates,
-    ViewableSelfState, ViewableState,
-};
 use iyes_loopless::prelude::*;
 use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
@@ -44,13 +39,9 @@ async fn main() -> std::io::Result<()> {
         .add_plugin(EditorPlugin)
         .add_plugin(PickerPlugin)
         .add_plugin(PlayerPlugin)
-        .add_system(
-            display_board
-                .run_if_resource_exists::<player::GameState>()
-                .run_if_resource_exists::<player::SelfPlayerPos>(),
-        )
-        .add_startup_system(setup)
-        // .add_startup_system(test_pick_start)
+        .add_plugin(BoardPlugin)
+        // .add_startup_system(setup)
+        .add_startup_system(load_scene)
         .run();
 
     // let player = CliPlayer {};
@@ -61,63 +52,119 @@ async fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn test_pick_start(mut ev: EventWriter<RequestPick>) {
-    ev.send(RequestPick::new([BasicAction::MoveBackward].into(), true));
+fn load_scene(asset_server: Res<AssetServer>, mut scene_spawner: ResMut<SceneSpawner>) {
+    let ff: Handle<Font> = asset_server.load("fonts/Fira_Sans/FiraSans-Regular.ttf");
+    std::mem::forget(ff);
+
+    scene_spawner.spawn_dynamic(asset_server.load("scenes/main_scene.scn.ron"));
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
 
     let font = asset_server.load("fonts/Fira_Sans/FiraSans-Regular.ttf");
-    commands.spawn((
-        TextBundle::from_sections([
-            TextSection::new(
-                "Hello world!: ",
-                TextStyle {
-                    font: font.clone(),
-                    font_size: 50.0,
+
+    for _ in 0..11 {
+        commands.spawn((
+            TextBundle::from_sections([
+                TextSection::new(
+                    "Dust: ",
+                    TextStyle {
+                        font: font.clone(),
+                        font_size: 50.0,
+                        ..default()
+                    },
+                ),
+                TextSection::new(
+                    "",
+                    TextStyle {
+                        font: font.clone(),
+                        font_size: 50.0,
+                        color: Color::GREEN,
+                    },
+                ),
+            ])
+            .with_text_alignment(TextAlignment::CENTER_LEFT)
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                position: UiRect {
+                    top: Val::Px(100.0),
+                    left: Val::Px(100.0),
                     ..default()
                 },
+                ..default()
+            }),
+            StateLabel::new(
+                1,
+                StateStringPicker::PlayerValue(PlayerValuePicker::new(
+                    PlayerRelativePos::Me,
+                    PlayerValuePickerType::Life,
+                )),
             ),
-            TextSection::new(
-                "Empty",
+        ));
+    }
+
+    commands
+        .spawn((
+            ButtonBundle {
+                style: Style {
+                    size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                    // center button
+                    margin: UiRect::all(Val::Auto),
+                    // horizontally center child text
+                    justify_content: JustifyContent::Center,
+                    // vertically center child text
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                background_color: Color::rgb(0.2, 0.5, 0.3).into(),
+                ..default()
+            },
+            SkipButton,
+        ))
+        .with_children(|parent| {
+            parent.spawn(TextBundle::from_section(
+                "Skip",
                 TextStyle {
                     font: font.clone(),
-                    font_size: 50.0,
-                    color: Color::GREEN,
+                    font_size: 40.0,
+                    color: Color::rgb(0.9, 0.9, 0.9),
                 },
-            ),
-        ])
-        .with_text_alignment(TextAlignment::CENTER_LEFT)
-        .with_style(Style {
-            position_type: PositionType::Absolute,
-            position: UiRect {
-                top: Val::Px(100.0),
-                left: Val::Px(100.0),
-                ..default()
-            },
-            ..default()
-        }),
-        StateLabel::new(1, StateStringPicker::Distance),
-    ));
+            ));
+        });
 
-    commands.spawn((
-        ButtonBundle {
-            style: Style {
-                size: Size::new(Val::Px(150.0), Val::Px(65.0)),
-                // center button
-                margin: UiRect::all(Val::Auto),
-                // horizontally center child text
-                justify_content: JustifyContent::Center,
-                // vertically center child text
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            background_color: Color::rgb(0.2, 0.5, 0.3).into(),
-            ..default()
-        },
-        SkipButton,
-    ));
+    for _ in 0..4 {
+        commands
+            .spawn((
+                ButtonBundle {
+                    style: Style {
+                        size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                        // center button
+                        margin: UiRect::all(Val::Auto),
+                        // horizontally center child text
+                        justify_content: JustifyContent::Center,
+                        // vertically center child text
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    background_color: Color::rgb(0.2, 0.5, 0.3).into(),
+                    ..default()
+                },
+                BasicActionButton {
+                    action: BasicAction::Focus,
+                },
+            ))
+            .with_children(|parent| {
+                parent.spawn(TextBundle::from_section(
+                    "FC",
+                    TextStyle {
+                        font: font.clone(),
+                        font_size: 40.0,
+                        color: Color::rgb(0.9, 0.9, 0.9),
+                    },
+                ));
+            });
+    }
 }
 
 async fn run_responder(

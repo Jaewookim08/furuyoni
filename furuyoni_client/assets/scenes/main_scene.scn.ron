@@ -1,0 +1,3600 @@
+(
+  entities: {
+    0: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 0.0,
+            y: 2.0,
+            z: 5.0,
+          ),
+        )),
+        "bevy_render::camera::camera::Camera": (
+          viewport: None,
+          priority: 100,
+          is_active: false,
+          hdr: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.0,
+            y: 2.0,
+            z: 5.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_render::camera::camera::CameraRenderGraph": ("core_3d"),
+        "bevy_render::camera::projection::Projection": Perspective((
+          fov: 0.7853982,
+          aspect_ratio: 1.7777778,
+          near: 0.1,
+          far: 1000.0,
+        )),
+        "bevy_render::view::visibility::VisibleEntities": (),
+        "bevy_render::primitives::Frustum": (),
+        "bevy_core_pipeline::core_3d::camera_3d::Camera3d": (
+          clear_color: Default,
+          depth_load_op: Clear(0.0),
+        ),
+        "bevy_core_pipeline::tonemapping::Tonemapping": Enabled(
+          deband_dither: true,
+        ),
+        "bevy_core::name::Name": (
+          hash: 14269388827828534261,
+          name: "Editor Camera 3D Free",
+        ),
+        "bevy_pbr::light::ClusterConfig": FixedZ(
+          total: 4096,
+          z_slices: 24,
+          z_config: (
+            first_slice_depth: 5.0,
+            far_z_mode: MaxLightRange,
+          ),
+          dynamic_resizing: true,
+        ),
+      },
+    ),
+    1: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 0.0,
+            y: 2.0,
+            z: 5.0,
+          ),
+        )),
+        "bevy_render::camera::camera::Camera": (
+          viewport: None,
+          priority: 100,
+          is_active: true,
+          hdr: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.0,
+            y: 2.0,
+            z: 5.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_render::camera::camera::CameraRenderGraph": ("core_3d"),
+        "bevy_render::camera::projection::Projection": Perspective((
+          fov: 0.7853982,
+          aspect_ratio: 1.7777778,
+          near: 0.1,
+          far: 1000.0,
+        )),
+        "bevy_render::view::visibility::VisibleEntities": (),
+        "bevy_render::primitives::Frustum": (),
+        "bevy_core_pipeline::core_3d::camera_3d::Camera3d": (
+          clear_color: Default,
+          depth_load_op: Clear(0.0),
+        ),
+        "bevy_core_pipeline::tonemapping::Tonemapping": Enabled(
+          deband_dither: true,
+        ),
+        "bevy_core::name::Name": (
+          hash: 14001947332897926749,
+          name: "Editor Camera 3D Pan/Orbit",
+        ),
+        "bevy_pbr::light::ClusterConfig": FixedZ(
+          total: 4096,
+          z_slices: 24,
+          z_config: (
+            first_slice_depth: 5.0,
+            far_z_mode: MaxLightRange,
+          ),
+          dynamic_resizing: true,
+        ),
+      },
+    ),
+    2: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 999.9,
+          ),
+        )),
+        "bevy_render::camera::camera::Camera": (
+          viewport: None,
+          priority: 100,
+          is_active: false,
+          hdr: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 999.9,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_render::camera::camera::CameraRenderGraph": ("core_2d"),
+        "bevy_render::view::visibility::VisibleEntities": (),
+        "bevy_render::primitives::Frustum": (),
+        "bevy_core_pipeline::tonemapping::Tonemapping": Disabled,
+        "bevy_core::name::Name": (
+          hash: 5508833531554862339,
+          name: "Editor Camera 2D Pan/Zoom",
+        ),
+        "bevy_render::camera::projection::OrthographicProjection": (
+          left: -640.0,
+          right: 640.0,
+          bottom: -360.0,
+          top: 360.0,
+          near: 0.0,
+          far: 1000.0,
+          window_origin: Center,
+          scaling_mode: WindowSize,
+          scale: 1.4089645,
+        ),
+        "bevy_core_pipeline::core_2d::camera_2d::Camera2d": (
+          clear_color: Default,
+        ),
+        "bevy_pbr::light::ClusterConfig": FixedZ(
+          total: 4096,
+          z_slices: 24,
+          z_config: (
+            first_slice_depth: 5.0,
+            far_z_mode: MaxLightRange,
+          ),
+          dynamic_resizing: true,
+        ),
+      },
+    ),
+    3: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 0.0,
+            y: 2.0,
+            z: 5.0,
+          ),
+        )),
+        "bevy_render::camera::camera::Camera": (
+          viewport: None,
+          priority: 100,
+          is_active: false,
+          hdr: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.0,
+            y: 2.0,
+            z: 5.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_render::camera::camera::CameraRenderGraph": ("core_3d"),
+        "bevy_render::camera::projection::Projection": Perspective((
+          fov: 0.7853982,
+          aspect_ratio: 1.7777778,
+          near: 0.1,
+          far: 1000.0,
+        )),
+        "bevy_render::view::visibility::VisibleEntities": (),
+        "bevy_render::primitives::Frustum": (),
+        "bevy_core_pipeline::core_3d::camera_3d::Camera3d": (
+          clear_color: Default,
+          depth_load_op: Clear(0.0),
+        ),
+        "bevy_core_pipeline::tonemapping::Tonemapping": Enabled(
+          deband_dither: true,
+        ),
+        "bevy_core::name::Name": (
+          hash: 15633794268597786964,
+          name: "Editor Camera 3D Free",
+        ),
+        "bevy_pbr::light::ClusterConfig": FixedZ(
+          total: 4096,
+          z_slices: 24,
+          z_config: (
+            first_slice_depth: 5.0,
+            far_z_mode: MaxLightRange,
+          ),
+          dynamic_resizing: true,
+        ),
+      },
+    ),
+    4: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 0.0,
+            y: 2.0,
+            z: 5.0,
+          ),
+        )),
+        "bevy_render::camera::camera::Camera": (
+          viewport: None,
+          priority: 100,
+          is_active: false,
+          hdr: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.0,
+            y: 2.0,
+            z: 5.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_render::camera::camera::CameraRenderGraph": ("core_3d"),
+        "bevy_render::camera::projection::Projection": Perspective((
+          fov: 0.7853982,
+          aspect_ratio: 1.7777778,
+          near: 0.1,
+          far: 1000.0,
+        )),
+        "bevy_render::view::visibility::VisibleEntities": (),
+        "bevy_render::primitives::Frustum": (),
+        "bevy_core_pipeline::core_3d::camera_3d::Camera3d": (
+          clear_color: Default,
+          depth_load_op: Clear(0.0),
+        ),
+        "bevy_core_pipeline::tonemapping::Tonemapping": Enabled(
+          deband_dither: true,
+        ),
+        "bevy_core::name::Name": (
+          hash: 11243446180909204491,
+          name: "Editor Camera 3D Pan/Orbit",
+        ),
+        "bevy_pbr::light::ClusterConfig": FixedZ(
+          total: 4096,
+          z_slices: 24,
+          z_config: (
+            first_slice_depth: 5.0,
+            far_z_mode: MaxLightRange,
+          ),
+          dynamic_resizing: true,
+        ),
+      },
+    ),
+    5: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 141.68288,
+            y: 125.0,
+            z: 999.9,
+          ),
+        )),
+        "bevy_render::camera::camera::Camera": (
+          viewport: None,
+          priority: 100,
+          is_active: false,
+          hdr: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 141.68288,
+            y: 125.0,
+            z: 999.9,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_render::camera::camera::CameraRenderGraph": ("core_2d"),
+        "bevy_render::view::visibility::VisibleEntities": (),
+        "bevy_render::primitives::Frustum": (),
+        "bevy_core_pipeline::tonemapping::Tonemapping": Disabled,
+        "bevy_core::name::Name": (
+          hash: 6393306879773920387,
+          name: "Editor Camera 2D Pan/Zoom",
+        ),
+        "bevy_render::camera::projection::OrthographicProjection": (
+          left: -640.0,
+          right: 640.0,
+          bottom: -360.0,
+          top: 360.0,
+          near: 0.0,
+          far: 1000.0,
+          window_origin: Center,
+          scaling_mode: WindowSize,
+          scale: 0.0016289734,
+        ),
+        "bevy_core_pipeline::core_2d::camera_2d::Camera2d": (
+          clear_color: Default,
+        ),
+        "bevy_pbr::light::ClusterConfig": FixedZ(
+          total: 4096,
+          z_slices: 24,
+          z_config: (
+            first_slice_depth: 5.0,
+            far_z_mode: MaxLightRange,
+          ),
+          dynamic_resizing: true,
+        ),
+      },
+    ),
+    6: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 999.9,
+          ),
+        )),
+        "bevy_render::camera::camera::Camera": (
+          viewport: None,
+          priority: 0,
+          is_active: false,
+          hdr: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 999.9,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_render::camera::camera::CameraRenderGraph": ("core_2d"),
+        "bevy_render::view::visibility::VisibleEntities": (),
+        "bevy_render::primitives::Frustum": (),
+        "bevy_core_pipeline::tonemapping::Tonemapping": Disabled,
+        "bevy_render::camera::projection::OrthographicProjection": (
+          left: -640.0,
+          right: 640.0,
+          bottom: -360.0,
+          top: 360.0,
+          near: 0.0,
+          far: 1000.0,
+          window_origin: Center,
+          scaling_mode: WindowSize,
+          scale: 1.0,
+        ),
+        "bevy_core_pipeline::core_2d::camera_2d::Camera2d": (
+          clear_color: Default,
+        ),
+        "bevy_pbr::light::ClusterConfig": FixedZ(
+          total: 4096,
+          z_slices: 24,
+          z_config: (
+            first_slice_depth: 5.0,
+            far_z_mode: MaxLightRange,
+          ),
+          dynamic_resizing: true,
+        ),
+      },
+    ),
+    7: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 315.5,
+            y: 108.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: true,
+          is_visible_in_view: true,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 315.5,
+            y: 108.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 131.0,
+            y: 50.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Life: ",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 1.0,
+                  green: 1.0,
+                  blue: 1.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+            (
+              value: "10",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 0.0,
+                  green: 1.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Center,
+            horizontal: Left,
+          ),
+        ),
+        "furuyoni_client::systems::display_board::StateLabel": (
+          text_section_index: 1,
+          picker: PlayerValue((
+            pos: Opponent,
+            value_type: Life,
+          )),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Percent(19.5),
+            right: Undefined,
+            top: Percent(11.5),
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(131.5),
+            height: Px(50.0),
+          ),
+        ),
+      },
+    ),
+    8: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 311.5,
+            y: 147.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: true,
+          is_visible_in_view: true,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 311.5,
+            y: 147.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 149.0,
+            y: 50.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Aura: ",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 1.0,
+                  green: 1.0,
+                  blue: 1.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+            (
+              value: "10",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 0.0,
+                  green: 1.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Center,
+            horizontal: Left,
+          ),
+        ),
+        "furuyoni_client::systems::display_board::StateLabel": (
+          text_section_index: 1,
+          picker: PlayerValue((
+            pos: Opponent,
+            value_type: Aura,
+          )),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Percent(18.5),
+            right: Undefined,
+            top: Percent(17.0),
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(149.20833),
+            height: Px(50.0),
+          ),
+        ),
+      },
+    ),
+    9: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 312.5,
+            y: 187.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: true,
+          is_visible_in_view: true,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 312.5,
+            y: 187.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 157.0,
+            y: 50.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Flare: ",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 1.0,
+                  green: 1.0,
+                  blue: 1.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+            (
+              value: "10",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 0.0,
+                  green: 1.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Center,
+            horizontal: Left,
+          ),
+        ),
+        "furuyoni_client::systems::display_board::StateLabel": (
+          text_section_index: 1,
+          picker: PlayerValue((
+            pos: Opponent,
+            value_type: Flare,
+          )),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Percent(18.3),
+            right: Undefined,
+            top: Percent(22.5),
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(156.45834),
+            height: Px(50.0),
+          ),
+        ),
+      },
+    ),
+    10: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 310.0,
+            y: 224.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: true,
+          is_visible_in_view: true,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 310.0,
+            y: 224.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 160.0,
+            y: 50.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Vigor: ",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 1.0,
+                  green: 1.0,
+                  blue: 1.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+            (
+              value: "10",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 0.0,
+                  green: 1.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Center,
+            horizontal: Left,
+          ),
+        ),
+        "furuyoni_client::systems::display_board::StateLabel": (
+          text_section_index: 1,
+          picker: PlayerValue((
+            pos: Opponent,
+            value_type: Vigor,
+          )),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Percent(18.0),
+            right: Undefined,
+            top: Percent(27.7),
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(159.33334),
+            height: Px(50.0),
+          ),
+        ),
+      },
+    ),
+    11: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 633.0,
+            y: 278.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: true,
+          is_visible_in_view: true,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 633.0,
+            y: 278.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 148.0,
+            y: 50.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Dust: ",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 1.0,
+                  green: 1.0,
+                  blue: 1.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+            (
+              value: "10",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 0.0,
+                  green: 1.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Center,
+            horizontal: Left,
+          ),
+        ),
+        "furuyoni_client::systems::display_board::StateLabel": (
+          text_section_index: 1,
+          picker: Dust,
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Percent(43.7),
+            right: Undefined,
+            top: Percent(35.2),
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(147.91667),
+            height: Px(50.0),
+          ),
+        ),
+      },
+    ),
+    12: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 637.5,
+            y: 241.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: true,
+          is_visible_in_view: true,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 637.5,
+            y: 241.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 225.0,
+            y: 50.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Distance: ",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 1.0,
+                  green: 1.0,
+                  blue: 1.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+            (
+              value: "10",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 0.0,
+                  green: 1.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Center,
+            horizontal: Left,
+          ),
+        ),
+        "furuyoni_client::systems::display_board::StateLabel": (
+          text_section_index: 1,
+          picker: Distance,
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Percent(41.0),
+            right: Undefined,
+            top: Percent(30.0),
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(225.12502),
+            height: Px(50.0),
+          ),
+        ),
+      },
+    ),
+    13: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 994.0,
+            y: 558.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: true,
+          is_visible_in_view: true,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 994.0,
+            y: 558.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 132.0,
+            y: 50.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Life: ",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 1.0,
+                  green: 1.0,
+                  blue: 1.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+            (
+              value: "10",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 0.0,
+                  green: 1.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Center,
+            horizontal: Left,
+          ),
+        ),
+        "furuyoni_client::systems::display_board::StateLabel": (
+          text_section_index: 1,
+          picker: PlayerValue((
+            pos: Me,
+            value_type: Life,
+          )),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Percent(72.5),
+            right: Undefined,
+            top: Percent(74.0),
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(131.5),
+            height: Px(50.0),
+          ),
+        ),
+      },
+    ),
+    14: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 996.5,
+            y: 601.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: true,
+          is_visible_in_view: true,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 996.5,
+            y: 601.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 149.0,
+            y: 50.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Aura: ",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 1.0,
+                  green: 1.0,
+                  blue: 1.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+            (
+              value: "10",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 0.0,
+                  green: 1.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Center,
+            horizontal: Left,
+          ),
+        ),
+        "furuyoni_client::systems::display_board::StateLabel": (
+          text_section_index: 1,
+          picker: PlayerValue((
+            pos: Me,
+            value_type: Aura,
+          )),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Percent(72.0),
+            right: Undefined,
+            top: Percent(80.0),
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(149.20833),
+            height: Px(50.0),
+          ),
+        ),
+      },
+    ),
+    15: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 997.0,
+            y: 645.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: true,
+          is_visible_in_view: true,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 997.0,
+            y: 645.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 156.0,
+            y: 50.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Flare: ",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 1.0,
+                  green: 1.0,
+                  blue: 1.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+            (
+              value: "10",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 0.0,
+                  green: 1.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Center,
+            horizontal: Left,
+          ),
+        ),
+        "furuyoni_client::systems::display_board::StateLabel": (
+          text_section_index: 1,
+          picker: PlayerValue((
+            pos: Me,
+            value_type: Flare,
+          )),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Percent(71.8),
+            right: Undefined,
+            top: Percent(86.1),
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(156.45834),
+            height: Px(50.0),
+          ),
+        ),
+      },
+    ),
+    16: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 1001.5,
+            y: 689.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: true,
+          is_visible_in_view: true,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 1001.5,
+            y: 689.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 159.0,
+            y: 50.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Vigor: ",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 1.0,
+                  green: 1.0,
+                  blue: 1.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+            (
+              value: "10",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 0.0,
+                  green: 1.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Center,
+            horizontal: Left,
+          ),
+        ),
+        "furuyoni_client::systems::display_board::StateLabel": (
+          text_section_index: 1,
+          picker: PlayerValue((
+            pos: Me,
+            value_type: Vigor,
+          )),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Percent(72.0),
+            right: Undefined,
+            top: Percent(92.2),
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(159.33334),
+            height: Px(50.0),
+          ),
+        ),
+      },
+    ),
+    17: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 1156.0,
+            y: 61.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: true,
+          is_visible_in_view: true,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 1156.0,
+            y: 61.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 148.0,
+            y: 50.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Turn: ",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 1.0,
+                  green: 1.0,
+                  blue: 1.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+            (
+              value: "10",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 50.0,
+                color: Rgba(
+                  red: 0.0,
+                  green: 1.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Center,
+            horizontal: Left,
+          ),
+        ),
+        "furuyoni_client::systems::display_board::StateLabel": (
+          text_section_index: 1,
+          picker: Turn,
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Percent(84.5),
+            right: Undefined,
+            top: Percent(5.0),
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(148.625),
+            height: Px(50.0),
+          ),
+        ),
+      },
+    ),
+    18: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 1039.0,
+            y: 471.5,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: false,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: false,
+          is_visible_in_view: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 1039.0,
+            y: 471.5,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_hierarchy::components::children::Children": ([
+          (
+            generation: 0,
+            index: 19,
+          ),
+        ]),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 150.0,
+            y: 65.0,
+          ),
+        ),
+        "bevy_ui::focus::Interaction": None,
+        "bevy_ui::focus::FocusPolicy": Block,
+        "furuyoni_client::systems::picker::SkipButton": (),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Center,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: Center,
+          position: (
+            left: Undefined,
+            right: Percent(13.0),
+            top: Undefined,
+            bottom: Percent(30.0),
+          ),
+          margin: (
+            left: Auto,
+            right: Auto,
+            top: Auto,
+            bottom: Auto,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Px(150.0),
+            height: Px(65.0),
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::UiImage": ((
+          id: Id("6ea26da6-6cf8-4ea2-9986-1d7bf6c17d6f", 13148262314052771789),
+        )),
+        "bevy_ui::ui_node::BackgroundColor": (Rgba(
+          red: 0.7921569,
+          green: 0.21960784,
+          blue: 0.21960784,
+          alpha: 1.0,
+        )),
+        "bevy_ui::widget::button::Button": (),
+      },
+    ),
+    19: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 1039.5,
+            y: 472.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: false,
+          is_visible_in_view: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.5,
+            y: 0.5,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_hierarchy::components::parent::Parent": ((
+          generation: 0,
+          index: 18,
+        )),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 65.0,
+            y: 40.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Skip",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 40.0,
+                color: Rgba(
+                  red: 0.8980392,
+                  green: 0.8980392,
+                  blue: 0.8980392,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Top,
+            horizontal: Left,
+          ),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Relative,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(64.43334),
+            height: Px(40.0),
+          ),
+        ),
+      },
+    ),
+    20: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 872.0,
+            y: 471.5,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: false,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: false,
+          is_visible_in_view: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 872.0,
+            y: 471.5,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_hierarchy::components::children::Children": ([
+          (
+            generation: 0,
+            index: 21,
+          ),
+        ]),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 150.0,
+            y: 65.0,
+          ),
+        ),
+        "bevy_ui::focus::Interaction": None,
+        "bevy_ui::focus::FocusPolicy": Block,
+        "furuyoni_client::systems::picker::BasicActionButton": (
+          action: Focus,
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Center,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: Center,
+          position: (
+            left: Undefined,
+            right: Percent(26.0),
+            top: Undefined,
+            bottom: Percent(30.0),
+          ),
+          margin: (
+            left: Auto,
+            right: Auto,
+            top: Auto,
+            bottom: Auto,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Px(150.0),
+            height: Px(65.0),
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::UiImage": ((
+          id: Id("6ea26da6-6cf8-4ea2-9986-1d7bf6c17d6f", 13148262314052771789),
+        )),
+        "bevy_ui::ui_node::BackgroundColor": (Rgba(
+          red: 0.2,
+          green: 0.49803922,
+          blue: 0.29803923,
+          alpha: 1.0,
+        )),
+        "bevy_ui::widget::button::Button": (),
+      },
+    ),
+    21: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 872.5,
+            y: 472.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: false,
+          is_visible_in_view: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.5,
+            y: 0.5,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_hierarchy::components::parent::Parent": ((
+          generation: 0,
+          index: 20,
+        )),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 87.0,
+            y: 40.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Focus",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 40.0,
+                color: Rgba(
+                  red: 0.8980392,
+                  green: 0.8980392,
+                  blue: 0.8980392,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Top,
+            horizontal: Left,
+          ),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Relative,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(86.73334),
+            height: Px(40.0),
+          ),
+        ),
+      },
+    ),
+    22: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 706.0,
+            y: 471.5,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: false,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: false,
+          is_visible_in_view: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 706.0,
+            y: 471.5,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_hierarchy::components::children::Children": ([
+          (
+            generation: 0,
+            index: 23,
+          ),
+        ]),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 150.0,
+            y: 65.0,
+          ),
+        ),
+        "bevy_ui::focus::Interaction": None,
+        "bevy_ui::focus::FocusPolicy": Block,
+        "furuyoni_client::systems::picker::BasicActionButton": (
+          action: Recover,
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Center,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: Center,
+          position: (
+            left: Undefined,
+            right: Percent(39.0),
+            top: Undefined,
+            bottom: Percent(30.0),
+          ),
+          margin: (
+            left: Auto,
+            right: Auto,
+            top: Auto,
+            bottom: Auto,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Px(150.0),
+            height: Px(65.0),
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::UiImage": ((
+          id: Id("6ea26da6-6cf8-4ea2-9986-1d7bf6c17d6f", 13148262314052771789),
+        )),
+        "bevy_ui::ui_node::BackgroundColor": (Rgba(
+          red: 0.2,
+          green: 0.49803922,
+          blue: 0.29803923,
+          alpha: 1.0,
+        )),
+        "bevy_ui::widget::button::Button": (),
+      },
+    ),
+    23: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 705.5,
+            y: 472.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: false,
+          is_visible_in_view: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: -0.5,
+            y: 0.5,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_hierarchy::components::parent::Parent": ((
+          generation: 0,
+          index: 22,
+        )),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 121.0,
+            y: 40.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Recover",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 40.0,
+                color: Rgba(
+                  red: 0.8980392,
+                  green: 0.8980392,
+                  blue: 0.8980392,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Top,
+            horizontal: Left,
+          ),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Relative,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(121.16667),
+            height: Px(40.0),
+          ),
+        ),
+      },
+    ),
+    24: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 872.0,
+            y: 399.5,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: false,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: false,
+          is_visible_in_view: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 872.0,
+            y: 399.5,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_hierarchy::components::children::Children": ([
+          (
+            generation: 0,
+            index: 25,
+          ),
+        ]),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 150.0,
+            y: 65.0,
+          ),
+        ),
+        "bevy_ui::focus::Interaction": None,
+        "bevy_ui::focus::FocusPolicy": Block,
+        "furuyoni_client::systems::picker::BasicActionButton": (
+          action: MoveBackward,
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Center,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: Center,
+          position: (
+            left: Undefined,
+            right: Percent(26.0),
+            top: Undefined,
+            bottom: Percent(40.0),
+          ),
+          margin: (
+            left: Auto,
+            right: Auto,
+            top: Auto,
+            bottom: Auto,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Px(150.0),
+            height: Px(65.0),
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::UiImage": ((
+          id: Id("6ea26da6-6cf8-4ea2-9986-1d7bf6c17d6f", 13148262314052771789),
+        )),
+        "bevy_ui::ui_node::BackgroundColor": (Rgba(
+          red: 0.2,
+          green: 0.49803922,
+          blue: 0.29803923,
+          alpha: 1.0,
+        )),
+        "bevy_ui::widget::button::Button": (),
+      },
+    ),
+    25: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 872.0,
+            y: 400.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: false,
+          is_visible_in_view: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.0,
+            y: 0.5,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_hierarchy::components::parent::Parent": ((
+          generation: 0,
+          index: 24,
+        )),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 146.0,
+            y: 40.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Backward",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 40.0,
+                color: Rgba(
+                  red: 0.8980392,
+                  green: 0.8980392,
+                  blue: 0.8980392,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Top,
+            horizontal: Left,
+          ),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Relative,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(146.23334),
+            height: Px(40.0),
+          ),
+        ),
+      },
+    ),
+    26: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 706.0,
+            y: 399.5,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: false,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: false,
+          is_visible_in_view: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 706.0,
+            y: 399.5,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_hierarchy::components::children::Children": ([
+          (
+            generation: 0,
+            index: 27,
+          ),
+        ]),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 150.0,
+            y: 65.0,
+          ),
+        ),
+        "bevy_ui::focus::Interaction": None,
+        "bevy_ui::focus::FocusPolicy": Block,
+        "furuyoni_client::systems::picker::BasicActionButton": (
+          action: MoveForward,
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Absolute,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Center,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: Center,
+          position: (
+            left: Undefined,
+            right: Percent(39.0),
+            top: Undefined,
+            bottom: Percent(40.0),
+          ),
+          margin: (
+            left: Auto,
+            right: Auto,
+            top: Auto,
+            bottom: Auto,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Px(150.0),
+            height: Px(65.0),
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::UiImage": ((
+          id: Id("6ea26da6-6cf8-4ea2-9986-1d7bf6c17d6f", 13148262314052771789),
+        )),
+        "bevy_ui::ui_node::BackgroundColor": (Rgba(
+          red: 0.2,
+          green: 0.49803922,
+          blue: 0.29803923,
+          alpha: 1.0,
+        )),
+        "bevy_ui::widget::button::Button": (),
+      },
+    ),
+    27: (
+      components: {
+        "bevy_transform::components::global_transform::GlobalTransform": ((
+          matrix3: (
+            x_axis: (
+              x: 1.0,
+              y: 0.0,
+              z: 0.0,
+            ),
+            y_axis: (
+              x: 0.0,
+              y: 1.0,
+              z: 0.0,
+            ),
+            z_axis: (
+              x: 0.0,
+              y: 0.0,
+              z: 1.0,
+            ),
+          ),
+          translation: (
+            x: 706.0,
+            y: 400.0,
+            z: 0.0,
+          ),
+        )),
+        "bevy_render::view::visibility::Visibility": (
+          is_visible: true,
+        ),
+        "bevy_render::view::visibility::ComputedVisibility": (
+          is_visible_in_hierarchy: false,
+          is_visible_in_view: false,
+        ),
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.0,
+            y: 0.5,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "bevy_hierarchy::components::parent::Parent": ((
+          generation: 0,
+          index: 26,
+        )),
+        "bevy_ui::ui_node::Node": (
+          calculated_size: (
+            x: 124.0,
+            y: 40.0,
+          ),
+        ),
+        "bevy_ui::focus::FocusPolicy": Pass,
+        "bevy_text::text::Text": (
+          sections: [
+            (
+              value: "Forward",
+              style: (
+                font: (
+                  id: AssetPathId(((12525564341232998258), (6298619649789039366))),
+                ),
+                font_size: 40.0,
+                color: Rgba(
+                  red: 0.8980392,
+                  green: 0.8980392,
+                  blue: 0.8980392,
+                  alpha: 1.0,
+                ),
+              ),
+            ),
+          ],
+          alignment: (
+            vertical: Top,
+            horizontal: Left,
+          ),
+        ),
+        "bevy_ui::ui_node::Style": (
+          display: Flex,
+          position_type: Relative,
+          direction: Inherit,
+          flex_direction: Row,
+          flex_wrap: NoWrap,
+          align_items: Stretch,
+          align_self: Auto,
+          align_content: Stretch,
+          justify_content: FlexStart,
+          position: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          margin: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          padding: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          border: (
+            left: Undefined,
+            right: Undefined,
+            top: Undefined,
+            bottom: Undefined,
+          ),
+          flex_grow: 0.0,
+          flex_shrink: 1.0,
+          flex_basis: Auto,
+          size: (
+            width: Auto,
+            height: Auto,
+          ),
+          min_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          max_size: (
+            width: Auto,
+            height: Auto,
+          ),
+          aspect_ratio: None,
+          overflow: Visible,
+        ),
+        "bevy_ui::ui_node::CalculatedSize": (
+          size: (
+            width: Px(123.53334),
+            height: Px(40.0),
+          ),
+        ),
+      },
+    ),
+  },
+)
