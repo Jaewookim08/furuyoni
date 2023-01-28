@@ -29,48 +29,6 @@ use iyes_loopless::prelude::*;
 use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
 
-#[derive(Resource, Debug)]
-pub struct GameState(pub ViewableState);
-
-// Todo: remove. GameState should not be constructed in client.
-impl Default for GameState {
-    fn default() -> Self {
-        Self {
-            0: ViewableState {
-                turn_number: 0,
-                turn_player: PlayerPos::P1,
-                phase: Phase::Beginning,
-                distance: 0,
-                dust: 0,
-                player_states: ViewablePlayerStates::new(
-                    ViewablePlayerState::SelfState(ViewableSelfState {
-                        hands: vec![],
-                        deck_count: 0,
-                        enhancements: vec![],
-                        played_pile: vec![],
-                        discard_pile: vec![],
-                        vigor: 0,
-                        aura: 0,
-                        life: 0,
-                        flare: 0,
-                    }),
-                    ViewablePlayerState::Opponent(ViewableOpponentState {
-                        hand_count: 0,
-                        deck_count: 0,
-                        enhancements: vec![],
-                        played_pile: vec![],
-                        discard_pile_count: 0,
-                        vigor: 0,
-                        aura: 0,
-                        life: 0,
-                        flare: 0,
-                    }),
-                ),
-            },
-        }
-    }
-}
-
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let socket = TcpStream::connect("127.0.0.1:4255").await?;
@@ -79,7 +37,6 @@ async fn main() -> std::io::Result<()> {
         spawn_post_office(socket);
 
     App::new()
-        .init_resource::<GameState>()
         .insert_resource(player::PlayerToGameResponder::new(Box::new(
             player_to_game_responder,
         )))
@@ -87,7 +44,11 @@ async fn main() -> std::io::Result<()> {
         .add_plugin(EditorPlugin)
         .add_plugin(PickerPlugin)
         .add_plugin(PlayerPlugin)
-        .add_system(display_board)
+        .add_system(
+            display_board
+                .run_if_resource_exists::<player::GameState>()
+                .run_if_resource_exists::<player::SelfPlayerPos>(),
+        )
         .add_startup_system(setup)
         // .add_startup_system(test_pick_start)
         .run();

@@ -1,6 +1,5 @@
 use crate::systems::picker::{PickedEvent, RequestPick};
 use crate::systems::player::PlayerState::Idle;
-use crate::GameState;
 use bevy::prelude::*;
 use furuyoni_lib::net::frames::{
     GameRequest, GameToPlayerRequestData, PlayerResponse, PlayerResponseFrame,
@@ -9,6 +8,10 @@ use furuyoni_lib::net::frames::{
 use furuyoni_lib::net::message_channel::MessageChannelResponseError;
 use furuyoni_lib::net::Responder;
 use furuyoni_lib::player_actions::{BasicActionCost, MainPhaseAction, PlayBasicAction};
+use furuyoni_lib::rules::{
+    Phase, PlayerPos, ViewableOpponentState, ViewablePlayerState, ViewablePlayerStates,
+    ViewableSelfState, ViewableState,
+};
 use iyes_loopless::prelude::*;
 
 pub struct PlayerPlugin;
@@ -39,6 +42,51 @@ impl PlayerToGameResponder {
     }
 }
 
+#[derive(Resource, Debug)]
+pub struct GameState(pub ViewableState);
+
+// Todo: remove. GameState should not be constructed in client.
+impl Default for GameState {
+    fn default() -> Self {
+        Self {
+            0: ViewableState {
+                turn_number: 0,
+                turn_player: PlayerPos::P1,
+                phase: Phase::Beginning,
+                distance: 0,
+                dust: 0,
+                player_states: ViewablePlayerStates::new(
+                    ViewablePlayerState::SelfState(ViewableSelfState {
+                        hands: vec![],
+                        deck_count: 0,
+                        enhancements: vec![],
+                        played_pile: vec![],
+                        discard_pile: vec![],
+                        vigor: 0,
+                        aura: 0,
+                        life: 0,
+                        flare: 0,
+                    }),
+                    ViewablePlayerState::Opponent(ViewableOpponentState {
+                        hand_count: 0,
+                        deck_count: 0,
+                        enhancements: vec![],
+                        played_pile: vec![],
+                        discard_pile_count: 0,
+                        vigor: 0,
+                        aura: 0,
+                        life: 0,
+                        flare: 0,
+                    }),
+                ),
+            },
+        }
+    }
+}
+
+#[derive(Resource, Debug)]
+pub struct SelfPlayerPos(pub PlayerPos);
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum PlayerState {
     Idle,
@@ -55,7 +103,9 @@ struct MainPhaseActionPickRequest {
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state(PlayerState::Idle)
+        app.init_resource::<GameState>()
+            .insert_resource(SelfPlayerPos { 0: PlayerPos::P1 })
+            .add_loopless_state(PlayerState::Idle)
             .add_system(player_listener)
             .add_enter_system(
                 PlayerState::SelectingMainPhaseAction,

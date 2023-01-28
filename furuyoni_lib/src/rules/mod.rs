@@ -18,3 +18,12 @@ pub enum PlayerPos {
     P1,
     P2,
 }
+
+impl PlayerPos {
+    pub fn other(&self) -> Self {
+        match self {
+            PlayerPos::P1 => Self::P2,
+            PlayerPos::P2 => Self::P1,
+        }
+    }
+}

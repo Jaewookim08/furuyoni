@@ -1,20 +1,28 @@
-use crate::GameState;
 use bevy::prelude::*;
 use bevy::text::Text;
 use furuyoni_lib::rules::{
-    ViewableOpponentState, ViewablePlayerState, ViewableSelfState, ViewableState,
+    PlayerPos, ViewableOpponentState, ViewablePlayerState, ViewableSelfState, ViewableState,
 };
 
+use crate::systems::player::{GameState, SelfPlayerPos};
 use bevy::prelude::Component;
-use furuyoni_lib::rules::PlayerPos;
 
-pub fn display_board(state: Res<GameState>, mut query: Query<(&mut Text, &StateLabel)>) {
+pub fn display_board(
+    state: Res<GameState>,
+    self_pos: Res<SelfPlayerPos>,
+    mut query: Query<(&mut Text, &StateLabel)>,
+) {
     if state.is_changed() {
         for (mut text, state_label) in &mut query {
             text.sections[state_label.text_section_index].value =
-                get_string(&state.0, &state_label.picker);
+                get_string(self_pos.0, &state.0, &state_label.picker);
         }
     }
+}
+
+pub enum PlayerRelativePos {
+    Me,
+    Opponent,
 }
 
 pub enum StateStringPicker {
@@ -22,7 +30,7 @@ pub enum StateStringPicker {
     Distance,
     Turn,
     PlayerValue {
-        pos: PlayerPos,
+        pos: PlayerRelativePos,
         picker: PlayerStringPicker,
     },
 }
@@ -49,13 +57,18 @@ impl StateLabel {
     }
 }
 
-fn get_string(state: &ViewableState, picker: &StateStringPicker) -> String {
+fn get_string(self_pos: PlayerPos, state: &ViewableState, picker: &StateStringPicker) -> String {
     match picker {
         StateStringPicker::Dust => state.dust.to_string(),
         StateStringPicker::Distance => state.distance.to_string(),
         StateStringPicker::Turn => state.turn_number.to_string(),
         StateStringPicker::PlayerValue { pos, picker } => {
+            let pos = match pos {
+                PlayerRelativePos::Me => self_pos,
+                PlayerRelativePos::Opponent => self_pos.other(),
+            };
             let player = &state.player_states[pos];
+
             match player {
                 ViewablePlayerState::SelfState(p) => get_string_from_self_player(p, picker),
                 ViewablePlayerState::Opponent(p) => get_string_from_opponent_player(p, picker),
