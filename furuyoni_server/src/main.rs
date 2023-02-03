@@ -39,7 +39,8 @@ async fn main() {
     let p2 = CliPlayer {};
 
     let mut game = game::Game::new(Box::new(p1), Box::new(p2));
-    let res = futures::executor::block_on(game.run());
+
+    let res = game.run().await;
     let winner_str = match res.winner {
         PlayerPos::P1 => "P1",
         PlayerPos::P2 => "P2",

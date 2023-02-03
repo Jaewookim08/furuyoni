@@ -31,7 +31,6 @@ pub fn display_board(
     mut query: Query<(&mut Text, &StateLabel)>,
 ) {
     if state.is_changed() {
-        println!("!!!!");
         for (mut text, state_label) in &mut query {
             text.sections[state_label.text_section_index].value =
                 get_string(self_pos.0, &state.0, &state_label.picker);
