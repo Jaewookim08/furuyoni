@@ -1,5 +1,5 @@
 use crate::player_actions::{BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector};
-use crate::rules::ViewableState;
+use crate::rules::{PlayerPos, ViewableState};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::io::{Cursor, Error, Write};
@@ -113,6 +113,10 @@ pub type GameToPlayerRequestDataFrame = WithRequestId<GameToPlayerRequestData>;
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameToPlayerRequestData {
     RequestMainPhaseAction(RequestMainPhaseAction),
+    RequestGameStart {
+        state: ViewableState,
+        pos: PlayerPos,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -131,6 +135,7 @@ pub type PlayerResponseFrame = WithRequestId<PlayerResponse>;
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PlayerResponse {
     ResponseMainPhaseAction(ResponseMainPhaseAction),
+    AcknowledgeGameStart,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

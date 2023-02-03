@@ -167,41 +167,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     }
 }
 
-async fn run_responder(
-    mut player: impl Player,
-    mut responder: impl Responder<PlayerResponseFrame, Request = GameRequest>,
-) {
-    loop {
-        let req = responder.recv().await.unwrap();
-        match req {
-            GameRequest::RequestData(GameToPlayerRequestDataFrame {
-                request_id,
-                data: req,
-            }) => {
-                let response = match req {
-                    GameToPlayerRequestData::RequestMainPhaseAction(r) => {
-                        let action = player
-                            .get_main_phase_action(
-                                &r.state,
-                                &r.playable_cards,
-                                &r.performable_basic_actions,
-                                &r.available_basic_action_costs,
-                            )
-                            .await;
-
-                        PlayerResponse::ResponseMainPhaseAction(ResponseMainPhaseAction { action })
-                    }
-                };
-
-                responder
-                    .response(PlayerResponseFrame::new(request_id, response))
-                    .unwrap();
-            }
-            GameRequest::Notify(n) => match n {},
-        }
-    }
-}
-
 fn spawn_post_office(
     stream: TcpStream,
 ) -> (

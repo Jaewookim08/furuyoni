@@ -13,12 +13,16 @@ pub trait Player {
         performable_basic_actions: &Vec<BasicAction>,
         available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> MainPhaseAction;
+
+    async fn start_game(&mut self, state: &ViewableState, pos: PlayerPos) -> Result<(), ()> {
+        Ok(())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlayerData<TData> {
-    p1_data: TData,
-    p2_data: TData,
+    pub p1_data: TData,
+    pub p2_data: TData,
 }
 impl<T> PlayerData<T> {
     pub fn new(p1_data: T, p2_data: T) -> Self {

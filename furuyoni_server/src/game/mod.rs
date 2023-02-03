@@ -19,6 +19,7 @@ use std::cmp;
 use std::collections::VecDeque;
 use std::future::Future;
 use std::marker::{Send, Sync};
+use tokio::join;
 
 type Players = PlayerData<Box<dyn Player + Send + Sync>>;
 
@@ -167,11 +168,17 @@ impl Game {
         player_1: Box<dyn Player + Sync + Send>,
         player_2: Box<dyn Player + Sync + Send>,
     ) -> Self {
+        let start_player = if rand::random::<bool>() {
+            PlayerPos::P1
+        } else {
+            PlayerPos::P2
+        };
+
         Game {
             players: Players::new(player_1, player_2),
             state: GameState::new(
                 0,
-                PlayerPos::P2,
+                start_player,
                 Phase::Main,
                 Petals::new(10),
                 Petals::new(0),
@@ -216,6 +223,8 @@ fn default_player_states() -> PlayerStates {
 }
 
 async fn run(game: &mut Game) -> GameResult {
+    start_game(game).await.expect("todo");
+
     let mut next: BoxFuture<StepResult> = Box::pin(next_turn(game));
 
     let result = loop {
@@ -231,6 +240,26 @@ async fn run(game: &mut Game) -> GameResult {
     //
 
     result
+}
+
+async fn start_game(game: &mut Game) -> Result<(), ()> {
+    async fn notify_start(
+        p: &mut (impl Player + ?Sized + Send),
+        state: &GameState,
+        pos: PlayerPos,
+    ) -> Result<(), ()> {
+        p.start_game(&get_player_viewable_state(state, pos), pos)
+            .await
+    }
+
+    let (a, b) = join!(
+        notify_start(&mut *game.players.p1_data, &game.state, PlayerPos::P1),
+        notify_start(&mut *game.players.p2_data, &game.state, PlayerPos::P2)
+    );
+
+    (a?, b?);
+
+    Ok(())
 }
 
 async fn next_turn(game: &mut Game) -> StepResult {

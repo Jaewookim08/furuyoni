@@ -10,7 +10,7 @@ use furuyoni_lib::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
 use furuyoni_lib::players::Player;
-use furuyoni_lib::rules::ViewableState;
+use furuyoni_lib::rules::{PlayerPos, ViewableState};
 
 pub struct RemotePlayer<TRequester, TSender> {
     requester: TRequester,
@@ -56,6 +56,23 @@ where
             response.action
         } else {
             todo!()
+        }
+    }
+
+    async fn start_game(&mut self, state: &ViewableState, pos: PlayerPos) -> Result<(), ()> {
+        let response = self
+            .requester
+            .request(GameToPlayerRequestData::RequestGameStart {
+                state: state.clone(),
+                pos,
+            })
+            .await
+            .map_err(|_| ())?;
+
+        if let PlayerResponse::AcknowledgeGameStart = response {
+            Ok(())
+        } else {
+            Err(())
         }
     }
 }

@@ -88,6 +88,7 @@ pub struct SelfPlayerPos(pub PlayerPos);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum PlayerState {
+    BeforeStart,
     Idle,
     SelectingMainPhaseAction,
 }
@@ -102,9 +103,7 @@ struct MainPhaseActionPickRequest {
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<GameState>()
-            .insert_resource(SelfPlayerPos { 0: PlayerPos::P1 })
-            .add_loopless_state(PlayerState::Idle)
+        app.add_loopless_state(PlayerState::BeforeStart)
             .add_system(player_listener)
             .add_enter_system(
                 PlayerState::SelectingMainPhaseAction,
@@ -136,7 +135,8 @@ fn run_player_listener(
     curr_state: Res<CurrentState<PlayerState>>,
     mut responder: ResMut<PlayerToGameResponder>,
 ) -> Result<(), ()> {
-    while let Some(request) = responder.0.try_recv().map_err(|_| ())? {
+    // Messages should at be processed at max once in a frame, to give time for state changes.
+    if let Some(request) = responder.0.try_recv().map_err(|_| ())? {
         match request {
             GameRequest::RequestData(WithRequestId { request_id, data }) => match data {
                 GameToPlayerRequestData::RequestMainPhaseAction(r) => {
@@ -149,6 +149,23 @@ fn run_player_listener(
                         request: r,
                         request_id,
                     });
+                }
+                GameToPlayerRequestData::RequestGameStart { pos, state } => {
+                    if curr_state.0 != PlayerState::BeforeStart {
+                        return Err(());
+                    }
+
+                    commands.insert_resource(NextState(PlayerState::Idle));
+                    commands.insert_resource(GameState { 0: state });
+                    commands.insert_resource(SelfPlayerPos { 0: pos });
+
+                    responder
+                        .0
+                        .response(PlayerResponseFrame::new(
+                            request_id,
+                            PlayerResponse::AcknowledgeGameStart,
+                        ))
+                        .map_err(|_| ())?;
                 }
             },
             GameRequest::Notify(nt) => match nt {},
