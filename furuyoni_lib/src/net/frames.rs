@@ -90,7 +90,44 @@ impl<T> WithRequestId<T> {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ServerMessageFrame {
+    LobbyMessage(LobbyMessageFrame),
     GameMessage(GameMessageFrame),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum LobbyMessageFrame {
+    Request(LobbyRequest),
+    Response(LobbyToPlayerResponseFrame),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum LobbyRequest {
+    RequestData(LobbyToPlayerRequestDataFrame),
+    Notify(LobbyNotification)
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum LobbyNotification {}
+
+pub type LobbyToPlayerRequestDataFrame = WithRequestId<LobbyToPlayerRequestData>;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum LobbyToPlayerRequestData {}
+
+pub type LobbyToPlayerResponseFrame = WithRequestId<LobbyResponse>;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum LobbyResponse {
+    RoomsList(Vec<RoomInfoFrame>),
+    RoonEnterSuccess(bool)
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RoomInfoFrame{
+    name: String,
+    description: String,
+    current_player: u32,
+    max_player: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
