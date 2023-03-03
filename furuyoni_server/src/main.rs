@@ -25,10 +25,28 @@ mod remote_player;
 #[tokio::main]
 async fn main() {
     println!("Hello, world!");
-
     let listener = TcpListener::bind("127.0.0.1:4255").await.unwrap();
-    let (socket, _) = listener.accept().await.unwrap();
 
+    loop{
+        println!("Ready To Get New Connection!");
+
+        let (socket, addr) = listener.accept().await.unwrap();
+
+        println!("New Connection Started: {addr}");
+
+        tokio::spawn(async move {
+            main_server_component(socket).await;
+        });
+    }
+}
+
+async fn main_server_component(socket: TcpStream){
+    // Game Action
+    // TODO: Get Player List And Put Two Players in to Spawn Game
+    spawn_game(socket).await;
+}
+
+async fn spawn_game(socket: TcpStream){
     let (
         game_to_player_requester,
         game_to_player_notifier,
@@ -36,7 +54,7 @@ async fn main() {
         post_office_task,
     ) = spawn_post_office(socket);
     let p1 = RemotePlayer::new(game_to_player_requester, game_to_player_notifier);
-    let p2 = CliPlayer {};
+    let p2 = IdlePlayer {};
 
     let mut game = game::Game::new(Box::new(p1), Box::new(p2));
 
