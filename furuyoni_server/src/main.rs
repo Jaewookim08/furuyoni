@@ -1,17 +1,16 @@
 extern crate furuyoni_lib;
 
 use crate::networking::{ServerConnectionReader, ServerConnectionWriter};
-use std::sync::Arc;
+
 
 use furuyoni_lib::net::frames::{
-    GameMessageFrame, GameNotification, GameRequest, GameToPlayerRequestData,
-    GameToPlayerRequestDataFrame, GameToPlayerResponseFrame, PlayerResponse, PlayerResponseFrame,
-    PlayerToGameRequestFrame, RequestMainPhaseAction, WriteError,
+    GameMessageFrame, GameNotification, GameRequest, GameToPlayerRequestData, GameToPlayerResponseFrame, PlayerResponse,
+    PlayerToGameRequestFrame,
 };
 use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::net::message_sender::{IntoMessageMap, MessageSender};
-use furuyoni_lib::net::{MessageReceiver, RequestError, Requester, Responder};
-use furuyoni_lib::players::{CliPlayer, IdlePlayer};
+use furuyoni_lib::net::{Requester, Responder};
+use furuyoni_lib::players::{IdlePlayer};
 use furuyoni_lib::rules::PlayerPos;
 use networking::post_office;
 use remote_player::RemotePlayer;
@@ -50,7 +49,7 @@ async fn spawn_game(socket: TcpStream){
     let (
         game_to_player_requester,
         game_to_player_notifier,
-        game_to_player_responder,
+        _game_to_player_responder,
         post_office_task,
     ) = spawn_post_office(socket);
     let p1 = RemotePlayer::new(game_to_player_requester, game_to_player_notifier);

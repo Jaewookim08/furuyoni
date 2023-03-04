@@ -1,5 +1,5 @@
 use crate::net::with_send_callback::WithCallback;
-use crate::net::{connection, with_send_callback};
+use crate::net::{connection};
 use thiserror::Error;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::{mpsc, oneshot};
