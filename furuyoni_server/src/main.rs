@@ -1,8 +1,4 @@
 extern crate furuyoni_lib;
-
-use crate::networking::{ServerConnectionReader, ServerConnectionWriter};
-
-
 use furuyoni_lib::net::frames::{
     GameMessageFrame, GameNotification, GameRequest, GameToPlayerRequestData, GameToPlayerResponseFrame, PlayerResponse,
     PlayerToGameRequestFrame,
@@ -12,14 +8,22 @@ use furuyoni_lib::net::message_sender::{IntoMessageMap, MessageSender};
 use furuyoni_lib::net::{Requester, Responder};
 use furuyoni_lib::players::{IdlePlayer};
 use furuyoni_lib::rules::PlayerPos;
-use networking::post_office;
-use remote_player::RemotePlayer;
-use tokio::net::{TcpListener, TcpStream};
-use tokio::task::JoinHandle;
 
 mod game;
+use crate::game::Game;
+
 mod networking;
+use networking::{post_office, ServerConnectionReader, ServerConnectionWriter};
+
 mod remote_player;
+use remote_player::RemotePlayer;
+
+mod main_channels;
+use main_channels::MainChannels;
+
+use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::mpsc;
+use tokio::task::JoinHandle;
 
 #[tokio::main]
 async fn main() {
@@ -55,7 +59,7 @@ async fn spawn_game(socket: TcpStream){
     let p1 = RemotePlayer::new(game_to_player_requester, game_to_player_notifier);
     let p2 = IdlePlayer {};
 
-    let mut game = game::Game::new(Box::new(p1), Box::new(p2));
+    let mut game = Game::new(Box::new(p1), Box::new(p2));
 
     let res = game.run().await;
     let winner_str = match res.winner {
@@ -80,9 +84,9 @@ fn spawn_post_office(
     let reader = ServerConnectionReader::new(read_half);
     let writer = ServerConnectionWriter::new(write_half);
 
-    let (player_response_tx, player_response_rx) = tokio::sync::mpsc::channel(20);
-    let (player_request_tx, player_request_rx) = tokio::sync::mpsc::channel(20);
-    let (game_message_tx, game_message_rx) = tokio::sync::mpsc::channel(20);
+    let (player_response_tx, player_response_rx) = mpsc::channel(20);
+    let (player_request_tx, player_request_rx) = mpsc::channel(20);
+    let (game_message_tx, game_message_rx) = mpsc::channel(20);
 
     let post_office_joinhandle = tokio::spawn(async {
         tokio::select!(
