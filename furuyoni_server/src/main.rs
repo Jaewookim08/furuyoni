@@ -1,7 +1,7 @@
 extern crate furuyoni_lib;
 use furuyoni_lib::net::frames::{
-    GameMessageFrame, GameNotification, GameRequest, GameToPlayerRequestData, GameToPlayerResponseFrame, PlayerResponse,
-    PlayerToGameRequestFrame,
+    GameToPlayerMessageFrame, GameToPlayerNotification, GameToPlayerRequest, GameToPlayerRequestData, GameToPlayerResponseFrame, 
+    PlayerToGameResponse,PlayerToGameRequestFrame,
 };
 use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::net::message_sender::{IntoMessageMap, MessageSender};
@@ -74,8 +74,8 @@ async fn spawn_game(socket: TcpStream){
 fn spawn_post_office(
     stream: TcpStream,
 ) -> (
-    impl Requester<GameToPlayerRequestData, Response = PlayerResponse>,
-    impl MessageSender<GameNotification>,
+    impl Requester<GameToPlayerRequestData, Response = PlayerToGameResponse>,
+    impl MessageSender<GameToPlayerNotification>,
     impl Responder<GameToPlayerResponseFrame, Request = PlayerToGameRequestFrame>,
     JoinHandle<()>,
 ) {
@@ -99,20 +99,20 @@ fn spawn_post_office(
 
     let game_to_player_req_sender = game_message_tx
         .clone()
-        .with_map(|request_data| GameMessageFrame::Request(GameRequest::RequestData(request_data)));
+        .with_map(|request_data| GameToPlayerMessageFrame::Request(GameToPlayerRequest::RequestData(request_data)));
 
     let game_to_player_requester =
         MessageChannel::new(game_to_player_req_sender, player_response_rx);
 
     let game_to_player_response_sender =
-        game_message_tx.clone().with_map(GameMessageFrame::Response);
+        game_message_tx.clone().with_map(GameToPlayerMessageFrame::Response);
 
     let game_to_player_responder =
         MessageChannel::new(game_to_player_response_sender, player_request_rx);
 
     let game_to_player_notifier = game_message_tx
         .clone()
-        .with_map(|m| GameMessageFrame::Request(GameRequest::Notify(m)));
+        .with_map(|m| GameToPlayerMessageFrame::Request(GameToPlayerRequest::Notify(m)));
 
     return (
         game_to_player_requester,

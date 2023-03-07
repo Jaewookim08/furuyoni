@@ -1,7 +1,7 @@
 use crate::systems::picker::{PickedEvent, RequestPick};
 use bevy::prelude::*;
 use furuyoni_lib::net::frames::{
-    GameRequest, GameToPlayerRequestData, PlayerResponse, PlayerResponseFrame,
+    GameToPlayerRequest, GameToPlayerRequestData, PlayerToGameResponse, PlayerToGameResponseFrame,
     RequestMainPhaseAction, ResponseMainPhaseAction, WithRequestId,
 };
 use furuyoni_lib::net::message_channel::MessageChannelResponseError;
@@ -19,8 +19,8 @@ pub struct PlayerPlugin;
 pub struct PlayerToGameResponder(
     Box<
         dyn Responder<
-                PlayerResponseFrame,
-                Request = GameRequest,
+                PlayerToGameResponseFrame,
+                Request = GameToPlayerRequest,
                 Error = MessageChannelResponseError,
             > + Send
             + Sync,
@@ -30,8 +30,8 @@ impl PlayerToGameResponder {
     pub fn new(
         responder: Box<
             dyn Responder<
-                    PlayerResponseFrame,
-                    Request = GameRequest,
+                    PlayerToGameResponseFrame,
+                    Request = GameToPlayerRequest,
                     Error = MessageChannelResponseError,
                 > + Send
                 + Sync,
@@ -138,7 +138,7 @@ fn run_player_listener(
     // Messages should at be processed at max once in a frame, to give time for state changes.
     if let Some(request) = responder.0.try_recv().map_err(|_| ())? {
         match request {
-            GameRequest::RequestData(WithRequestId { request_id, data }) => match data {
+            GameToPlayerRequest::RequestData(WithRequestId { request_id, data }) => match data {
                 GameToPlayerRequestData::RequestMainPhaseAction(r) => {
                     if curr_state.0 != PlayerState::Idle {
                         return Err(());
@@ -161,14 +161,14 @@ fn run_player_listener(
 
                     responder
                         .0
-                        .response(PlayerResponseFrame::new(
+                        .response(PlayerToGameResponseFrame::new(
                             request_id,
-                            PlayerResponse::AcknowledgeGameStart,
+                            PlayerToGameResponse::AcknowledgeGameStart,
                         ))
                         .map_err(|_| ())?;
                 }
             },
-            GameRequest::Notify(nt) => match nt {},
+            GameToPlayerRequest::Notify(nt) => match nt {},
         }
     }
     Ok(())
@@ -206,9 +206,9 @@ fn wait_for_main_phase_action(
 
         responder
             .0
-            .response(PlayerResponseFrame {
+            .response(PlayerToGameResponseFrame {
                 request_id: req.request_id,
-                data: PlayerResponse::ResponseMainPhaseAction(ResponseMainPhaseAction { action }),
+                data: PlayerToGameResponse::MainPhaseAction(ResponseMainPhaseAction { action }),
             })
             .expect("Todo");
 

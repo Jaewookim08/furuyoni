@@ -1,8 +1,8 @@
 use crate::networking::{ClientConnectionReader, ClientConnectionWriter};
 use furuyoni_lib::net::connection::WriteError;
 use furuyoni_lib::net::frames::{
-    ClientMessageFrame, GameMessageFrame, GameRequest, GameToPlayerResponseFrame,
-    ServerMessageFrame,
+    ClientMessageFrame, GameToPlayerMessageFrame, GameToPlayerRequest, GameToPlayerResponseFrame,
+    ServerMessageFrame, LobbyToPlayerMessageFrame,
 };
 use furuyoni_lib::net::with_send_callback::WithCallback;
 use thiserror::Error;
@@ -19,7 +19,7 @@ pub enum ReceivePostsError {
 
 pub async fn receive_posts<T: AsyncRead + Unpin>(
     mut reader: ClientConnectionReader<T>,
-    game_request_tx: mpsc::Sender<GameRequest>,
+    game_request_tx: mpsc::Sender<GameToPlayerRequest>,
     game_response_tx: mpsc::Sender<GameToPlayerResponseFrame>,
 ) -> Result<(), ReceivePostsError> {
     loop {
@@ -30,17 +30,25 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
             }
             Ok(message_frame) => match message_frame {
                 ServerMessageFrame::GameMessage(msg) => match msg {
-                    GameMessageFrame::Request(req) => {
+                    GameToPlayerMessageFrame::Request(req) => {
                         game_request_tx
                             .try_send(req)
                             .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
-                    GameMessageFrame::Response(resp) => {
+                    GameToPlayerMessageFrame::Response(resp) => {
                         game_response_tx
                             .try_send(resp)
                             .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
                 },
+                ServerMessageFrame::LobbyMessage(msg) => match msg{
+                    LobbyToPlayerMessageFrame::Request(req) => {
+
+                    }
+                    LobbyToPlayerMessageFrame::Response(res) => {
+                        
+                    }
+                }
             },
         }
     }
