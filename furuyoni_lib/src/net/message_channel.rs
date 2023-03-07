@@ -1,4 +1,4 @@
-use crate::net::frames::WithRequestId;
+use crate::net::frames::base::WithRequestId;
 use crate::net::message_sender::{MessageSendError, MessageSender};
 use crate::net::responder::Responder;
 use crate::net::{MessageReceiver, MessageRecvError, RequestError, Requester};

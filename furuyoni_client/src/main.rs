@@ -6,7 +6,7 @@ use crate::systems::display_board::{
     display_board, BoardPlugin, PlayerRelativePos, PlayerValuePicker, PlayerValuePickerType,
     StateLabel, StateStringPicker,
 };
-use crate::systems::picker::{BasicActionButton, PickerPlugin, RequestPick, SkipButton};
+use crate::systems::picker::{BasicActionButton, PickerPlugin, SkipButton};
 use crate::systems::player;
 use crate::systems::player::PlayerPlugin;
 use bevy::prelude::*;
@@ -20,7 +20,6 @@ use furuyoni_lib::net::message_sender::IntoMessageMap;
 use furuyoni_lib::net::{RequestError, Requester, Responder};
 use furuyoni_lib::player_actions::BasicAction;
 use furuyoni_lib::players::{CliPlayer, Player};
-use iyes_loopless::prelude::*;
 use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
 
@@ -173,7 +172,7 @@ fn spawn_post_office(
     impl Requester<PlayerToGameRequest, Response = GameToPlayerResponse, Error = RequestError>
         + Send
         + Sync,
-    impl Responder<PlayerResponseFrame, Request = GameRequest, Error = MessageChannelResponseError>
+    impl Responder<PlayerToGameResponseFrame, Request = GameToPlayerRequest, Error = MessageChannelResponseError>
         + Send
         + Sync,
     JoinHandle<()>,
@@ -198,7 +197,7 @@ fn spawn_post_office(
     });
 
     let player_to_game_request_sender = client_message_tx.clone().with_map(|request| {
-        ClientMessageFrame::PlayerMessage(PlayerMessageFrame::Request(request))
+        ClientMessageFrame::PlayerToGameMessage(PlayerToGameMessageFrame::Request(request))
     });
 
     let player_to_game_requester =
@@ -206,7 +205,7 @@ fn spawn_post_office(
 
     let player_to_game_response_sender = client_message_tx
         .clone()
-        .with_map(|r| ClientMessageFrame::PlayerMessage(PlayerMessageFrame::Response(r)));
+        .with_map(|r| ClientMessageFrame::PlayerToGameMessage(PlayerToGameMessageFrame::Response(r)));
 
     let player_to_game_responder =
         MessageChannel::new(player_to_game_response_sender, game_request_rx);

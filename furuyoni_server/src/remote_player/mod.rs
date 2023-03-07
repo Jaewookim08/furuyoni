@@ -1,7 +1,7 @@
 use crate::furuyoni_lib::net::Requester;
 use async_trait::async_trait;
 use furuyoni_lib::net::frames::{
-    GameNotification, GameToPlayerRequestData, PlayerResponse,
+    GameToPlayerNotification, GameToPlayerRequestData, PlayerToGameResponse,
     RequestMainPhaseAction,
 };
 
@@ -29,8 +29,8 @@ impl<TRequester, TSender> RemotePlayer<TRequester, TSender> {
 #[async_trait]
 impl<TRequester, TSender> Player for RemotePlayer<TRequester, TSender>
 where
-    TRequester: Requester<GameToPlayerRequestData, Response = PlayerResponse> + Send,
-    TSender: MessageSender<GameNotification> + Send,
+    TRequester: Requester<GameToPlayerRequestData, Response = PlayerToGameResponse> + Send,
+    TSender: MessageSender<GameToPlayerNotification> + Send,
 {
     async fn get_main_phase_action(
         &mut self,
@@ -52,7 +52,7 @@ where
             .await
             .expect("Todo");
 
-        if let PlayerResponse::ResponseMainPhaseAction(response) = response {
+        if let PlayerToGameResponse::MainPhaseAction(response) = response {
             response.action
         } else {
             todo!()
@@ -69,7 +69,7 @@ where
             .await
             .map_err(|_| ())?;
 
-        if let PlayerResponse::AcknowledgeGameStart = response {
+        if let PlayerToGameResponse::AcknowledgeGameStart = response {
             Ok(())
         } else {
             Err(())
