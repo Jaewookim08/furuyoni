@@ -1,18 +1,18 @@
 
-pub mod base;
+mod base;
 pub use base::*;
 
-pub mod error;
+mod error;
 pub use error::*;
 
-pub mod client;
+mod client;
 pub use client::*;
 
-pub mod server;
+mod server;
 pub use server::*;
 
-pub mod lobby;
+mod lobby;
 pub use lobby::*;
 
-pub mod game;
+mod game;
 pub use game::*;
