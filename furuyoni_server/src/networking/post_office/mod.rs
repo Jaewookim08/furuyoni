@@ -1,7 +1,7 @@
 use crate::networking::{ServerConnectionReader, ServerConnectionWriter};
 use furuyoni_lib::net::connection::WriteError;
 use furuyoni_lib::net::frames::{
-    ClientMessageFrame, GameToPlayerMessageFrame, PlayerToGameMessageFrame, PlayerToGameResponseFrame, PlayerToGameRequestFrame, ServerMessageFrame, PlayerToLobbyMessageFrame,
+    ClientMessageFrame, GameToPlayerMessage, PlayerToGameMessage, PlayerToGameResponseFrame, PlayerToGameRequestFrame, ServerMessageFrame, PlayerToLobbyMessage, PlayerToLobbyResponseFrame, PlayerToLobbyRequestFrame, LobbyToPlayerMessage,
 };
 use furuyoni_lib::net::with_send_callback::WithCallback;
 use thiserror::Error;
@@ -19,7 +19,9 @@ pub enum ReceivePostsError {
 pub async fn receive_posts<T: AsyncRead + Unpin>(
     mut reader: ServerConnectionReader<T>,
     player_to_game_response_tx: mpsc::Sender<PlayerToGameResponseFrame>,
-    player_to_game_request_tx: mpsc::Sender<PlayerToGameRequestFrame>
+    player_to_game_request_tx: mpsc::Sender<PlayerToGameRequestFrame>,
+    lobby_to_game_response_tx: mpsc::Sender<PlayerToLobbyResponseFrame>,
+    lobby_to_game_request_tx: mpsc::Sender<PlayerToLobbyRequestFrame>
 ) -> Result<(), ReceivePostsError> {
     loop {
         match reader.read_frame().await {
@@ -29,27 +31,27 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
             }
             Ok(client_message_frame) => match client_message_frame {
                 ClientMessageFrame::PlayerToGameMessage(message) => match message {
-                    PlayerToGameMessageFrame::Response(response) => {
+                    PlayerToGameMessage::Response(response) => {
                         player_to_game_response_tx
                             .try_send(response)
                             .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
-                    PlayerToGameMessageFrame::Request(request) => {
+                    PlayerToGameMessage::Request(request) => {
                         player_to_game_request_tx
                             .try_send(request)
                             .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
                 },
                 ClientMessageFrame::PlayerToLobbyMessage(message) => match message{
-                    PlayerToLobbyMessageFrame::Response(response) => {
-                        // player_to_game_response_tx
-                        //     .try_send(response)
-                        //     .map_err(|_| ReceivePostsError::ChannelSendError)?;
+                    PlayerToLobbyMessage::Response(response) => {
+                        lobby_to_game_response_tx
+                            .try_send(response)
+                            .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
-                    PlayerToLobbyMessageFrame::Request(request) => {
-                        // player_to_game_request_tx
-                        //     .try_send(request)
-                        //     .map_err(|_| ReceivePostsError::ChannelSendError);
+                    PlayerToLobbyMessage::Request(request) => {
+                        lobby_to_game_request_tx
+                            .try_send(request)
+                            .map_err(|_| ReceivePostsError::ChannelSendError);
                     }
                 }
             },
@@ -58,10 +60,10 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
 }
 
 pub async fn handle_send_requests<TWrite: AsyncWrite + Unpin + Send>(
-    mut send_game_message_mailbox: mpsc::Receiver<WithCallback<GameToPlayerMessageFrame, WriteError>>,
+    mut send_message_mailbox: mpsc::Receiver<WithCallback<GameToPlayerMessage, WriteError>>,
     mut writer: ServerConnectionWriter<TWrite>,
 ) {
-    while let Some(request) = send_game_message_mailbox.recv().await {
+    while let Some(request) = send_message_mailbox.recv().await {
         let res = writer
             .write_frame(&ServerMessageFrame::GameMessage(request.data))
             .await;

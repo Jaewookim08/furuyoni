@@ -1,8 +1,8 @@
 use crate::networking::{ClientConnectionReader, ClientConnectionWriter};
 use furuyoni_lib::net::connection::WriteError;
 use furuyoni_lib::net::frames::{
-    ClientMessageFrame, GameToPlayerMessageFrame, GameToPlayerRequest, GameToPlayerResponseFrame,
-    ServerMessageFrame, LobbyToPlayerMessageFrame,
+    ClientMessageFrame, GameToPlayerMessage, GameToPlayerRequest, GameToPlayerResponseFrame,
+    ServerMessageFrame, LobbyToPlayerMessage,
 };
 use furuyoni_lib::net::with_send_callback::WithCallback;
 use thiserror::Error;
@@ -30,22 +30,22 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
             }
             Ok(message_frame) => match message_frame {
                 ServerMessageFrame::GameMessage(msg) => match msg {
-                    GameToPlayerMessageFrame::Request(req) => {
+                    GameToPlayerMessage::Request(req) => {
                         game_request_tx
                             .try_send(req)
                             .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
-                    GameToPlayerMessageFrame::Response(resp) => {
+                    GameToPlayerMessage::Response(resp) => {
                         game_response_tx
                             .try_send(resp)
                             .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
                 },
                 ServerMessageFrame::LobbyMessage(msg) => match msg{
-                    LobbyToPlayerMessageFrame::Request(req) => {
+                    LobbyToPlayerMessage::Request(req) => {
 
                     }
-                    LobbyToPlayerMessageFrame::Response(res) => {
+                    LobbyToPlayerMessage::Response(res) => {
                         
                     }
                 }

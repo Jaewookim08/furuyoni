@@ -197,7 +197,7 @@ fn spawn_post_office(
     });
 
     let player_to_game_request_sender = client_message_tx.clone().with_map(|request| {
-        ClientMessageFrame::PlayerToGameMessage(PlayerToGameMessageFrame::Request(request))
+        ClientMessageFrame::PlayerToGameMessage(PlayerToGameMessage::Request(request))
     });
 
     let player_to_game_requester =
@@ -205,7 +205,7 @@ fn spawn_post_office(
 
     let player_to_game_response_sender = client_message_tx
         .clone()
-        .with_map(|r| ClientMessageFrame::PlayerToGameMessage(PlayerToGameMessageFrame::Response(r)));
+        .with_map(|r| ClientMessageFrame::PlayerToGameMessage(PlayerToGameMessage::Response(r)));
 
     let player_to_game_responder =
         MessageChannel::new(player_to_game_response_sender, game_request_rx);

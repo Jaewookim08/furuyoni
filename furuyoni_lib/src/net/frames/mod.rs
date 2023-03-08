@@ -14,5 +14,5 @@ pub use server::*;
 mod lobby;
 pub use lobby::*;
 
-mod game;
-pub use game::*;
+mod Game;
+pub use Game::*;

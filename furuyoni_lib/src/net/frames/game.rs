@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::base::WithRequestId;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum GameToPlayerMessageFrame {
+pub enum GameToPlayerMessage {
     Request(GameToPlayerRequest),
     Response(GameToPlayerResponseFrame),
 }
@@ -50,7 +50,7 @@ pub enum GameToPlayerResponse {
 
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum PlayerToGameMessageFrame {
+pub enum PlayerToGameMessage {
     Response(PlayerToGameResponseFrame),
     Request(PlayerToGameRequestFrame),
 }

@@ -6,13 +6,13 @@ use serde::{Serialize, Deserialize};
 use tokio::io::AsyncWriteExt;
 use async_trait::async_trait;
 
-use super::game::GameToPlayerMessageFrame;
-use super::lobby::LobbyToPlayerMessageFrame;
+use super::Game::GameToPlayerMessage;
+use super::lobby::LobbyToPlayerMessage;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ServerMessageFrame {
-    LobbyMessage(LobbyToPlayerMessageFrame),
-    GameMessage(GameToPlayerMessageFrame),
+    LobbyMessage(LobbyToPlayerMessage),
+    GameMessage(GameToPlayerMessage),
 }
 
 #[async_trait]

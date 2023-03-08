@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 use super::base::WithRequestId;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum LobbyToPlayerMessageFrame {
+pub enum LobbyToPlayerMessage {
     Request(LobbyToPlayerRequest),
     Response(LobbyToPlayerResponseFrame),
 }
@@ -19,7 +19,9 @@ pub enum LobbyToPlayerNotification {}
 pub type LobbyToPlayerRequestDataFrame = WithRequestId<LobbyToPlayerRequestData>;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum LobbyToPlayerRequestData {}
+pub enum LobbyToPlayerRequestData {
+    AreYouAlive
+}
 
 pub type LobbyToPlayerResponseFrame = WithRequestId<LobbyToPlayerResponse>;
 
@@ -28,8 +30,6 @@ pub enum LobbyToPlayerResponse {
     RoomsList(Vec<LobbyRoomInfo>),
     RoonEnterSuccess(bool)
 }
-
-
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LobbyRoomInfo{
@@ -40,8 +40,10 @@ pub struct LobbyRoomInfo{
     max_player_num: u32,
 }
 
+
+
 #[derive(Serialize, Deserialize, Debug)]
-pub enum PlayerToLobbyMessageFrame{
+pub enum PlayerToLobbyMessage{
     Response(PlayerToLobbyResponseFrame),
     Request(PlayerToLobbyRequestFrame)
 }
@@ -49,7 +51,9 @@ pub enum PlayerToLobbyMessageFrame{
 pub type PlayerToLobbyResponseFrame = WithRequestId<PlayerToLobbyResponse>;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum PlayerToLobbyResponse { }
+pub enum PlayerToLobbyResponse {
+    IAmAlive
+ }
 
 pub type PlayerToLobbyRequestFrame = WithRequestId<PlayerToLobbyRequest>;
 
