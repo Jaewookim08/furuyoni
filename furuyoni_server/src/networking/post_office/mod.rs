@@ -20,8 +20,8 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
     mut reader: ServerConnectionReader<T>,
     player_to_game_response_tx: mpsc::Sender<PlayerToGameResponseFrame>,
     player_to_game_request_tx: mpsc::Sender<PlayerToGameRequestFrame>,
-    lobby_to_game_response_tx: mpsc::Sender<PlayerToLobbyResponseFrame>,
-    lobby_to_game_request_tx: mpsc::Sender<PlayerToLobbyRequestFrame>
+    player_to_lobby_response_tx: mpsc::Sender<PlayerToLobbyResponseFrame>,
+    player_to_lobby_request_tx: mpsc::Sender<PlayerToLobbyRequestFrame>
 ) -> Result<(), ReceivePostsError> {
     loop {
         match reader.read_frame().await {
@@ -44,12 +44,12 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
                 },
                 ClientMessageFrame::PlayerToLobbyMessage(message) => match message{
                     PlayerToLobbyMessage::Response(response) => {
-                        lobby_to_game_response_tx
+                        player_to_lobby_response_tx
                             .try_send(response)
                             .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
                     PlayerToLobbyMessage::Request(request) => {
-                        lobby_to_game_request_tx
+                        player_to_lobby_request_tx
                             .try_send(request)
                             .map_err(|_| ReceivePostsError::ChannelSendError);
                     }
@@ -60,19 +60,17 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
 }
 
 pub async fn handle_send_requests<TWrite: AsyncWrite + Unpin + Send>(
-    mut send_message_mailbox: mpsc::Receiver<WithCallback<GameToPlayerMessage, WriteError>>,
+    mut send_message_mailbox: mpsc::Receiver<ServerMessageFrame>,
     mut writer: ServerConnectionWriter<TWrite>,
 ) {
     while let Some(request) = send_message_mailbox.recv().await {
         let res = writer
-            .write_frame(&ServerMessageFrame::GameMessage(request.data))
+            .write_frame(&request)
             .await;
 
         if let Err(_) = res {
             panic!("Todo");
         }
-
-        let _ = request.callback.send(res.map_err(|e| e.into()));
     }
 
     println!("[PostOffice] No more messages to send. 'handle_send_requests' has ended.")

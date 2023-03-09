@@ -59,13 +59,12 @@ where
 }
 
 impl<TMessage> MessageSender<TMessage>
-    for &mpsc::Sender<WithCallback<TMessage, connection::WriteError>>
+    for &mpsc::Sender<TMessage>
 {
     /// This function fails when the inner channel is full. This limitation is to make this function
     /// non-async and therefore easier to use with locks.
     fn send_message(&self, message: TMessage) -> Result<(), MessageSendError> {
-        let (send_result_tx, _) = oneshot::channel();
-        self.try_send(WithCallback::new(send_result_tx, message))
+        self.try_send(message)
             .map_err(|e| match e {
                 TrySendError::Full(_) => {
                     panic!("The mpsc channel should never be full.")
@@ -73,26 +72,14 @@ impl<TMessage> MessageSender<TMessage>
                 TrySendError::Closed(_) => MessageSendError::ChannelClosed,
             })?;
 
-        // Do not wait for the callback to be called. The callback is currently not used anywhere
-        // and is just left for potential future cases where sender has to check if the message
-        // has been correctly processed.
-
         Ok(())
     }
 }
 
 impl<TMessage> MessageSender<TMessage>
-    for mpsc::Sender<WithCallback<TMessage, connection::WriteError>>
+    for mpsc::Sender<TMessage>
 {
     fn send_message(&self, message: TMessage) -> Result<(), MessageSendError> {
         (&self).send_message(message)
-    }
-}
-
-impl<TMessage> MessageSender<TMessage>
-    for std::sync::Arc<mpsc::Sender<WithCallback<TMessage, connection::WriteError>>>
-{
-    fn send_message(&self, message: TMessage) -> Result<(), MessageSendError> {
-        (**self).send_message(message)
     }
 }
