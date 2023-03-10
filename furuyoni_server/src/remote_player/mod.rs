@@ -1,8 +1,8 @@
 use crate::furuyoni_lib::net::Requester;
 use async_trait::async_trait;
+use furuyoni_lib::events::GameEvent;
 use furuyoni_lib::net::frames::{
-    GameToPlayerNotification, GameToPlayerRequestData, PlayerToGameResponse,
-    RequestMainPhaseAction,
+    GameToPlayerNotification, GameToPlayerRequestData, PlayerToGameResponse, RequestMainPhaseAction,
 };
 
 use furuyoni_lib::net::message_sender::MessageSender;
@@ -74,5 +74,12 @@ where
         } else {
             Err(())
         }
+    }
+
+    fn notify_event(&mut self, event: GameEvent) -> Result<(), ()> {
+        self.notifier
+            .send_message(GameToPlayerNotification::Event(event))
+            .map_err(|_| ())?;
+        Ok(())
     }
 }

@@ -1,8 +1,8 @@
 use crate::systems::picker::{PickedEvent, RequestPick};
 use bevy::prelude::*;
 use furuyoni_lib::net::frames::{
-    GameToPlayerRequest, GameToPlayerRequestData, PlayerToGameResponse, PlayerToGameResponseFrame,
-    RequestMainPhaseAction, ResponseMainPhaseAction, WithRequestId,
+    GameToPlayerNotification, GameToPlayerRequest, GameToPlayerRequestData, PlayerToGameResponse,
+    PlayerToGameResponseFrame, RequestMainPhaseAction, ResponseMainPhaseAction, WithRequestId,
 };
 use furuyoni_lib::net::message_channel::MessageChannelResponseError;
 use furuyoni_lib::net::Responder;
@@ -130,7 +130,9 @@ fn run_player_listener(
                         .map_err(|_| ())?;
                 }
             },
-            GameToPlayerRequest::Notify(nt) => match nt {},
+            GameToPlayerRequest::Notify(nt) => match nt {
+                GameToPlayerNotification::Event(_) => {}
+            },
         }
     }
     Ok(())

@@ -1,3 +1,4 @@
+use crate::events::GameEvent;
 use crate::player_actions::{BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector};
 use crate::rules::{PlayerPos, ViewableState};
 use async_trait::async_trait;
@@ -15,6 +16,10 @@ pub trait Player {
     ) -> MainPhaseAction;
 
     async fn start_game(&mut self, state: &ViewableState, pos: PlayerPos) -> Result<(), ()> {
+        Ok(())
+    }
+
+    fn notify_event(&mut self, event: GameEvent) -> Result<(), ()> {
         Ok(())
     }
 }

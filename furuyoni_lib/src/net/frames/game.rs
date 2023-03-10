@@ -1,6 +1,7 @@
 use crate::player_actions::{BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector};
 use crate::rules::{PlayerPos, ViewableState};
 
+use crate::events::GameEvent;
 use serde::{Deserialize, Serialize};
 
 use super::base::WithRequestId;
@@ -18,7 +19,9 @@ pub enum GameToPlayerRequest {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum GameToPlayerNotification {}
+pub enum GameToPlayerNotification {
+    Event(GameEvent),
+}
 
 pub type GameToPlayerRequestDataFrame = WithRequestId<GameToPlayerRequestData>;
 
@@ -46,8 +49,6 @@ pub enum GameToPlayerResponse {
     State(ViewableState),
     Ack,
 }
-
-
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PlayerToGameMessage {
