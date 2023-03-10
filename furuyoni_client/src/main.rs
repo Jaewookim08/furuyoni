@@ -39,8 +39,8 @@ async fn main() -> std::io::Result<()> {
         .add_plugin(PickerPlugin)
         .add_plugin(PlayerPlugin)
         .add_plugin(BoardPlugin)
-        // .add_startup_system(setup)
-        .add_startup_system(load_scene)
+        .add_startup_system(setup)
+        // .add_startup_system(load_scene)
         .run();
 
     // let player = CliPlayer {};
@@ -83,7 +83,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     },
                 ),
             ])
-            .with_text_alignment(TextAlignment::CENTER_LEFT)
+            .with_text_alignment(TextAlignment::Left)
             .with_style(Style {
                 position_type: PositionType::Absolute,
                 position: UiRect {

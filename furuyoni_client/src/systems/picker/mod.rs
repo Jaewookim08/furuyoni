@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use furuyoni_lib::player_actions::BasicAction;
-use iyes_loopless::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -46,28 +45,29 @@ impl Default for BasicActionButton {
 
 impl Plugin for PickerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state(PickingState::Idle)
+        app.add_state::<PickingState>()
             .register_type::<SkipButton>()
             .register_type::<BasicActionButton>()
             .add_event::<RequestPick>()
             .add_event::<PickedEvent>()
-            .add_enter_system(PickingState::Idle, disable_picker_buttons)
-            .add_system(start_picker_on_request.run_in_state(PickingState::Idle))
-            .add_system(poll_pickers.run_in_state(PickingState::Picking));
+            .add_system(disable_picker_buttons.in_schedule(OnEnter(PickingState::Idle)))
+            .add_system(start_picker_on_request.in_set(OnUpdate(PickingState::Idle)))
+            .add_system(poll_pickers.in_set(OnUpdate(PickingState::Picking)));
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(States, Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum PickingState {
+    #[default]
     Idle,
     Picking,
 }
 
 fn disable_picker_buttons(
-    mut buttons: Query<(&mut Visibility), Or<(With<SkipButton>, With<BasicActionButton>)>>,
+    mut buttons: Query<&mut Visibility, Or<(With<SkipButton>, With<BasicActionButton>)>>,
 ) {
     for mut v in buttons.iter_mut() {
-        v.is_visible = false;
+        *v = Visibility::Hidden;
     }
 }
 
@@ -78,20 +78,21 @@ fn start_picker_on_request(
         Query<&mut Visibility, With<SkipButton>>,
         Query<(&BasicActionButton, &mut Visibility)>,
     )>,
+    mut next_state: ResMut<NextState<PickingState>>,
 ) {
     if let Some(req) = request.iter().next() {
         if req.skip {
             for mut v in set.p0().iter_mut() {
-                v.is_visible = true;
+                *v = Visibility::Inherited;
             }
         }
 
         for (ba, mut v) in set.p1().iter_mut() {
             if req.basic_actions.contains(&ba.action) {
-                v.is_visible = true;
+                *v = Visibility::Inherited;
             }
         }
-        commands.insert_resource(NextState(PickingState::Picking));
+        next_state.set(PickingState::Picking);
     }
 }
 
@@ -100,6 +101,7 @@ fn poll_pickers(
     mut commands: Commands,
     mut basic_action_buttons: Query<(&Interaction, &BasicActionButton), Changed<Interaction>>,
     mut skip_buttons: Query<&Interaction, (Changed<Interaction>, With<SkipButton>)>,
+    mut next_state: ResMut<NextState<PickingState>>,
 ) {
     let picked = 'picked: {
         for (interaction, ba) in basic_action_buttons.iter() {
@@ -123,6 +125,6 @@ fn poll_pickers(
 
     if let Some(picked) = picked {
         ev_picked.send(picked);
-        commands.insert_resource(NextState(PickingState::Idle));
+        next_state.set(PickingState::Idle);
     }
 }

@@ -11,8 +11,6 @@ use furuyoni_lib::rules::{
     Phase, PlayerPos, ViewableOpponentState, ViewablePlayerState, ViewablePlayerStates,
     ViewableSelfState, ViewableState,
 };
-use iyes_loopless::prelude::*;
-
 pub struct PlayerPlugin;
 
 #[derive(Resource)]
@@ -86,8 +84,9 @@ impl Default for GameState {
 #[derive(Resource, Debug)]
 pub struct SelfPlayerPos(pub PlayerPos);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 enum PlayerState {
+    #[default]
     BeforeStart,
     Idle,
     SelectingMainPhaseAction,
@@ -103,24 +102,25 @@ struct MainPhaseActionPickRequest {
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state(PlayerState::BeforeStart)
+        app.add_state::<PlayerState>()
             .add_system(player_listener)
-            .add_enter_system(
-                PlayerState::SelectingMainPhaseAction,
-                start_pick_main_phase_action,
+            .add_system(
+                start_pick_main_phase_action
+                    .in_schedule(OnEnter(PlayerState::SelectingMainPhaseAction)),
             )
             .add_system(
-                wait_for_main_phase_action.run_in_state(PlayerState::SelectingMainPhaseAction),
+                wait_for_main_phase_action.in_set(OnUpdate(PlayerState::SelectingMainPhaseAction)),
             );
     }
 }
 
 fn player_listener(
     commands: Commands,
-    curr_state: Res<CurrentState<PlayerState>>,
+    curr_state: Res<State<PlayerState>>,
     responder: ResMut<PlayerToGameResponder>,
+    next_state: ResMut<NextState<PlayerState>>,
 ) {
-    let res = run_player_listener(commands, curr_state, responder);
+    let res = run_player_listener(commands, curr_state, responder, next_state);
 
     match res {
         Ok(_) => {}
@@ -132,8 +132,9 @@ fn player_listener(
 
 fn run_player_listener(
     mut commands: Commands,
-    curr_state: Res<CurrentState<PlayerState>>,
+    curr_state: Res<State<PlayerState>>,
     mut responder: ResMut<PlayerToGameResponder>,
+    mut next_state: ResMut<NextState<PlayerState>>,
 ) -> Result<(), ()> {
     // Messages should at be processed at max once in a frame, to give time for state changes.
     if let Some(request) = responder.0.try_recv().map_err(|_| ())? {
@@ -144,18 +145,18 @@ fn run_player_listener(
                         return Err(());
                     }
 
-                    commands.insert_resource(NextState(PlayerState::SelectingMainPhaseAction));
                     commands.insert_resource(MainPhaseActionPickRequest {
                         request: r,
                         request_id,
                     });
+                    next_state.set(PlayerState::SelectingMainPhaseAction);
                 }
                 GameToPlayerRequestData::RequestGameStart { pos, state } => {
                     if curr_state.0 != PlayerState::BeforeStart {
                         return Err(());
                     }
 
-                    commands.insert_resource(NextState(PlayerState::Idle));
+                    next_state.set(PlayerState::Idle);
                     commands.insert_resource(GameState { 0: state });
                     commands.insert_resource(SelfPlayerPos { 0: pos });
 
@@ -194,6 +195,7 @@ fn wait_for_main_phase_action(
     mut event_reader: EventReader<PickedEvent>,
     responder: ResMut<PlayerToGameResponder>,
     req: Res<MainPhaseActionPickRequest>,
+    mut next_state: ResMut<NextState<PlayerState>>,
 ) {
     if let Some(ev) = event_reader.iter().next() {
         let action = match ev {
@@ -213,6 +215,6 @@ fn wait_for_main_phase_action(
             .expect("Todo");
 
         commands.remove_resource::<MainPhaseActionPickRequest>();
-        commands.insert_resource(NextState(PlayerState::Idle));
+        next_state.set(PlayerState::Idle);
     }
 }

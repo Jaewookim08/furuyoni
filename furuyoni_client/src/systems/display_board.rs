@@ -1,10 +1,8 @@
-use crate::systems;
 use bevy::prelude::*;
 use bevy::text::Text;
 use furuyoni_lib::rules::{
     PlayerPos, ViewableOpponentState, ViewablePlayerState, ViewableSelfState, ViewableState,
 };
-use iyes_loopless::prelude::*;
 
 use crate::systems::player::{GameState, SelfPlayerPos};
 
@@ -19,8 +17,8 @@ impl Plugin for BoardPlugin {
             .register_type::<PlayerValuePickerType>()
             .add_system(
                 display_board
-                    .run_if_resource_exists::<GameState>()
-                    .run_if_resource_exists::<SelfPlayerPos>(),
+                    .run_if(resource_exists::<GameState>())
+                    .run_if(resource_exists::<SelfPlayerPos>()),
             );
     }
 }
@@ -38,13 +36,15 @@ pub fn display_board(
     }
 }
 
-#[derive(Debug, Reflect, FromReflect)]
+#[derive(Debug, Reflect, FromReflect, Default)]
 pub enum PlayerRelativePos {
+    #[default]
     Me,
     Opponent,
 }
 
-#[derive(Debug, Reflect, FromReflect)]
+#[derive(Debug, Reflect, FromReflect, Default)]
+#[reflect(Default)]
 pub struct PlayerValuePicker {
     pos: PlayerRelativePos,
     value_type: PlayerValuePickerType,
@@ -64,8 +64,9 @@ pub enum StateStringPicker {
     PlayerValue(PlayerValuePicker),
 }
 
-#[derive(Debug, Reflect, FromReflect)]
+#[derive(Debug, Reflect, FromReflect, Default)]
 pub enum PlayerValuePickerType {
+    #[default]
     Life,
     Flare,
     Aura,
