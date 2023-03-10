@@ -19,7 +19,6 @@ use furuyoni_lib::net::message_channel::{MessageChannel, MessageChannelResponseE
 use furuyoni_lib::net::message_sender::IntoMessageMap;
 use furuyoni_lib::net::{RequestError, Requester, Responder};
 use furuyoni_lib::player_actions::BasicAction;
-use furuyoni_lib::players::{CliPlayer, Player};
 use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
 
@@ -35,12 +34,12 @@ async fn main() -> std::io::Result<()> {
             player_to_game_responder,
         )))
         .add_plugins(DefaultPlugins)
-        .add_plugin(EditorPlugin)
         .add_plugin(PickerPlugin)
         .add_plugin(PlayerPlugin)
         .add_plugin(BoardPlugin)
         .add_startup_system(setup)
         // .add_startup_system(load_scene)
+        .add_plugin(EditorPlugin)
         .run();
 
     // let player = CliPlayer {};
@@ -63,11 +62,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let font = asset_server.load("fonts/Fira_Sans/FiraSans-Regular.ttf");
 
-    for _ in 0..11 {
+    let mut spawn_label = |l, t, str: &str, picker| {
         commands.spawn((
             TextBundle::from_sections([
                 TextSection::new(
-                    "Dust: ",
+                    str.to_string() + ": ",
                     TextStyle {
                         font: font.clone(),
                         font_size: 50.0,
@@ -87,21 +86,97 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             .with_style(Style {
                 position_type: PositionType::Absolute,
                 position: UiRect {
-                    top: Val::Px(100.0),
-                    left: Val::Px(100.0),
+                    top: Val::Percent(t),
+                    left: Val::Percent(l),
                     ..default()
                 },
                 ..default()
             }),
-            StateLabel::new(
-                1,
-                StateStringPicker::PlayerValue(PlayerValuePicker::new(
-                    PlayerRelativePos::Me,
-                    PlayerValuePickerType::Life,
-                )),
-            ),
+            StateLabel::new(1, picker),
         ));
-    }
+    };
+
+    const LH: f32 = 6.;
+    spawn_label(
+        10.,
+        10.,
+        "Life",
+        StateStringPicker::PlayerValue(PlayerValuePicker::new(
+            PlayerRelativePos::Opponent,
+            PlayerValuePickerType::Life,
+        )),
+    );
+    spawn_label(
+        10.,
+        10. + LH * 1.,
+        "Flare",
+        StateStringPicker::PlayerValue(PlayerValuePicker::new(
+            PlayerRelativePos::Opponent,
+            PlayerValuePickerType::Flare,
+        )),
+    );
+
+    spawn_label(
+        10.,
+        10. + LH * 2.,
+        "Aura",
+        StateStringPicker::PlayerValue(PlayerValuePicker::new(
+            PlayerRelativePos::Opponent,
+            PlayerValuePickerType::Aura,
+        )),
+    );
+
+    spawn_label(
+        10.,
+        10. + LH * 3.,
+        "Vigor",
+        StateStringPicker::PlayerValue(PlayerValuePicker::new(
+            PlayerRelativePos::Opponent,
+            PlayerValuePickerType::Vigor,
+        )),
+    );
+
+    spawn_label(
+        80.,
+        70.,
+        "Life",
+        StateStringPicker::PlayerValue(PlayerValuePicker::new(
+            PlayerRelativePos::Me,
+            PlayerValuePickerType::Life,
+        )),
+    );
+
+    spawn_label(
+        80.,
+        70. + LH * 1.,
+        "Flare",
+        StateStringPicker::PlayerValue(PlayerValuePicker::new(
+            PlayerRelativePos::Me,
+            PlayerValuePickerType::Flare,
+        )),
+    );
+
+    spawn_label(
+        80.,
+        70. + LH * 2.,
+        "Aura",
+        StateStringPicker::PlayerValue(PlayerValuePicker::new(
+            PlayerRelativePos::Me,
+            PlayerValuePickerType::Aura,
+        )),
+    );
+    spawn_label(
+        80.,
+        70. + LH * 3.,
+        "Vigor",
+        StateStringPicker::PlayerValue(PlayerValuePicker::new(
+            PlayerRelativePos::Me,
+            PlayerValuePickerType::Vigor,
+        )),
+    );
+    spawn_label(85., 20., "Turn", StateStringPicker::Turn);
+    spawn_label(50., 40., "Distance", StateStringPicker::Distance);
+    spawn_label(50., 40. + LH * 1., "Dust", StateStringPicker::Dust);
 
     commands
         .spawn((
@@ -114,9 +189,15 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     justify_content: JustifyContent::Center,
                     // vertically center child text
                     align_items: AlignItems::Center,
+                    position_type: PositionType::Absolute,
+                    position: UiRect {
+                        left: Val::Percent(21.),
+                        top: Val::Percent(20.),
+                        ..default()
+                    },
                     ..default()
                 },
-                background_color: Color::rgb(0.2, 0.5, 0.3).into(),
+                background_color: Color::rgb(125. / 256., 13. / 256., 40.0 / 256.).into(),
                 ..default()
             },
             SkipButton,
@@ -132,7 +213,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ));
         });
 
-    for _ in 0..4 {
+    let mut spawn_ba_button = |l, t, str: &str, action| {
         commands
             .spawn((
                 ButtonBundle {
@@ -144,18 +225,22 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         justify_content: JustifyContent::Center,
                         // vertically center child text
                         align_items: AlignItems::Center,
+                        position_type: PositionType::Absolute,
+                        position: UiRect {
+                            top: Val::Percent(t),
+                            left: Val::Percent(l),
+                            ..default()
+                        },
                         ..default()
                     },
                     background_color: Color::rgb(0.2, 0.5, 0.3).into(),
                     ..default()
                 },
-                BasicActionButton {
-                    action: BasicAction::Focus,
-                },
+                BasicActionButton { action },
             ))
             .with_children(|parent| {
                 parent.spawn(TextBundle::from_section(
-                    "FC",
+                    str,
                     TextStyle {
                         font: font.clone(),
                         font_size: 40.0,
@@ -163,7 +248,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     },
                 ));
             });
-    }
+    };
+
+    spawn_ba_button(-5., 20., "Forward", BasicAction::MoveForward);
+    spawn_ba_button(8., 20., "Backward", BasicAction::MoveBackward);
+    spawn_ba_button(-5., 30., "Focus", BasicAction::Focus);
+    spawn_ba_button(8., 30., "Recover", BasicAction::Recover);
 }
 
 fn spawn_post_office(
