@@ -2,7 +2,7 @@ use crate::networking::{ClientConnectionReader, ClientConnectionWriter};
 use furuyoni_lib::net::connection::WriteError;
 use furuyoni_lib::net::frames::{
     ClientMessageFrame, GameToPlayerMessage, GameToPlayerRequest, GameToPlayerResponseFrame,
-    ServerMessageFrame, LobbyToPlayerMessage,
+    LobbyToPlayerMessage, ServerMessageFrame,
 };
 use furuyoni_lib::net::with_send_callback::WithCallback;
 use thiserror::Error;
@@ -41,31 +41,25 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
                             .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
                 },
-                ServerMessageFrame::LobbyMessage(msg) => match msg{
-                    LobbyToPlayerMessage::Request(req) => {
-
-                    }
-                    LobbyToPlayerMessage::Response(res) => {
-                        
-                    }
-                }
+                ServerMessageFrame::LobbyMessage(msg) => match msg {
+                    LobbyToPlayerMessage::Request(req) => {}
+                    LobbyToPlayerMessage::Response(res) => {}
+                },
             },
         }
     }
 }
 
 pub async fn handle_send_requests<TWrite: AsyncWrite + Unpin + Send>(
-    mut mailbox: mpsc::Receiver<WithCallback<ClientMessageFrame, WriteError>>,
+    mut mailbox: mpsc::Receiver<ClientMessageFrame>,
     mut writer: ClientConnectionWriter<TWrite>,
 ) {
     while let Some(request) = mailbox.recv().await {
-        let res = writer.write_frame(&request.data).await;
+        let res = writer.write_frame(&request).await;
 
         if let Err(_) = res {
             panic!("Todo");
         }
-
-        let _ = request.callback.send(res.map_err(|e| e.into()));
     }
 
     println!("[PostOffice] No more messages to send. 'handle_send_requests' has ended.")

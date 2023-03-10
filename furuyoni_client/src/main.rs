@@ -172,8 +172,11 @@ fn spawn_post_office(
     impl Requester<PlayerToGameRequest, Response = GameToPlayerResponse, Error = RequestError>
         + Send
         + Sync,
-    impl Responder<PlayerToGameResponseFrame, Request = GameToPlayerRequest, Error = MessageChannelResponseError>
-        + Send
+    impl Responder<
+            PlayerToGameResponseFrame,
+            Request = GameToPlayerRequest,
+            Error = MessageChannelResponseError,
+        > + Send
         + Sync,
     JoinHandle<()>,
 ) {
