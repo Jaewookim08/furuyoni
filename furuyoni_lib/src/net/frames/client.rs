@@ -1,13 +1,13 @@
-use crate::net::frames::base::{InputFrame, OutputFrame, write_serialized, parse};
-use crate::net::frames::error::{WriteError, ParseError};
+use crate::net::frames::base::{parse, write_serialized, InputFrame, OutputFrame};
+use crate::net::frames::error::{ParseError, WriteError};
 
-use std::io::Cursor;
 use async_trait::async_trait;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::io::Cursor;
 use tokio::io::AsyncWriteExt;
 
+use super::game::PlayerToGameMessage;
 use super::PlayerToLobbyMessage;
-use super::Game::PlayerToGameMessage;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ClientMessageFrame {

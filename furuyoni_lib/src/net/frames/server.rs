@@ -1,12 +1,12 @@
-use crate::net::frames::base::{InputFrame, OutputFrame, write_serialized, parse};
-use crate::net::frames::error::{WriteError, ParseError};
+use crate::net::frames::base::{parse, write_serialized, InputFrame, OutputFrame};
+use crate::net::frames::error::{ParseError, WriteError};
 
-use std::io::Cursor;
-use serde::{Serialize, Deserialize};
-use tokio::io::AsyncWriteExt;
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use std::io::Cursor;
+use tokio::io::AsyncWriteExt;
 
-use super::Game::GameToPlayerMessage;
+use super::game::GameToPlayerMessage;
 use super::lobby::LobbyToPlayerMessage;
 
 #[derive(Serialize, Deserialize, Debug)]
