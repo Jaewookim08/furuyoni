@@ -42,45 +42,6 @@ impl PlayerToGameResponder {
 #[derive(Resource, Debug)]
 pub struct GameState(pub ViewableState);
 
-// Todo: remove. GameState should not be constructed in client.
-impl Default for GameState {
-    fn default() -> Self {
-        Self {
-            0: ViewableState {
-                turn_number: 0,
-                turn_player: PlayerPos::P1,
-                phase: Phase::Beginning,
-                distance: 0,
-                dust: 0,
-                player_states: ViewablePlayerStates::new(
-                    ViewablePlayerState::SelfState(ViewableSelfState {
-                        hands: vec![],
-                        deck_count: 0,
-                        enhancements: vec![],
-                        played_pile: vec![],
-                        discard_pile: vec![],
-                        vigor: 0,
-                        aura: 0,
-                        life: 0,
-                        flare: 0,
-                    }),
-                    ViewablePlayerState::Opponent(ViewableOpponentState {
-                        hand_count: 0,
-                        deck_count: 0,
-                        enhancements: vec![],
-                        played_pile: vec![],
-                        discard_pile_count: 0,
-                        vigor: 0,
-                        aura: 0,
-                        life: 0,
-                        flare: 0,
-                    }),
-                ),
-            },
-        }
-    }
-}
-
 #[derive(Resource, Debug)]
 pub struct SelfPlayerPos(pub PlayerPos);
 
