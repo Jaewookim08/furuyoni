@@ -10,12 +10,13 @@ tokio = { version = "1.21.2", features = ["full"] }
 furuyoni_lib = { path = "../furuyoni_lib" }
 rand = "0.8.5"
 thiserror = "1.0.37"
-bevy = { version = "0.10.0", features = ["dynamic_linking"] }
+bevy = { version = "0.10.0" }
 bevy_editor_pls = "0.3"
 bevy_asset_loader = { version = "0.14.1", features = ["stageless", "iyes_progress", "progress_tracking_stageless"] }
 iyes_progress = { version = "0.7.1", features = ["iyes_loopless"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+futures-lite = "1.13.0"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

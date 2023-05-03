@@ -2,13 +2,13 @@ mod networking;
 mod systems;
 
 use crate::networking::{post_office, ClientConnectionReader, ClientConnectionWriter};
-use crate::systems::display_board::{
-    display_board, BoardPlugin, PlayerRelativePos, PlayerValuePicker, PlayerValuePickerType,
-    StateLabel, StateStringPicker,
+use crate::systems::board_system::{
+    BoardPlugin, PlayerRelativePos, PlayerValuePicker, PlayerValuePickerType, StateLabel,
+    StateStringPicker,
 };
 use crate::systems::picker::{BasicActionButton, PickerPlugin, SkipButton};
 use crate::systems::player;
-use crate::systems::player::PlayerPlugin;
+use crate::systems::player::{PlayerPlugin, ResponderResource};
 use bevy::prelude::*;
 use bevy::text::TextStyle;
 use bevy::ui::PositionType;
@@ -30,12 +30,10 @@ async fn main() -> std::io::Result<()> {
         spawn_post_office(socket);
 
     App::new()
-        .insert_resource(player::PlayerToGameResponder::new(Box::new(
-            player_to_game_responder,
-        )))
         .add_plugins(DefaultPlugins)
         .add_plugin(PickerPlugin)
         .add_plugin(PlayerPlugin)
+        .insert_resource(ResponderResource::new(player_to_game_responder))
         .add_plugin(BoardPlugin)
         .add_startup_system(setup)
         // .add_startup_system(load_scene)

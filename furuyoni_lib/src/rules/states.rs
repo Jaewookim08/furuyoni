@@ -9,6 +9,60 @@ pub enum ViewablePlayerState {
     Opponent(ViewableOpponentState),
 }
 
+impl ViewablePlayerState {
+    pub fn get_vigor(&self) -> i32 {
+        match self {
+            ViewablePlayerState::SelfState(s) => s.vigor,
+            ViewablePlayerState::Opponent(o) => o.vigor,
+        }
+    }
+    pub fn get_vigor_mut(&mut self) -> &mut i32 {
+        match self {
+            ViewablePlayerState::SelfState(s) => &mut s.vigor,
+            ViewablePlayerState::Opponent(o) => &mut o.vigor,
+        }
+    }
+
+    pub fn get_aura(&self) -> i32 {
+        match self {
+            ViewablePlayerState::SelfState(s) => s.aura,
+            ViewablePlayerState::Opponent(o) => o.aura,
+        }
+    }
+    pub fn get_aura_mut(&mut self) -> &mut i32 {
+        match self {
+            ViewablePlayerState::SelfState(s) => &mut s.aura,
+            ViewablePlayerState::Opponent(o) => &mut o.aura,
+        }
+    }
+
+    pub fn get_life(&self) -> i32 {
+        match self {
+            ViewablePlayerState::SelfState(s) => s.life,
+            ViewablePlayerState::Opponent(o) => o.life,
+        }
+    }
+    pub fn get_life_mut(&mut self) -> &mut i32 {
+        match self {
+            ViewablePlayerState::SelfState(s) => &mut s.life,
+            ViewablePlayerState::Opponent(o) => &mut o.life,
+        }
+    }
+
+    pub fn get_flare(&self) -> i32 {
+        match self {
+            ViewablePlayerState::SelfState(s) => s.flare,
+            ViewablePlayerState::Opponent(o) => o.flare,
+        }
+    }
+    pub fn get_flare_mut(&mut self) -> &mut i32 {
+        match self {
+            ViewablePlayerState::SelfState(s) => &mut s.flare,
+            ViewablePlayerState::Opponent(o) => &mut o.flare,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ViewableOpponentState {
     pub hand_count: usize,

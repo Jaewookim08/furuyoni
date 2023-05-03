@@ -1,43 +1,26 @@
-use crate::systems::picker::{PickedEvent, RequestPick};
+use crate::systems::board_system::{BoardRequest, BoardRequestQueue};
 use bevy::prelude::*;
+use bevy::tasks::AsyncComputeTaskPool;
 use furuyoni_lib::net::frames::{
     GameToPlayerNotification, GameToPlayerRequest, GameToPlayerRequestData, PlayerToGameResponse,
-    PlayerToGameResponseFrame, RequestMainPhaseAction, ResponseMainPhaseAction, WithRequestId,
+    PlayerToGameResponseFrame, ResponseMainPhaseAction, WithRequestId,
 };
 use furuyoni_lib::net::message_channel::MessageChannelResponseError;
 use furuyoni_lib::net::Responder;
-use furuyoni_lib::player_actions::{BasicActionCost, MainPhaseAction, PlayBasicAction};
-use furuyoni_lib::rules::{
-    Phase, PlayerPos, ViewableOpponentState, ViewablePlayerState, ViewablePlayerStates,
-    ViewableSelfState, ViewableState,
-};
-pub struct PlayerPlugin;
+use furuyoni_lib::rules::{PlayerPos, ViewableState};
+use futures_lite::future;
+use tokio::sync::oneshot;
 
-#[derive(Resource)]
-pub struct PlayerToGameResponder(
-    Box<
-        dyn Responder<
-                PlayerToGameResponseFrame,
-                Request = GameToPlayerRequest,
-                Error = MessageChannelResponseError,
-            > + Send
-            + Sync,
-    >,
-);
-impl PlayerToGameResponder {
-    pub fn new(
-        responder: Box<
-            dyn Responder<
-                    PlayerToGameResponseFrame,
-                    Request = GameToPlayerRequest,
-                    Error = MessageChannelResponseError,
-                > + Send
-                + Sync,
-        >,
-    ) -> Self {
-        Self(responder)
-    }
-}
+type PlayerToGameResponder = Box<
+    dyn Responder<
+            PlayerToGameResponseFrame,
+            Request = GameToPlayerRequest,
+            Error = MessageChannelResponseError,
+        > + Send
+        + Sync,
+>;
+
+pub struct PlayerPlugin;
 
 #[derive(Resource, Debug)]
 pub struct GameState(pub ViewableState);
@@ -48,136 +31,157 @@ pub struct SelfPlayerPos(pub PlayerPos);
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 enum PlayerState {
     #[default]
-    BeforeStart,
-    Idle,
-    SelectingMainPhaseAction,
-}
-
-// This struct is not integrated into PlayerState because
-// the state needs to be Copy and Clone for some reasons.
-#[derive(Resource)]
-struct MainPhaseActionPickRequest {
-    request: RequestMainPhaseAction,
-    request_id: u32,
+    BeforeGameStart,
+    GameStarted,
 }
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<PlayerState>()
-            .add_system(player_listener)
-            .add_system(
-                start_pick_main_phase_action
-                    .in_schedule(OnEnter(PlayerState::SelectingMainPhaseAction)),
-            )
-            .add_system(
-                wait_for_main_phase_action.in_set(OnUpdate(PlayerState::SelectingMainPhaseAction)),
-            );
+            .insert_resource(TaskRunning::Listen)
+            .add_system(process_task.run_if(resource_exists::<ResponderResource>()));
     }
 }
 
-fn player_listener(
-    commands: Commands,
+#[derive(Resource)]
+pub struct ResponderResource(PlayerToGameResponder);
+
+impl ResponderResource {
+    pub fn new(
+        responder: impl Responder<
+                PlayerToGameResponseFrame,
+                Request = GameToPlayerRequest,
+                Error = MessageChannelResponseError,
+            > + Send
+            + Sync
+            + 'static,
+    ) -> Self {
+        Self {
+            0: Box::new(responder),
+        }
+    }
+}
+
+#[derive(Resource)]
+enum TaskRunning {
+    Listen,
+    ProcessDataRequest {
+        request_id: u32,
+        run: bevy::tasks::Task<Result<PlayerToGameResponse, ()>>,
+    },
+}
+
+fn process_task(
+    mut commands: Commands,
     curr_state: Res<State<PlayerState>>,
-    responder: ResMut<PlayerToGameResponder>,
     next_state: ResMut<NextState<PlayerState>>,
+    mut board_request_queue: ResMut<BoardRequestQueue>,
+    mut task: ResMut<TaskRunning>,
+    mut responder: ResMut<ResponderResource>,
 ) {
-    let res = run_player_listener(commands, curr_state, responder, next_state);
+    let responder = &mut responder.0;
+    let task = task.into_inner();
+    match task {
+        TaskRunning::Listen => {
+            match responder.try_recv() {
+                Ok(Some(req)) => {
+                    let new_task = handle_request(
+                        &mut commands,
+                        &curr_state.0,
+                        next_state.into_inner(),
+                        board_request_queue.into_inner(),
+                        req,
+                    )
+                    .expect("handling request failed");
 
-    match res {
-        Ok(_) => {}
-        Err(_) => {
-            panic!("Todo")
+                    *task = new_task;
+                }
+                Ok(None) => {
+                    // No message. Do nothing.
+                }
+                Err(_) => {
+                    todo!("Game->player channel has been closed.")
+                }
+            }
+        }
+        TaskRunning::ProcessDataRequest { request_id, run } => {
+            if let Some(process_res) = future::block_on(future::poll_once(run)) {
+                match process_res {
+                    Ok(data) => {
+                        responder
+                            .response(WithRequestId::new(*request_id, data))
+                            .expect("Sending response failed");
+
+                        *task = TaskRunning::Listen;
+                    }
+                    Err(()) => todo!("processing data request failed"),
+                }
+            }
         }
     }
 }
 
-fn run_player_listener(
-    mut commands: Commands,
-    curr_state: Res<State<PlayerState>>,
-    mut responder: ResMut<PlayerToGameResponder>,
-    mut next_state: ResMut<NextState<PlayerState>>,
-) -> Result<(), ()> {
-    // Messages should at be processed at max once in a frame, to give time for state changes.
-    if let Some(request) = responder.0.try_recv().map_err(|_| ())? {
-        match request {
-            GameToPlayerRequest::RequestData(WithRequestId { request_id, data }) => match data {
-                GameToPlayerRequestData::RequestMainPhaseAction(r) => {
-                    if curr_state.0 != PlayerState::Idle {
-                        return Err(());
-                    }
+fn handle_request(
+    commands: &mut Commands,
+    curr_state: &PlayerState,
+    next_state: &mut NextState<PlayerState>,
+    board_request_queue: &mut BoardRequestQueue,
+    req: GameToPlayerRequest,
+) -> Result<TaskRunning, ()> {
+    let pool = AsyncComputeTaskPool::get();
 
-                    commands.insert_resource(MainPhaseActionPickRequest {
-                        request: r,
-                        request_id,
+    match req {
+        GameToPlayerRequest::RequestData(WithRequestId { request_id, data }) => match data {
+            GameToPlayerRequestData::RequestMainPhaseAction(r) => {
+                if curr_state != &PlayerState::GameStarted {
+                    return Err(());
+                }
+                let (tx, rx) = oneshot::channel();
+                board_request_queue
+                    .0
+                    .push_back(BoardRequest::GetMainPhaseAction {
+                        query: r,
+                        callback: tx,
                     });
-                    next_state.set(PlayerState::SelectingMainPhaseAction);
+
+                let new_task = pool.spawn(async move {
+                    rx.await.map_err(|e| ()).map(|action| {
+                        PlayerToGameResponse::MainPhaseAction(ResponseMainPhaseAction { action })
+                    })
+                });
+                Ok(TaskRunning::ProcessDataRequest {
+                    request_id,
+                    run: new_task,
+                })
+            }
+            GameToPlayerRequestData::RequestGameStart { pos, state } => {
+                if curr_state != &PlayerState::BeforeGameStart {
+                    return Err(());
                 }
-                GameToPlayerRequestData::RequestGameStart { pos, state } => {
-                    if curr_state.0 != PlayerState::BeforeStart {
-                        return Err(());
-                    }
 
-                    next_state.set(PlayerState::Idle);
-                    commands.insert_resource(GameState { 0: state });
-                    commands.insert_resource(SelfPlayerPos { 0: pos });
+                commands.insert_resource(GameState { 0: state });
+                commands.insert_resource(SelfPlayerPos { 0: pos });
+                next_state.set(PlayerState::GameStarted);
 
-                    responder
+                let new_task =
+                    pool.spawn(async move { Ok(PlayerToGameResponse::AcknowledgeGameStart) });
+
+                Ok(TaskRunning::ProcessDataRequest {
+                    request_id,
+                    run: new_task,
+                })
+            }
+        },
+        GameToPlayerRequest::Notify(notification) => {
+            match notification {
+                GameToPlayerNotification::Event(game_event) => {
+                    board_request_queue
                         .0
-                        .response(PlayerToGameResponseFrame::new(
-                            request_id,
-                            PlayerToGameResponse::AcknowledgeGameStart,
-                        ))
-                        .map_err(|_| ())?;
+                        .push_back(BoardRequest::PlayEvent(game_event));
                 }
-            },
-            GameToPlayerRequest::Notify(nt) => match nt {
-                GameToPlayerNotification::Event(_) => {}
-            },
+            }
+
+            Ok(TaskRunning::Listen)
         }
-    }
-    Ok(())
-}
-
-fn start_pick_main_phase_action(
-    mut game_state: ResMut<GameState>,
-    mut event_writer: EventWriter<RequestPick>,
-    req: Res<MainPhaseActionPickRequest>,
-) {
-    let req = &req.request;
-
-    game_state.0 = req.state.clone();
-
-    event_writer.send(RequestPick::new(
-        req.performable_basic_actions.iter().cloned().collect(),
-        true,
-    ));
-}
-
-fn wait_for_main_phase_action(
-    mut commands: Commands,
-    mut event_reader: EventReader<PickedEvent>,
-    responder: ResMut<PlayerToGameResponder>,
-    req: Res<MainPhaseActionPickRequest>,
-    mut next_state: ResMut<NextState<PlayerState>>,
-) {
-    if let Some(ev) = event_reader.iter().next() {
-        let action = match ev {
-            PickedEvent::BasicAction(ba) => MainPhaseAction::PlayBasicAction(PlayBasicAction {
-                action: *ba,
-                cost: BasicActionCost::Vigor,
-            }),
-            PickedEvent::Skip => MainPhaseAction::EndMainPhase,
-        };
-
-        responder
-            .0
-            .response(PlayerToGameResponseFrame {
-                request_id: req.request_id,
-                data: PlayerToGameResponse::MainPhaseAction(ResponseMainPhaseAction { action }),
-            })
-            .expect("Todo");
-
-        commands.remove_resource::<MainPhaseActionPickRequest>();
-        next_state.set(PlayerState::Idle);
     }
 }

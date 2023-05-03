@@ -6,13 +6,9 @@ use serde::{Deserialize, Serialize};
 pub enum GameEvent {
     DoBasicAction {
         pos: PlayerPos,
+        cost: Option<EventCost>,
         action: BasicAction,
         amount: i32,
-    },
-    WithCost {
-        pos: PlayerPos,
-        cost: EventCost,
-        event: Box<GameEvent>,
     },
 }
 
