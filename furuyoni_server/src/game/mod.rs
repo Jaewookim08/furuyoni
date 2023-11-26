@@ -1,4 +1,7 @@
 mod petals;
+mod player_state;
+mod game_controlflow;
+
 use petals::Petals;
 
 use async_recursion::async_recursion;
@@ -20,178 +23,229 @@ use std::collections::VecDeque;
 use std::future::Future;
 use std::marker::{Send, Sync};
 use tokio::join;
+use player_state::PlayerState;
+use thiserror::Error;
+use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};
+use crate::game::game_controlflow::GameControlFlow::{BreakPhase, Continue};
+
+const GET_ACTION_RETRY_TIMES: usize = 3;
+
+
+#[derive(Error, Debug)]
+pub enum GameError {
+    #[error("Failed to communicate with a player.")]
+    PlayerCommunicationFail(PlayerPos),
+    #[error("An invalid action has been requested from the player.")]
+    InvalidActionRequested(PlayerPos),
+}
+
+pub enum GameResult {
+    Draw,
+    Winner(PlayerPos),
+}
 
 type Players = PlayerData<Box<dyn Player + Send + Sync>>;
-
-macro_rules! unwrap_or {
-    ( $e:expr, $el:expr ) => {
-        match $e {
-            Some(x) => x,
-            None => $el,
-        }
-    };
-}
-
-pub struct Game {
-    players: Players,
-    state: GameState,
-}
-
-pub struct GameResult {
-    pub winner: PlayerPos,
-}
 
 #[derive(Debug, Copy, Clone, PartialEq, Neg)]
 pub struct Vigor(i32);
 
-struct GameState {
+struct PhaseState {
     turn_number: u32,
     turn_player: PlayerPos,
     phase: Phase,
+}
+
+struct BoardState {
     distance: Petals,
     dust: Petals,
     player_states: PlayerStates,
 }
 
-impl From<&PlayerState> for ViewableOpponentState {
-    fn from(player_state: &PlayerState) -> Self {
-        ViewableOpponentState {
-            hand_count: player_state.hand.len(),
-            deck_count: player_state.deck.len(),
-            enhancements: player_state.enhancements.clone(),
-            played_pile: player_state.played_pile.clone(),
-            discard_pile_count: player_state.discard_pile.len(),
-
-            vigor: player_state.vigor.0,
-            aura: player_state.aura.get_count(),
-            life: player_state.life.get_count(),
-            flare: player_state.flare.get_count(),
-        }
-    }
-}
-
-impl From<&PlayerState> for ViewableSelfState {
-    fn from(player_state: &PlayerState) -> Self {
-        ViewableSelfState {
-            hands: player_state.hand.clone(),
-            deck_count: player_state.deck.len(),
-            enhancements: player_state.enhancements.clone(),
-            played_pile: player_state.played_pile.clone(),
-            discard_pile: player_state.discard_pile.clone(),
-
-            vigor: player_state.vigor.0,
-            aura: player_state.aura.get_count(),
-            life: player_state.life.get_count(),
-            flare: player_state.flare.get_count(),
-        }
-    }
-}
-
 type PlayerStates = PlayerData<PlayerState>;
 
-trait Continuation<'a, TArgs>: FnOnce(TArgs) -> StepResult<'a> + Send + 'a {}
 
-impl<'a, TArgs, T> Continuation<'a, TArgs> for T where T: FnOnce(TArgs) -> StepResult<'a> + Send + 'a
-{}
+pub async fn run_game(player_1: Box<dyn Player + Sync + Send>,
+                      player_2: Box<dyn Player + Sync + Send>) -> Result<GameResult, GameError> {
+    let mut players = Players::new(player_1, player_2);
 
-#[derive(Debug)]
-pub struct PlayerState {
-    hand: Vec<Card>,
-    deck: VecDeque<Card>,
-    enhancements: Vec<Card>,
-    played_pile: Vec<Card>,
-    discard_pile: Vec<Card>,
+    let (mut phase_state, mut board_state) = initialize_game_states();
 
-    vigor: Vigor,
-    aura: Petals,
-    life: Petals,
-    flare: Petals,
-}
+    notify_game_start(&mut players, &phase_state, &board_state).await?;
 
-impl Default for PlayerState {
-    fn default() -> Self {
-        Self {
-            hand: vec![],
-            deck: VecDeque::default(),
-            enhancements: vec![],
-            played_pile: vec![],
-            discard_pile: vec![],
-            vigor: Vigor(0),
-            aura: Petals::new(3),
-            life: Petals::new(10),
-            flare: Petals::new(0),
+
+    // Define phase modifying functions.
+    fn next_phase(phase_state: &mut PhaseState) {
+        match phase_state.phase {
+            Phase::Beginning => { phase_state.phase = Phase::Main }
+            Phase::Main => { phase_state.phase = Phase::End }
+            Phase::End => { next_turn(phase_state) }
         }
     }
-}
 
-enum StepResult<'a> {
-    TailCall(BoxFuture<'a, StepResult<'a>>),
-    Result(GameResult),
-}
-
-fn rec_call<'a>(future: impl Future<Output = StepResult<'a>> + Send + 'a) -> StepResult<'a> {
-    StepResult::TailCall(Box::pin(future))
-}
-
-fn rec_ret<'a>(result: GameResult) -> StepResult<'a> {
-    StepResult::Result(result)
-}
-
-impl GameResult {
-    pub fn new(winner: PlayerPos) -> Self {
-        Self { winner }
-    }
-}
-
-impl GameState {
-    fn new(
-        turn_number: u32,
-        turn_player: PlayerPos,
-        phase: Phase,
-        distance: Petals,
-        dust: Petals,
-        player_states: PlayerStates,
-    ) -> Self {
-        GameState {
-            turn_player,
-            phase,
-            distance,
-            dust,
-            turn_number,
-            player_states,
+    fn next_turn(phase_state: &mut PhaseState) {
+        *phase_state = PhaseState {
+            turn_number: phase_state.turn_number + 1,
+            turn_player: phase_state.turn_player.other(),
+            phase: Phase::Beginning,
         }
     }
-}
 
-impl Game {
-    pub fn new(
-        player_1: Box<dyn Player + Sync + Send>,
-        player_2: Box<dyn Player + Sync + Send>,
-    ) -> Self {
-        let start_player = if rand::random::<bool>() {
-            PlayerPos::P1
-        } else {
-            PlayerPos::P2
+    // phase loop
+    loop {
+        let phase_result: GameControlFlow = match phase_state.phase {
+            Phase::Beginning => { run_beginning_phase(&mut players, &phase_state, &mut board_state).await? }
+            Phase::Main => { run_main_phase(&mut players, &phase_state, &mut board_state).await? }
+            Phase::End => { run_end_phase(&mut players, &phase_state, &mut board_state).await? }
         };
 
-        Game {
-            players: Players::new(player_1, player_2),
-            state: GameState::new(
-                0,
-                start_player,
-                Phase::Main,
-                Petals::new(10),
-                Petals::new(0),
-                default_player_states(),
-            ),
+        match phase_result {
+            Continue => { next_phase(&mut phase_state) }
+            BreakPhase(phase_break) => {
+                match phase_break {
+                    PhaseBreak::EndPhase => { next_phase(&mut phase_state) }
+                    PhaseBreak::EndTurn => { next_turn(&mut phase_state) }
+                    PhaseBreak::EndGame(game_result) => { return Ok(game_result); }
+                }
+            }
         }
-    }
-
-    pub async fn run(&mut self) -> GameResult {
-        run(self).await
     }
 }
 
+
+async fn run_beginning_phase(players: &mut Players, phase_state: &PhaseState, board_state: &mut BoardState)
+                             -> Result<GameControlFlow, GameError> {
+    // Skip beginning phase for the first two turns.
+    if phase_state.turn_number <= 2 {
+        return Ok(Continue);
+    }
+
+    // Add vigor
+    add_to_vigor(&mut board_state.player_states[phase_state.turn_player], Vigor(1)).unwrap();
+    // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
+
+    Ok(Continue)
+}
+
+async fn run_main_phase(players: &mut Players, phase_state: &PhaseState, board_state: &mut BoardState)
+                        -> Result<GameControlFlow, GameError> {
+    handle_player_actions(players, phase_state, board_state).await??;
+
+    Ok(Continue)
+}
+
+async fn run_end_phase(players: &mut Players, phase_state: &PhaseState, board_state: &mut BoardState)
+                       -> Result<GameControlFlow, GameError> {
+    // Todo: move enhancements and in-use cards to the used pile.
+
+    Ok(Continue)
+}
+
+async fn handle_player_actions(players: &mut Players, phase_state: &PhaseState, board_state: &mut BoardState)
+                               -> Result<GameControlFlow, GameError> {
+    let turn_player_pos = phase_state.turn_player;
+    let turn_player = &mut players[turn_player_pos];
+
+    // main phase actions loop.
+    loop {
+        // Todo: implement selecting playable actions
+        let doable_basic_actions = vec![
+            BasicAction::MoveForward,
+            BasicAction::MoveBackward,
+            BasicAction::Focus,
+            BasicAction::Recover,
+        ];
+        let playable_cards = vec![PlayableCardSelector::Hand(HandSelector(0))];
+        let available_costs = vec![BasicActionCost::Vigor];
+
+        // Todo: some reusable retry function.
+        let mut cnt_try = 0;
+        let action = loop {
+            let action = turn_player
+                .get_main_phase_action(
+                    &get_player_viewable_state(&phase_state, &board_state, turn_player_pos),
+                    &playable_cards,
+                    &doable_basic_actions,
+                    &available_costs,
+                )
+                .await;
+            // Todo: handle result.
+
+            if validate_main_phase_action(board_state, &action) {
+                break action;
+            }
+            cnt_try += 1;
+            if cnt_try >= GET_ACTION_RETRY_TIMES {
+                return Err(GameError::InvalidActionRequested(turn_player_pos));
+            }
+        };
+
+        match action {
+            MainPhaseAction::EndMainPhase => return Ok(Continue),
+            MainPhaseAction::PlayBasicAction(PlayBasicAction { action, cost }) => {
+                pay_basic_action_cost(board_state, turn_player_pos, cost)?;
+                play_basic_action(board_state, turn_player_pos, action)?;
+                continue;
+            }
+            MainPhaseAction::PlayCard(_) => {
+                todo!();
+                continue;
+            }
+        };
+
+        fn validate_main_phase_action(_state: &BoardState, _action: &MainPhaseAction) -> bool {
+            true // Todo:
+        }
+    }
+}
+
+fn initialize_game_states() -> (PhaseState, BoardState) {
+    // Select starting player.
+    let start_player = if rand::random::<bool>() {
+        PlayerPos::P1
+    } else {
+        PlayerPos::P2
+    };
+
+    // Initialize states.
+    let phase_state = PhaseState {
+        turn_number: 1,
+        turn_player: start_player,
+        phase: Phase::Beginning,
+    };
+
+    let board_state = BoardState {
+        distance: Petals::new(10),
+        dust: Petals::new(0),
+        player_states: default_player_states(),
+    };
+
+    (phase_state, board_state)
+}
+
+async fn notify_game_start(players: &mut Players, phase_state: &PhaseState, board_state: &BoardState) -> Result<(), GameError> {
+    async fn notify_start(
+        p: &mut (impl Player + ?Sized + Send),
+        phase_state: &PhaseState,
+        board_state: &BoardState,
+        pos: PlayerPos,
+    ) -> Result<(), GameError> {
+        p.notify_game_start(&get_player_viewable_state(phase_state, board_state, pos), pos)
+            .await
+            .map_err(|e| GameError::PlayerCommunicationFail(pos))
+    }
+
+    let (a, b) = join!(
+        notify_start(&mut *players.p1_data, phase_state, board_state, PlayerPos::P1),
+        notify_start(&mut *players.p2_data, phase_state, board_state, PlayerPos::P2)
+    );
+
+    (a?, b?);
+
+    Ok(())
+}
+
+
+/// Return default player states. Only used for debugging.
 fn default_player_states() -> PlayerStates {
     let p1_state = PlayerState {
         deck: VecDeque::from([
@@ -222,209 +276,57 @@ fn default_player_states() -> PlayerStates {
     PlayerStates::new(p1_state, p2_state)
 }
 
-async fn run(game: &mut Game) -> GameResult {
-    start_game(game).await.expect("todo");
 
-    let mut next: BoxFuture<StepResult> = Box::pin(next_turn(game));
-
-    let result = loop {
-        let step_result = next.await;
-
-        match step_result {
-            StepResult::TailCall(future) => next = future,
-            StepResult::Result(res) => {
-                break res;
-            }
-        }
-    };
-    //
-
-    result
-}
-
-async fn start_game(game: &mut Game) -> Result<(), ()> {
-    async fn notify_start(
-        p: &mut (impl Player + ?Sized + Send),
-        state: &GameState,
-        pos: PlayerPos,
-    ) -> Result<(), ()> {
-        p.start_game(&get_player_viewable_state(state, pos), pos)
-            .await
-    }
-
-    let (a, b) = join!(
-        notify_start(&mut *game.players.p1_data, &game.state, PlayerPos::P1),
-        notify_start(&mut *game.players.p2_data, &game.state, PlayerPos::P2)
-    );
-
-    (a?, b?);
-
-    Ok(())
-}
-
-async fn next_turn(game: &mut Game) -> StepResult {
-    // increase turn number
-    let state = &mut game.state;
-    state.turn_number += 1;
-
-    // switch current player
-    let next_player = if state.turn_player == PlayerPos::P1 {
-        PlayerPos::P2
-    } else {
-        PlayerPos::P1
-    };
-    state.turn_player = next_player;
-
-    let step_result = if state.turn_number <= 2 {
-        rec_call(run_from_main_phase(game))
-    } else {
-        rec_call(run_from_beginning_phase(game))
-    };
-
-    step_result
-}
-
-async fn run_from_beginning_phase(game: &mut Game) -> StepResult {
-    let state = &mut game.state;
-    state.phase = Phase::Beginning;
-
-    let current_player = state.turn_player;
-    add_to_vigor(state, current_player, Vigor(1));
-    // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
-
-    rec_call(run_from_main_phase(game))
-}
-
-async fn run_from_main_phase(game: &mut Game) -> StepResult {
-    game.state.phase = Phase::Main;
-
-    rec_call(do_main_phase_actions(game, |game| {
-        rec_call(run_from_end_phase(game))
-    }))
-}
-
-#[async_recursion]
-async fn do_main_phase_actions<'a>(
-    game: &'a mut Game,
-    cont: impl Continuation<'a, &'a mut Game>,
-) -> StepResult<'a> {
-    const GET_ACTION_RETRY_TIMES: usize = 3;
-    let state = &mut game.state;
-
-    let turn_player = state.turn_player;
-    let turn_player_data = &mut game.players[turn_player];
-
-    let doable_basic_actions = vec![
-        BasicAction::MoveForward,
-        BasicAction::MoveBackward,
-        BasicAction::Focus,
-        BasicAction::Recover,
-    ];
-    let playable_cards = vec![PlayableCardSelector::Hand(HandSelector(0))];
-    let available_costs = vec![BasicActionCost::Vigor];
-
-    let mut cnt = 0;
-    let action = loop {
-        let action = turn_player_data
-            .get_main_phase_action(
-                &get_player_viewable_state(&state, turn_player),
-                &playable_cards,
-                &doable_basic_actions,
-                &available_costs,
-            )
-            .await;
-
-        if validate_main_phase_action(state, &action) {
-            break action;
-        }
-        cnt += 1;
-        if cnt >= GET_ACTION_RETRY_TIMES {
-            todo!()
-        }
-    };
-
-    let ret = match action {
-        MainPhaseAction::EndMainPhase => cont(game),
-        MainPhaseAction::PlayBasicAction(PlayBasicAction { action, cost }) => rec_call(
-            pay_basic_action_cost(game, turn_player, cost, move |game| {
-                rec_call(play_basic_action(game, turn_player, action, |game| {
-                    rec_call(do_main_phase_actions(game, cont))
-                }))
-            }),
-        ),
-        MainPhaseAction::PlayCard(_) => cont(game),
-    };
-
-    fn validate_main_phase_action(_state: &GameState, _action: &MainPhaseAction) -> bool {
-        true // Todo:
-    }
-
-    ret
-}
-
-#[async_recursion]
-async fn run_from_end_phase(game: &mut Game) -> StepResult {
-    rec_call(turn_end(game))
-}
-
-#[async_recursion]
-async fn play_basic_action<'a>(
-    game: &'a mut Game,
+fn play_basic_action(
+    board_state: &mut BoardState,
     player: PlayerPos,
     action: BasicAction,
-    cont: impl Continuation<'a, &'a mut Game>,
-) -> StepResult<'a> {
-    let state = &mut game.state;
-    let player_data = &mut state.player_states[player];
+) -> Result<GameControlFlow, GameError> {
+    let player_data = &mut board_state.player_states[player];
 
+    // Todo: lambda로 map_err 한 줄로 줄이기?
     match action {
         BasicAction::MoveForward => {
-            player_data.aura += state.distance.take(1);
+            // Todo: Petals max 추가, transfer.
+            player_data.aura += board_state.distance.take(1).map_err(|()| GameError::InvalidActionRequested(player))?;
         }
         BasicAction::MoveBackward => {
-            state.distance += player_data.aura.take(1);
+            board_state.distance += player_data.aura.take(1).map_err(|()| GameError::InvalidActionRequested(player))?;
         }
         BasicAction::Recover => {
-            player_data.aura += state.dust.take(1);
+            player_data.aura += board_state.dust.take(1).map_err(|()| GameError::InvalidActionRequested(player))?;
         }
         BasicAction::Focus => {
-            player_data.flare += player_data.aura.take(1);
+            player_data.flare += player_data.aura.take(1).map_err(|()| GameError::InvalidActionRequested(player))?;
         }
     }
-    cont(game)
+
+    Ok(Continue)
 }
 
-#[async_recursion]
-async fn pay_basic_action_cost<'a>(
-    game: &'a mut Game,
-    player: PlayerPos,
-    cost: BasicActionCost,
-    cont: impl Continuation<'a, &'a mut Game>,
-) -> StepResult<'a> {
+
+fn pay_basic_action_cost(board_state: &mut BoardState, player: PlayerPos, cost: BasicActionCost)
+                         -> Result<(), GameError> {
+    let player_state = &mut board_state.player_states[player];
     match cost {
         BasicActionCost::Hand(selector) => {
-            let player_state = &mut game.state.player_states[player];
             let hand = &mut player_state.hand;
 
             if selector.0 > hand.len() {
-                todo!("Call error continuation.")
+                return Err(GameError::InvalidActionRequested(player));
             }
             let card = hand.remove(selector.0);
 
             player_state.discard_pile.push(card)
         }
-        BasicActionCost::Vigor => add_to_vigor(&mut game.state, player, -Vigor(1)),
+        BasicActionCost::Vigor => add_to_vigor(player_state, -Vigor(1)).map_err(|()| GameError::InvalidActionRequested(player))?,
     }
-    cont(game)
+
+    Ok(())
 }
 
-async fn turn_end<'a>(game: &'a mut Game) -> StepResult {
-    // Todo: move enhancements and in-use cards to the used pile.
-    rec_call(next_turn(game))
-}
-
-fn get_player_viewable_state(state: &GameState, viewed_from: PlayerPos) -> ViewableState {
-    let player_states = &state.player_states;
+fn get_player_viewable_state(phase_state: &PhaseState, board: &BoardState, viewed_from: PlayerPos) -> ViewableState {
+    let player_states = &board.player_states;
 
     let get_player_state = |player: PlayerPos| -> ViewablePlayerState {
         let player_state = &player_states[player];
@@ -436,11 +338,11 @@ fn get_player_viewable_state(state: &GameState, viewed_from: PlayerPos) -> Viewa
     };
 
     ViewableState {
-        turn_player: state.turn_player,
-        phase: state.phase,
-        turn_number: state.turn_number,
-        distance: state.distance.get_count(),
-        dust: state.dust.get_count(),
+        turn_player: phase_state.turn_player,
+        phase: phase_state.phase,
+        turn_number: phase_state.turn_number,
+        distance: board.distance.get_count(),
+        dust: board.dust.get_count(),
         player_states: ViewablePlayerStates::new(
             get_player_state(PlayerPos::P1),
             get_player_state(PlayerPos::P2),
@@ -448,15 +350,20 @@ fn get_player_viewable_state(state: &GameState, viewed_from: PlayerPos) -> Viewa
     }
 }
 
-async fn test_win<'a>() -> StepResult<'a> {
-    rec_ret(GameResult::new(PlayerPos::P1))
-}
 
-fn add_to_vigor(state: &mut GameState, player: PlayerPos, diff: Vigor) {
+// Todo: impl Add for Vigor
+fn add_to_vigor(player_state: &mut PlayerState, diff: Vigor) -> Result<(), ()> {
     const MAX_VIGOR: i32 = 2;
     const MIN_VIGOR: i32 = 0;
 
-    let vigor = &mut state.player_states[player].vigor;
+    let vigor = &mut player_state.vigor;
 
-    vigor.0 = cmp::min(MAX_VIGOR, cmp::max(MIN_VIGOR, vigor.0 + diff.0));
+    let new = vigor.0 + diff.0;
+
+    if new < 0 {
+        return Err(());
+    }
+
+    vigor.0 = cmp::min(MAX_VIGOR, new);
+    Ok(())
 }

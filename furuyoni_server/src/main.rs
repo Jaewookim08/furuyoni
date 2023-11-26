@@ -1,3 +1,4 @@
+#![feature(try_trait_v2)]
 extern crate furuyoni_lib;
 use furuyoni_lib::net::frames::*;
 use furuyoni_lib::net::message_channel::MessageChannel;
@@ -7,7 +8,6 @@ use furuyoni_lib::players::{IdlePlayer};
 use furuyoni_lib::rules::PlayerPos;
 
 mod game;
-use crate::game::Game;
 
 mod networking;
 use networking::{post_office, ServerConnectionReader, ServerConnectionWriter};
@@ -21,6 +21,7 @@ use main_channels::MainChannels;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
+use crate::game::GameResult;
 
 #[tokio::main]
 async fn main() {
@@ -59,12 +60,15 @@ async fn spawn_game(socket: TcpStream){
     let p1 = RemotePlayer::new(game_to_player_requester, game_to_player_notifier);
     let p2 = IdlePlayer {};
 
-    let mut game = Game::new(Box::new(p1), Box::new(p2));
-
-    let res = game.run().await;
-    let winner_str = match res.winner {
-        PlayerPos::P1 => "P1",
-        PlayerPos::P2 => "P2",
+    let res = game::run_game(Box::new(p1), Box::new(p2)).await.expect("todo");
+    let winner_str = match res{
+        GameResult::Draw => { "Draw" }
+        GameResult::Winner(winner) => {
+            match winner {
+                PlayerPos::P1 => "P1",
+                PlayerPos::P2 => "P2",
+            }
+        }
     };
     println!("Game ended. Winner: {winner_str}");
 

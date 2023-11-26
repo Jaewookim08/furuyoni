@@ -177,6 +177,9 @@ fn apply_event(game_state: &mut GameState, event: &GameEvent) {
                 apply_cost(state, *pos, cost);
             }
 
+            // Todo: petalsSlot과 transfer로 수정.. unsafe cast 수정.
+            let amount = *amount as u32;
+
             match action {
                 BasicAction::MoveForward => {
                     *state.player_states[pos].get_aura_mut() += amount;

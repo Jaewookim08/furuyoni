@@ -23,39 +23,39 @@ impl ViewablePlayerState {
         }
     }
 
-    pub fn get_aura(&self) -> i32 {
+    pub fn get_aura(&self) -> u32 {
         match self {
             ViewablePlayerState::SelfState(s) => s.aura,
             ViewablePlayerState::Opponent(o) => o.aura,
         }
     }
-    pub fn get_aura_mut(&mut self) -> &mut i32 {
+    pub fn get_aura_mut(&mut self) -> &mut u32 {
         match self {
             ViewablePlayerState::SelfState(s) => &mut s.aura,
             ViewablePlayerState::Opponent(o) => &mut o.aura,
         }
     }
 
-    pub fn get_life(&self) -> i32 {
+    pub fn get_life(&self) -> u32 {
         match self {
             ViewablePlayerState::SelfState(s) => s.life,
             ViewablePlayerState::Opponent(o) => o.life,
         }
     }
-    pub fn get_life_mut(&mut self) -> &mut i32 {
+    pub fn get_life_mut(&mut self) -> &mut u32 {
         match self {
             ViewablePlayerState::SelfState(s) => &mut s.life,
             ViewablePlayerState::Opponent(o) => &mut o.life,
         }
     }
 
-    pub fn get_flare(&self) -> i32 {
+    pub fn get_flare(&self) -> u32 {
         match self {
             ViewablePlayerState::SelfState(s) => s.flare,
             ViewablePlayerState::Opponent(o) => o.flare,
         }
     }
-    pub fn get_flare_mut(&mut self) -> &mut i32 {
+    pub fn get_flare_mut(&mut self) -> &mut u32 {
         match self {
             ViewablePlayerState::SelfState(s) => &mut s.flare,
             ViewablePlayerState::Opponent(o) => &mut o.flare,
@@ -72,9 +72,9 @@ pub struct ViewableOpponentState {
     pub discard_pile_count: usize,
 
     pub vigor: i32,
-    pub aura: i32,
-    pub life: i32,
-    pub flare: i32,
+    pub aura: u32,
+    pub life: u32,
+    pub flare: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -86,19 +86,18 @@ pub struct ViewableSelfState {
     pub discard_pile: Vec<Card>,
 
     pub vigor: i32,
-    pub aura: i32,
-    pub life: i32,
-    pub flare: i32,
+    pub aura: u32,
+    pub life: u32,
+    pub flare: u32,
 }
-// Todo: Divide Self-Opponent state correctly so that no properties are repeated.
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ViewableState {
     pub turn_number: u32,
     pub turn_player: PlayerPos,
     pub phase: Phase,
-    pub distance: i32,
-    pub dust: i32,
+    pub distance: u32,
+    pub dust: u32,
     pub player_states: ViewablePlayerStates,
 }
 

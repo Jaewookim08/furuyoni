@@ -51,7 +51,7 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
                     PlayerToLobbyMessage::Request(request) => {
                         player_to_lobby_request_tx
                             .try_send(request)
-                            .map_err(|_| ReceivePostsError::ChannelSendError);
+                            .map_err(|_| ReceivePostsError::ChannelSendError)?;
                     }
                 }
             },

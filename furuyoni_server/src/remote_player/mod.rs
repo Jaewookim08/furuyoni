@@ -59,7 +59,7 @@ where
         }
     }
 
-    async fn start_game(&mut self, state: &ViewableState, pos: PlayerPos) -> Result<(), ()> {
+    async fn notify_game_start(&mut self, state: &ViewableState, pos: PlayerPos) -> Result<(), ()> {
         let response = self
             .requester
             .request(GameToPlayerRequestData::RequestGameStart {
