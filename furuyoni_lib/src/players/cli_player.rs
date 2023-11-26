@@ -11,9 +11,9 @@ impl super::Player for CliPlayer {
     async fn get_main_phase_action(
         &mut self,
         state: &ViewableState,
-        playable_cards: &Vec<PlayableCardSelector>,
+        _playable_cards: &Vec<PlayableCardSelector>,
         performable_basic_actions: &Vec<BasicAction>,
-        available_basic_action_costs: &Vec<BasicActionCost>,
+        _available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> MainPhaseAction {
         Self::print_state(&state);
 

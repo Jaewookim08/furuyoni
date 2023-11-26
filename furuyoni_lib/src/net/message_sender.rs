@@ -1,8 +1,6 @@
-use crate::net::with_send_callback::WithCallback;
-use crate::net::{connection};
 use thiserror::Error;
 use tokio::sync::mpsc::error::TrySendError;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::mpsc;
 
 #[derive(Error, Debug)]
 #[error("MessageSender failed.")]
@@ -31,9 +29,9 @@ impl<TInnerSender, F> MessageMap<TInnerSender, F> {
 }
 
 impl<TMessageIn, TMessageOut, TInnerSender: MessageSender<TMessageOut>, F> MessageSender<TMessageIn>
-    for MessageMap<TInnerSender, F>
-where
-    F: Fn(TMessageIn) -> TMessageOut,
+for MessageMap<TInnerSender, F>
+    where
+        F: Fn(TMessageIn) -> TMessageOut,
 {
     fn send_message(&self, message: TMessageIn) -> Result<(), MessageSendError> {
         self.sender.send_message((self.f)(message))
@@ -42,24 +40,24 @@ where
 
 pub trait IntoMessageMap<TM> {
     fn with_map<F>(self, f: F) -> MessageMap<Self, F>
-    where
-        Self: Sized;
+        where
+            Self: Sized;
 }
 
 impl<T, TM> IntoMessageMap<TM> for T
-where
-    T: MessageSender<TM>,
+    where
+        T: MessageSender<TM>,
 {
     fn with_map<F>(self, f: F) -> MessageMap<Self, F>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         MessageMap::new(self, f)
     }
 }
 
 impl<TMessage> MessageSender<TMessage>
-    for &mpsc::Sender<TMessage>
+for &mpsc::Sender<TMessage>
 {
     /// This function fails when the inner channel is full. This limitation is to make this function
     /// non-async and therefore easier to use with locks.
@@ -77,7 +75,7 @@ impl<TMessage> MessageSender<TMessage>
 }
 
 impl<TMessage> MessageSender<TMessage>
-    for mpsc::Sender<TMessage>
+for mpsc::Sender<TMessage>
 {
     fn send_message(&self, message: TMessage) -> Result<(), MessageSendError> {
         (&self).send_message(message)

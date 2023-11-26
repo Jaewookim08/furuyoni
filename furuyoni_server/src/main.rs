@@ -16,7 +16,6 @@ mod remote_player;
 use remote_player::RemotePlayer;
 
 mod main_channels;
-use main_channels::MainChannels;
 
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc;

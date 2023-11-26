@@ -211,11 +211,11 @@ fn apply_cost(state: &mut ViewableState, pos: PlayerPos, cost: &EventCost) {
 }
 
 fn run_system(
-    mut board_state: ResMut<BoardState>,
-    mut request_queue: ResMut<BoardRequestQueue>,
-    mut pick_requester: EventWriter<RequestPick>,
-    mut picked_event_reader: EventReader<PickedEvent>,
-    mut game_state: ResMut<GameState>,
+    board_state: ResMut<BoardState>,
+    request_queue: ResMut<BoardRequestQueue>,
+    pick_requester: EventWriter<RequestPick>,
+    picked_event_reader: EventReader<PickedEvent>,
+    game_state: ResMut<GameState>,
 ) {
     let board_state = board_state.into_inner();
     let op_next_state = match board_state {

@@ -16,11 +16,11 @@ pub trait Player {
         available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> MainPhaseAction;
 
-    async fn notify_game_start(&mut self, state: &ViewableState, pos: PlayerPos) -> Result<(), ()> {
+    async fn notify_game_start(&mut self, _state: &ViewableState, _pos: PlayerPos) -> Result<(), ()> {
         Ok(())
     }
 
-    fn notify_event(&mut self, event: GameEvent) -> Result<(), ()> {
+    fn notify_event(&mut self, _event: GameEvent) -> Result<(), ()> {
         Ok(())
     }
 }

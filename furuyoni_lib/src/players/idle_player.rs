@@ -8,10 +8,10 @@ pub struct IdlePlayer {}
 impl super::Player for IdlePlayer {
     async fn get_main_phase_action(
         &mut self,
-        state: &ViewableState,
-        playable_cards: &Vec<PlayableCardSelector>,
-        performable_basic_actions: &Vec<BasicAction>,
-        available_basic_action_costs: &Vec<BasicActionCost>,
+        _state: &ViewableState,
+        _playable_cards: &Vec<PlayableCardSelector>,
+        _performable_basic_actions: &Vec<BasicAction>,
+        _available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> MainPhaseAction {
         MainPhaseAction::EndMainPhase
     }

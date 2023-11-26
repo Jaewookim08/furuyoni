@@ -72,7 +72,6 @@ fn disable_picker_buttons(
 }
 
 fn start_picker_on_request(
-    mut commands: Commands,
     mut request: EventReader<RequestPick>,
     mut set: ParamSet<(
         Query<&mut Visibility, With<SkipButton>>,
@@ -98,9 +97,8 @@ fn start_picker_on_request(
 
 fn poll_pickers(
     mut ev_picked: EventWriter<PickedEvent>,
-    mut commands: Commands,
-    mut basic_action_buttons: Query<(&Interaction, &BasicActionButton), Changed<Interaction>>,
-    mut skip_buttons: Query<&Interaction, (Changed<Interaction>, With<SkipButton>)>,
+    basic_action_buttons: Query<(&Interaction, &BasicActionButton), Changed<Interaction>>,
+    skip_buttons: Query<&Interaction, (Changed<Interaction>, With<SkipButton>)>,
     mut next_state: ResMut<NextState<PickingState>>,
 ) {
     let picked = 'picked: {

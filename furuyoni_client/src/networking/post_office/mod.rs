@@ -1,10 +1,8 @@
 use crate::networking::{ClientConnectionReader, ClientConnectionWriter};
-use furuyoni_lib::net::connection::WriteError;
 use furuyoni_lib::net::frames::{
     ClientMessageFrame, GameToPlayerMessage, GameToPlayerRequest, GameToPlayerResponseFrame,
     LobbyToPlayerMessage, ServerMessageFrame,
 };
-use furuyoni_lib::net::with_send_callback::WithCallback;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::mpsc;
@@ -42,8 +40,8 @@ pub async fn receive_posts<T: AsyncRead + Unpin>(
                     }
                 },
                 ServerMessageFrame::LobbyMessage(msg) => match msg {
-                    LobbyToPlayerMessage::Request(req) => {}
-                    LobbyToPlayerMessage::Response(res) => {}
+                    LobbyToPlayerMessage::Request(req) => { todo!() }
+                    LobbyToPlayerMessage::Response(res) => { todo!() }
                 },
             },
         }
