@@ -12,7 +12,7 @@ impl super::Player for IdlePlayer {
         _playable_cards: &Vec<PlayableCardSelector>,
         _performable_basic_actions: &Vec<BasicAction>,
         _available_basic_action_costs: &Vec<BasicActionCost>,
-    ) -> MainPhaseAction {
-        MainPhaseAction::EndMainPhase
+    ) -> Result<MainPhaseAction, ()> {
+        Ok(MainPhaseAction::EndMainPhase)
     }
 }

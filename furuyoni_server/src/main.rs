@@ -1,11 +1,11 @@
 #![feature(try_trait_v2)]
 extern crate furuyoni_lib;
 
+use crate::furuyoni_lib::net::message_sender::IntoMessageMap;
 use furuyoni_lib::net::frames::*;
 use furuyoni_lib::net::message_channel::MessageChannel;
-use furuyoni_lib::players::{IdlePlayer};
+use furuyoni_lib::players::IdlePlayer;
 use furuyoni_lib::rules::PlayerPos;
-use crate::furuyoni_lib::net::message_sender::IntoMessageMap;
 
 mod game;
 
@@ -19,10 +19,10 @@ use remote_player::RemotePlayer;
 
 mod main_channels;
 
+use crate::game::GameResult;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
-use crate::game::GameResult;
 
 #[tokio::main]
 async fn main() {
@@ -59,15 +59,15 @@ async fn spawn_game(socket: TcpStream) {
     let p1 = RemotePlayer::new(game_to_player_requester);
     let p2 = IdlePlayer {};
 
-    let res = game::run_game(Box::new(p1), Box::new(p2)).await.expect("todo");
+    let res = game::run_game(Box::new(p1), Box::new(p2))
+        .await
+        .expect("todo");
     let winner_str = match res {
-        GameResult::Draw => { "Draw" }
-        GameResult::Winner(winner) => {
-            match winner {
-                PlayerPos::P1 => "P1",
-                PlayerPos::P2 => "P2",
-            }
-        }
+        GameResult::Draw => "Draw",
+        GameResult::Winner(winner) => match winner {
+            PlayerPos::P1 => "P1",
+            PlayerPos::P2 => "P2",
+        },
     };
     println!("Game ended. Winner: {winner_str}");
 
@@ -81,7 +81,7 @@ fn spawn_post_office(
     MessageChannel<LobbyToPlayerResponse, PlayerToLobbyRequest>,
     MessageChannel<GameToPlayerRequest, PlayerToGameResponse>,
     MessageChannel<GameToPlayerResponse, PlayerToGameRequest>,
-    JoinHandle<()>
+    JoinHandle<()>,
 ) {
     let (read_half, write_half) = stream.into_split();
 
@@ -105,22 +105,25 @@ fn spawn_post_office(
         );
     });
 
-    let lobby_to_player_sender = server_message_tx
-        .clone()
-        .with_map(|request| ServerMessageFrame::LobbyMessage(LobbyToPlayerMessage::Request(request)));
+    let lobby_to_player_sender = server_message_tx.clone().with_map(|request| {
+        ServerMessageFrame::LobbyMessage(LobbyToPlayerMessage::Request(request))
+    });
 
     let lobby_to_player_requester =
         MessageChannel::new(lobby_to_player_sender, lobby_player_response_rx);
 
-    let lobby_to_player_response_sender =
-        server_message_tx.clone().with_map(|response| ServerMessageFrame::LobbyMessage(LobbyToPlayerMessage::Response(response)));
+    let lobby_to_player_response_sender = server_message_tx.clone().with_map(|response| {
+        ServerMessageFrame::LobbyMessage(LobbyToPlayerMessage::Response(response))
+    });
 
     let lobby_to_player_responder =
         MessageChannel::new(lobby_to_player_response_sender, lobby_player_request_rx);
 
-    let lobby_to_player_notifier = server_message_tx
-        .clone()
-        .with_map(|m| ServerMessageFrame::LobbyMessage(LobbyToPlayerMessage::Request(LobbyToPlayerRequest::Notify(m))));
+    let lobby_to_player_notifier = server_message_tx.clone().with_map(|m| {
+        ServerMessageFrame::LobbyMessage(LobbyToPlayerMessage::Request(
+            LobbyToPlayerRequest::Notify(m),
+        ))
+    });
 
     let game_to_player_req_sender = server_message_tx
         .clone()
@@ -129,15 +132,18 @@ fn spawn_post_office(
     let game_to_player_requester =
         MessageChannel::new(game_to_player_req_sender, game_player_response_rx);
 
-    let game_to_player_response_sender =
-        server_message_tx.clone().with_map(|response_data| ServerMessageFrame::GameMessage(GameToPlayerMessage::Response(response_data)));
+    let game_to_player_response_sender = server_message_tx.clone().with_map(|response_data| {
+        ServerMessageFrame::GameMessage(GameToPlayerMessage::Response(response_data))
+    });
 
     let game_to_player_responder =
         MessageChannel::new(game_to_player_response_sender, game_player_request_rx);
 
-    let game_to_player_notifier = server_message_tx
-        .clone()
-        .with_map(|notify_data| ServerMessageFrame::GameMessage(GameToPlayerMessage::Request(GameToPlayerRequest::Notify(notify_data))));
+    let game_to_player_notifier = server_message_tx.clone().with_map(|notify_data| {
+        ServerMessageFrame::GameMessage(GameToPlayerMessage::Request(GameToPlayerRequest::Notify(
+            notify_data,
+        )))
+    });
 
     return (
         lobby_to_player_requester,

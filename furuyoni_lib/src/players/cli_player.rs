@@ -14,7 +14,7 @@ impl super::Player for CliPlayer {
         _playable_cards: &Vec<PlayableCardSelector>,
         performable_basic_actions: &Vec<BasicAction>,
         _available_basic_action_costs: &Vec<BasicActionCost>,
-    ) -> MainPhaseAction {
+    ) -> Result<MainPhaseAction, ()> {
         Self::print_state(&state);
 
         println!("actions: {performable_basic_actions:?}");
@@ -22,12 +22,12 @@ impl super::Player for CliPlayer {
         let index = Self::get_index_lower_than(performable_basic_actions.len() + 1).unwrap();
 
         if index == performable_basic_actions.len() {
-            MainPhaseAction::EndMainPhase
+            Ok(MainPhaseAction::EndMainPhase)
         } else {
-            MainPhaseAction::PlayBasicAction(PlayBasicAction::new(
+            Ok(MainPhaseAction::PlayBasicAction(PlayBasicAction::new(
                 performable_basic_actions[index],
                 BasicActionCost::Vigor,
-            ))
+            )))
         }
     }
 }

@@ -1,6 +1,6 @@
+mod game_controlflow;
 mod petals;
 mod player_state;
-mod game_controlflow;
 
 use petals::Petals;
 
@@ -16,18 +16,17 @@ use furuyoni_lib::rules::{
     ViewableSelfState, ViewableState,
 };
 
+use crate::game::game_controlflow::GameControlFlow::{BreakPhase, Continue};
+use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};
+use player_state::PlayerState;
 use std::cmp;
 use std::collections::VecDeque;
 use std::future::Future;
 use std::marker::{Send, Sync};
-use tokio::join;
-use player_state::PlayerState;
 use thiserror::Error;
-use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};
-use crate::game::game_controlflow::GameControlFlow::{BreakPhase, Continue};
+use tokio::join;
 
 const GET_ACTION_RETRY_TIMES: usize = 3;
-
 
 #[derive(Error, Debug)]
 pub enum GameError {
@@ -61,22 +60,22 @@ struct BoardState {
 
 type PlayerStates = PlayerData<PlayerState>;
 
-
-pub async fn run_game(player_1: Box<dyn Player + Sync + Send>,
-                      player_2: Box<dyn Player + Sync + Send>) -> Result<GameResult, GameError> {
+pub async fn run_game(
+    player_1: Box<dyn Player + Sync + Send>,
+    player_2: Box<dyn Player + Sync + Send>,
+) -> Result<GameResult, GameError> {
     let mut players = Players::new(player_1, player_2);
 
     let (mut phase_state, mut board_state) = initialize_game_states();
 
     notify_game_start(&mut players, &phase_state, &board_state).await?;
 
-
     // Define phase modifying functions.
     fn next_phase(phase_state: &mut PhaseState) {
         match phase_state.phase {
-            Phase::Beginning => { phase_state.phase = Phase::Main }
-            Phase::Main => { phase_state.phase = Phase::End }
-            Phase::End => { next_turn(phase_state) }
+            Phase::Beginning => phase_state.phase = Phase::Main,
+            Phase::Main => phase_state.phase = Phase::End,
+            Phase::End => next_turn(phase_state),
         }
     }
 
@@ -91,55 +90,72 @@ pub async fn run_game(player_1: Box<dyn Player + Sync + Send>,
     // phase loop
     loop {
         let phase_result: GameControlFlow = match phase_state.phase {
-            Phase::Beginning => { run_beginning_phase(&mut players, &phase_state, &mut board_state).await? }
-            Phase::Main => { run_main_phase(&mut players, &phase_state, &mut board_state).await? }
-            Phase::End => { run_end_phase(&mut players, &phase_state, &mut board_state).await? }
+            Phase::Beginning => {
+                run_beginning_phase(&mut players, &phase_state, &mut board_state).await?
+            }
+            Phase::Main => run_main_phase(&mut players, &phase_state, &mut board_state).await?,
+            Phase::End => run_end_phase(&mut players, &phase_state, &mut board_state).await?,
         };
 
         match phase_result {
-            Continue => { next_phase(&mut phase_state) }
-            BreakPhase(phase_break) => {
-                match phase_break {
-                    PhaseBreak::EndPhase => { next_phase(&mut phase_state) }
-                    PhaseBreak::EndTurn => { next_turn(&mut phase_state) }
-                    PhaseBreak::EndGame(game_result) => { return Ok(game_result); }
+            Continue => next_phase(&mut phase_state),
+            BreakPhase(phase_break) => match phase_break {
+                PhaseBreak::EndPhase => next_phase(&mut phase_state),
+                PhaseBreak::EndTurn => next_turn(&mut phase_state),
+                PhaseBreak::EndGame(game_result) => {
+                    return Ok(game_result);
                 }
-            }
+            },
         }
     }
 }
 
-
-async fn run_beginning_phase(players: &mut Players, phase_state: &PhaseState, board_state: &mut BoardState)
-                             -> Result<GameControlFlow, GameError> {
+async fn run_beginning_phase(
+    players: &mut Players,
+    phase_state: &PhaseState,
+    board_state: &mut BoardState,
+) -> Result<GameControlFlow, GameError> {
     // Skip beginning phase for the first two turns.
     if phase_state.turn_number <= 2 {
         return Ok(Continue);
     }
 
     // Add vigor
-    add_to_vigor(&mut board_state.player_states[phase_state.turn_player], Vigor(1)).unwrap();
+    add_to_vigor(
+        &mut board_state.player_states[phase_state.turn_player],
+        Vigor(1),
+    )
+    .unwrap();
     // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
 
     Ok(Continue)
 }
 
-async fn run_main_phase(players: &mut Players, phase_state: &PhaseState, board_state: &mut BoardState)
-                        -> Result<GameControlFlow, GameError> {
+async fn run_main_phase(
+    players: &mut Players,
+    phase_state: &PhaseState,
+    board_state: &mut BoardState,
+) -> Result<GameControlFlow, GameError> {
     handle_player_actions(players, phase_state, board_state).await??;
 
     Ok(Continue)
 }
 
-async fn run_end_phase(players: &mut Players, phase_state: &PhaseState, board_state: &mut BoardState)
-                       -> Result<GameControlFlow, GameError> {
+async fn run_end_phase(
+    players: &mut Players,
+    phase_state: &PhaseState,
+    board_state: &mut BoardState,
+) -> Result<GameControlFlow, GameError> {
     // Todo: move enhancements and in-use cards to the used pile.
 
     Ok(Continue)
 }
 
-async fn handle_player_actions(players: &mut Players, phase_state: &PhaseState, board_state: &mut BoardState)
-                               -> Result<GameControlFlow, GameError> {
+async fn handle_player_actions(
+    players: &mut Players,
+    phase_state: &PhaseState,
+    board_state: &mut BoardState,
+) -> Result<GameControlFlow, GameError> {
     let turn_player_pos = phase_state.turn_player;
     let turn_player = &mut players[turn_player_pos];
 
@@ -165,7 +181,8 @@ async fn handle_player_actions(players: &mut Players, phase_state: &PhaseState, 
                     &doable_basic_actions,
                     &available_costs,
                 )
-                .await;
+                .await
+                .map_err(|_| GameError::PlayerCommunicationFail(turn_player_pos))?;
             // Todo: handle result.
 
             if validate_main_phase_action(board_state, &action) {
@@ -220,28 +237,44 @@ fn initialize_game_states() -> (PhaseState, BoardState) {
     (phase_state, board_state)
 }
 
-async fn notify_game_start(players: &mut Players, phase_state: &PhaseState, board_state: &BoardState) -> Result<(), GameError> {
+async fn notify_game_start(
+    players: &mut Players,
+    phase_state: &PhaseState,
+    board_state: &BoardState,
+) -> Result<(), GameError> {
     async fn notify_start(
         p: &mut (impl Player + ?Sized + Send),
         phase_state: &PhaseState,
         board_state: &BoardState,
         pos: PlayerPos,
     ) -> Result<(), GameError> {
-        p.notify_game_start(&get_player_viewable_state(phase_state, board_state, pos), pos)
-            .await
-            .map_err(|()| GameError::PlayerCommunicationFail(pos))
+        p.notify_game_start(
+            &get_player_viewable_state(phase_state, board_state, pos),
+            pos,
+        )
+        .await
+        .map_err(|_| GameError::PlayerCommunicationFail(pos))
     }
 
     let (a, b) = join!(
-        notify_start(&mut *players.p1_data, phase_state, board_state, PlayerPos::P1),
-        notify_start(&mut *players.p2_data, phase_state, board_state, PlayerPos::P2)
+        notify_start(
+            &mut *players.p1_data,
+            phase_state,
+            board_state,
+            PlayerPos::P1
+        ),
+        notify_start(
+            &mut *players.p2_data,
+            phase_state,
+            board_state,
+            PlayerPos::P2
+        )
     );
 
     (a?, b?);
 
     Ok(())
 }
-
 
 /// Return default player states. Only used for debugging.
 fn default_player_states() -> PlayerStates {
@@ -274,7 +307,6 @@ fn default_player_states() -> PlayerStates {
     PlayerStates::new(p1_state, p2_state)
 }
 
-
 fn play_basic_action(
     board_state: &mut BoardState,
     player: PlayerPos,
@@ -286,25 +318,39 @@ fn play_basic_action(
     match action {
         BasicAction::MoveForward => {
             // Todo: Petals max 추가, transfer.
-            player_data.aura += board_state.distance.take(1).map_err(|()| GameError::InvalidActionRequested(player))?;
+            player_data.aura += board_state
+                .distance
+                .take(1)
+                .map_err(|()| GameError::InvalidActionRequested(player))?;
         }
         BasicAction::MoveBackward => {
-            board_state.distance += player_data.aura.take(1).map_err(|()| GameError::InvalidActionRequested(player))?;
+            board_state.distance += player_data
+                .aura
+                .take(1)
+                .map_err(|()| GameError::InvalidActionRequested(player))?;
         }
         BasicAction::Recover => {
-            player_data.aura += board_state.dust.take(1).map_err(|()| GameError::InvalidActionRequested(player))?;
+            player_data.aura += board_state
+                .dust
+                .take(1)
+                .map_err(|()| GameError::InvalidActionRequested(player))?;
         }
         BasicAction::Focus => {
-            player_data.flare += player_data.aura.take(1).map_err(|()| GameError::InvalidActionRequested(player))?;
+            player_data.flare += player_data
+                .aura
+                .take(1)
+                .map_err(|()| GameError::InvalidActionRequested(player))?;
         }
     }
 
     Ok(Continue)
 }
 
-
-fn pay_basic_action_cost(board_state: &mut BoardState, player: PlayerPos, cost: BasicActionCost)
-                         -> Result<(), GameError> {
+fn pay_basic_action_cost(
+    board_state: &mut BoardState,
+    player: PlayerPos,
+    cost: BasicActionCost,
+) -> Result<(), GameError> {
     let player_state = &mut board_state.player_states[player];
     match cost {
         BasicActionCost::Hand(selector) => {
@@ -317,13 +363,18 @@ fn pay_basic_action_cost(board_state: &mut BoardState, player: PlayerPos, cost: 
 
             player_state.discard_pile.push(card)
         }
-        BasicActionCost::Vigor => add_to_vigor(player_state, -Vigor(1)).map_err(|()| GameError::InvalidActionRequested(player))?,
+        BasicActionCost::Vigor => add_to_vigor(player_state, -Vigor(1))
+            .map_err(|()| GameError::InvalidActionRequested(player))?,
     }
 
     Ok(())
 }
 
-fn get_player_viewable_state(phase_state: &PhaseState, board: &BoardState, viewed_from: PlayerPos) -> ViewableState {
+fn get_player_viewable_state(
+    phase_state: &PhaseState,
+    board: &BoardState,
+    viewed_from: PlayerPos,
+) -> ViewableState {
     let player_states = &board.player_states;
 
     let get_player_state = |player: PlayerPos| -> ViewablePlayerState {
@@ -347,7 +398,6 @@ fn get_player_viewable_state(phase_state: &PhaseState, board: &BoardState, viewe
         ),
     }
 }
-
 
 // Todo: impl Add for Vigor
 fn add_to_vigor(player_state: &mut PlayerState, diff: Vigor) -> Result<(), ()> {

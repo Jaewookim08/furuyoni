@@ -7,16 +7,19 @@ use std::ops::{Index, IndexMut};
 
 #[async_trait]
 pub trait Player {
-    // Todo: Return Result.
     async fn get_main_phase_action(
         &mut self,
         state: &ViewableState,
         playable_cards: &Vec<PlayableCardSelector>,
         performable_basic_actions: &Vec<BasicAction>,
         available_basic_action_costs: &Vec<BasicActionCost>,
-    ) -> MainPhaseAction;
+    ) -> Result<MainPhaseAction, ()>;
 
-    async fn notify_game_start(&mut self, _state: &ViewableState, _pos: PlayerPos) -> Result<(), ()> {
+    async fn notify_game_start(
+        &mut self,
+        _state: &ViewableState,
+        _pos: PlayerPos,
+    ) -> Result<(), ()> {
         Ok(())
     }
 
