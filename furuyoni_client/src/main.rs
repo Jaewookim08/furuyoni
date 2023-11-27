@@ -1,49 +1,59 @@
+mod game_logic;
 mod networking;
 mod systems;
 
-use crate::networking::{post_office, ClientConnectionReader, ClientConnectionWriter};
+use crate::game_logic::GameLogicError;
+use crate::networking::post_office::spawn_post_office;
 use crate::systems::board_system::{
-    BoardPlugin, PlayerRelativePos, PlayerValuePicker, PlayerValuePickerType, StateLabel,
-    StateStringPicker,
+    PlayerRelativePos, PlayerValuePicker, PlayerValuePickerType, StateLabel, StateStringPicker,
 };
 use crate::systems::picker::{BasicActionButton, PickerPlugin, SkipButton};
-use crate::systems::player::{PlayerPlugin, ResponderResource};
 use bevy::prelude::*;
 use bevy::text::TextStyle;
 use bevy::ui::PositionType;
 use bevy::DefaultPlugins;
 use bevy_editor_pls::prelude::*;
+use bevy_tokio_tasks::{TokioTasksPlugin, TokioTasksRuntime};
 use furuyoni_lib::net::frames::*;
-use furuyoni_lib::net::message_channel::{MessageChannel};
 use furuyoni_lib::net::message_sender::IntoMessageMap;
 use furuyoni_lib::player_actions::BasicAction;
+use thiserror::Error;
 use tokio::net::TcpStream;
-use tokio::task::JoinHandle;
 
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let socket = TcpStream::connect("127.0.0.1:4255").await?;
+#[derive(Debug, Error)]
+pub(crate) enum Error {
+    #[error("Failed to connect to the server.")]
+    ConnectionFailed(tokio::io::Error),
+    #[error("{0}")]
+    GameLogicError(#[from] GameLogicError),
+}
 
-    let (player_to_game_requester, player_to_game_responder, post_office_task) =
-        spawn_post_office(socket);
-
+fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(PickerPlugin)
-        .add_plugin(PlayerPlugin)
-        .insert_resource(ResponderResource::new(player_to_game_responder))
-        .add_plugin(BoardPlugin)
-        .add_startup_system(setup)
-        // .add_startup_system(load_scene)
-        .add_plugin(EditorPlugin)
+        .add_plugins(PickerPlugin)
+        .add_plugins(TokioTasksPlugin::default())
+        .add_plugins(EditorPlugin::default())
+        .add_systems(Startup, (setup, spawn_async_tasks))
+        // .add_systems(Startup, load_scene)
         .run();
+}
 
-    // let player = CliPlayer {};
+pub fn spawn_async_tasks(runtime: ResMut<TokioTasksRuntime>) {
+    runtime.spawn_background_task(|ctx| async move {
+        let socket = TcpStream::connect("127.0.0.1:4255")
+            .await
+            .map_err(|e| Error::ConnectionFailed(e))?;
 
-    // run_responder(player, player_to_game_responder).await;
+        let (player_to_game_requester, player_to_game_responder, post_office_task) =
+            spawn_post_office(socket);
 
-    post_office_task.abort();
-    Ok(())
+        game_logic::run_game(player_to_game_responder, ctx).await?;
+
+        post_office_task.abort();
+
+        Ok::<(), Error>(())
+    });
 }
 
 fn load_scene(asset_server: Res<AssetServer>, mut scene_spawner: ResMut<SceneSpawner>) {
@@ -81,11 +91,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             .with_text_alignment(TextAlignment::Left)
             .with_style(Style {
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    top: Val::Percent(t),
-                    left: Val::Percent(l),
-                    ..default()
-                },
+                top: Val::Percent(t),
+                left: Val::Percent(l),
                 ..default()
             }),
             StateLabel::new(1, picker),
@@ -178,7 +185,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn((
             ButtonBundle {
                 style: Style {
-                    size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                    width: Val::Px(150.0),
+                    height: Val::Px(65.0),
                     // center button
                     margin: UiRect::all(Val::Auto),
                     // horizontally center child text
@@ -186,11 +194,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     // vertically center child text
                     align_items: AlignItems::Center,
                     position_type: PositionType::Absolute,
-                    position: UiRect {
-                        left: Val::Percent(21.),
-                        top: Val::Percent(20.),
-                        ..default()
-                    },
+                    left: Val::Percent(21.),
+                    top: Val::Percent(20.),
                     ..default()
                 },
                 background_color: Color::rgb(125. / 256., 13. / 256., 40.0 / 256.).into(),
@@ -214,7 +219,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             .spawn((
                 ButtonBundle {
                     style: Style {
-                        size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                        width: Val::Px(150.0),
+                        height: Val::Px(65.0),
                         // center button
                         margin: UiRect::all(Val::Auto),
                         // horizontally center child text
@@ -222,11 +228,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         // vertically center child text
                         align_items: AlignItems::Center,
                         position_type: PositionType::Absolute,
-                        position: UiRect {
-                            top: Val::Percent(t),
-                            left: Val::Percent(l),
-                            ..default()
-                        },
+                        top: Val::Percent(t),
+                        left: Val::Percent(l),
                         ..default()
                     },
                     background_color: Color::rgb(0.2, 0.5, 0.3).into(),
@@ -250,58 +253,4 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     spawn_ba_button(8., 20., "Backward", BasicAction::MoveBackward);
     spawn_ba_button(-5., 30., "Focus", BasicAction::Focus);
     spawn_ba_button(8., 30., "Recover", BasicAction::Recover);
-}
-
-fn spawn_post_office(
-    stream: TcpStream,
-) -> (
-    impl Requester<PlayerToGameRequest, Response = GameToPlayerResponse, Error = RequestError>
-        + Send
-        + Sync,
-    impl Responder<
-            PlayerToGameResponseFrame,
-            Request = GameToPlayerRequest,
-            Error = MessageChannelResponseError,
-        > + Send
-        + Sync,
-    JoinHandle<()>,
-) {
-    let (read_half, write_half) = stream.into_split();
-
-    let reader = ClientConnectionReader::new(read_half);
-    let writer = ClientConnectionWriter::new(write_half);
-
-    let (game_request_tx, game_request_rx) = tokio::sync::mpsc::channel(20);
-    let (game_response_tx, game_response_rx) = tokio::sync::mpsc::channel(20);
-
-    let (client_message_tx, client_message_rx) = tokio::sync::mpsc::channel(20);
-
-    let post_office_joinhandle = tokio::spawn(async {
-        tokio::select!(
-            res = post_office::receive_posts(reader, game_request_tx, game_response_tx) =>
-                println!("receive_posts has ended with result: {:?}", res),
-            () = post_office::handle_send_requests(client_message_rx, writer) =>
-                println!("handle_send_request has ended."),
-        );
-    });
-
-    let player_to_game_request_sender = client_message_tx.clone().with_map(|request| {
-        ClientMessageFrame::PlayerToGameMessage(PlayerToGameMessage::Request(request))
-    });
-
-    let player_to_game_requester =
-        MessageChannel::new(player_to_game_request_sender, game_response_rx);
-
-    let player_to_game_response_sender = client_message_tx
-        .clone()
-        .with_map(|r| ClientMessageFrame::PlayerToGameMessage(PlayerToGameMessage::Response(r)));
-
-    let player_to_game_responder =
-        MessageChannel::new(player_to_game_response_sender, game_request_rx);
-
-    return (
-        player_to_game_requester,
-        player_to_game_responder,
-        post_office_joinhandle,
-    );
 }
