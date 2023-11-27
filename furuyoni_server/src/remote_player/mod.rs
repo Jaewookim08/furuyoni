@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use furuyoni_lib::events::GameEvent;
 use furuyoni_lib::net::frames::{
-    GameToPlayerNotification, GameToPlayerRequest, GameToPlayerRequestData, PlayerToGameResponse,
-    RequestMainPhaseAction,
+    GameToPlayerRequest, PlayerToGameResponse, RequestMainPhaseAction,
 };
 use furuyoni_lib::net::message_channel::MessageChannel;
 
@@ -34,13 +33,13 @@ impl Player for RemotePlayer {
         available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> Result<MainPhaseAction, ()> {
         self.channel
-            .send(GameToPlayerRequest::RequestData(
-                GameToPlayerRequestData::RequestMainPhaseAction(RequestMainPhaseAction {
+            .send(GameToPlayerRequest::RequestMainPhaseAction(
+                RequestMainPhaseAction {
                     state: state.clone(),
                     playable_cards: playable_cards.clone(),
                     performable_basic_actions: performable_basic_actions.clone(),
                     available_basic_action_costs: available_basic_action_costs.clone(),
-                }),
+                },
             ))
             .expect("Todo: add error type for Player");
 
@@ -55,12 +54,10 @@ impl Player for RemotePlayer {
 
     async fn notify_game_start(&mut self, state: &ViewableState, pos: PlayerPos) -> Result<(), ()> {
         self.channel
-            .send(GameToPlayerRequest::RequestData(
-                GameToPlayerRequestData::RequestGameStart {
-                    state: state.clone(),
-                    pos,
-                },
-            ))
+            .send(GameToPlayerRequest::RequestGameStart {
+                state: state.clone(),
+                pos,
+            })
             .map_err(|_| ())?;
 
         let response = self.channel.receive().await.map_err(|_| ())?;
@@ -74,9 +71,7 @@ impl Player for RemotePlayer {
 
     fn notify_event(&mut self, event: GameEvent) -> Result<(), ()> {
         self.channel
-            .send(GameToPlayerRequest::Notify(
-                GameToPlayerNotification::Event(event),
-            ))
+            .send(GameToPlayerRequest::NotifyEvent(event))
             .map_err(|_| ())?;
         Ok(())
     }

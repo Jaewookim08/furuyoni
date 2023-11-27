@@ -88,17 +88,17 @@ fn spawn_post_office(
     let reader = ServerConnectionReader::new(read_half);
     let writer = ServerConnectionWriter::new(write_half);
 
-    let (lobby_player_response_tx, lobby_player_response_rx) = mpsc::channel(20);
-    let (lobby_player_request_tx, lobby_player_request_rx) = mpsc::channel(20);
+    let (player_to_lobby_response_tx, player_to_lobby_response_rx) = mpsc::channel(20);
+    let (player_to_lobby_request_tx, player_to_lobby_request_rx) = mpsc::channel(20);
 
-    let (game_player_response_tx, game_player_response_rx) = mpsc::channel(20);
-    let (game_player_request_tx, game_player_request_rx) = mpsc::channel(20);
+    let (player_to_game_response_tx, player_to_game_response_rx) = mpsc::channel(20);
+    let (player_to_game_request_tx, player_to_game_request_rx) = mpsc::channel(20);
 
     let (server_message_tx, server_message_rx) = mpsc::channel(20);
 
     let post_office_joinhandle = tokio::spawn(async {
         tokio::select!(
-            res = post_office::receive_posts(reader, game_player_response_tx, game_player_request_tx, lobby_player_response_tx, lobby_player_request_tx) =>
+            res = post_office::receive_posts(reader, player_to_game_response_tx, player_to_game_request_tx, player_to_lobby_response_tx, player_to_lobby_request_tx) =>
                 println ! ("receive_posts has ended with result: {:?}", res),
             () = post_office::handle_send_requests(server_message_rx, writer) =>
                 println ! ("game_handle_send_request has ended."),
@@ -110,40 +110,28 @@ fn spawn_post_office(
     });
 
     let lobby_to_player_requester =
-        MessageChannel::new(lobby_to_player_sender, lobby_player_response_rx);
+        MessageChannel::new(lobby_to_player_sender, player_to_lobby_response_rx);
 
     let lobby_to_player_response_sender = server_message_tx.clone().with_map(|response| {
         ServerMessageFrame::LobbyMessage(LobbyToPlayerMessage::Response(response))
     });
 
     let lobby_to_player_responder =
-        MessageChannel::new(lobby_to_player_response_sender, lobby_player_request_rx);
-
-    let lobby_to_player_notifier = server_message_tx.clone().with_map(|m| {
-        ServerMessageFrame::LobbyMessage(LobbyToPlayerMessage::Request(
-            LobbyToPlayerRequest::Notify(m),
-        ))
-    });
+        MessageChannel::new(lobby_to_player_response_sender, player_to_lobby_request_rx);
 
     let game_to_player_req_sender = server_message_tx
         .clone()
         .with_map(|request| ServerMessageFrame::GameMessage(GameToPlayerMessage::Request(request)));
 
     let game_to_player_requester =
-        MessageChannel::new(game_to_player_req_sender, game_player_response_rx);
+        MessageChannel::new(game_to_player_req_sender, player_to_game_response_rx);
 
     let game_to_player_response_sender = server_message_tx.clone().with_map(|response_data| {
         ServerMessageFrame::GameMessage(GameToPlayerMessage::Response(response_data))
     });
 
     let game_to_player_responder =
-        MessageChannel::new(game_to_player_response_sender, game_player_request_rx);
-
-    let game_to_player_notifier = server_message_tx.clone().with_map(|notify_data| {
-        ServerMessageFrame::GameMessage(GameToPlayerMessage::Request(GameToPlayerRequest::Notify(
-            notify_data,
-        )))
-    });
+        MessageChannel::new(game_to_player_response_sender, player_to_game_request_rx);
 
     return (
         lobby_to_player_requester,

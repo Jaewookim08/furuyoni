@@ -12,17 +12,7 @@ pub enum GameToPlayerMessage {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameToPlayerRequest {
-    Notify(GameToPlayerNotification),
-    RequestData(GameToPlayerRequestData),
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum GameToPlayerNotification {
-    Event(GameEvent),
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum GameToPlayerRequestData {
+    NotifyEvent(GameEvent),
     RequestMainPhaseAction(RequestMainPhaseAction),
     RequestGameStart {
         state: ViewableState,
@@ -64,5 +54,5 @@ pub struct ResponseMainPhaseAction {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PlayerToGameRequest {
     RequestState,
-    Surrender,
+    RequestSurrender,
 }
