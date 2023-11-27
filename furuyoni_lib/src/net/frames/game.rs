@@ -4,26 +4,22 @@ use crate::rules::{PlayerPos, ViewableState};
 use crate::events::GameEvent;
 use serde::{Deserialize, Serialize};
 
-use super::base::WithRequestId;
-
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameToPlayerMessage {
     Request(GameToPlayerRequest),
-    Response(GameToPlayerResponseFrame),
+    Response(GameToPlayerResponse),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameToPlayerRequest {
     Notify(GameToPlayerNotification),
-    RequestData(GameToPlayerRequestDataFrame),
+    RequestData(GameToPlayerRequestData),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameToPlayerNotification {
     Event(GameEvent),
 }
-
-pub type GameToPlayerRequestDataFrame = WithRequestId<GameToPlayerRequestData>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameToPlayerRequestData {
@@ -42,8 +38,6 @@ pub struct RequestMainPhaseAction {
     pub available_basic_action_costs: Vec<BasicActionCost>,
 }
 
-pub type GameToPlayerResponseFrame = WithRequestId<GameToPlayerResponse>;
-
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameToPlayerResponse {
     State(ViewableState),
@@ -52,11 +46,9 @@ pub enum GameToPlayerResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PlayerToGameMessage {
-    Response(PlayerToGameResponseFrame),
-    Request(PlayerToGameRequestFrame),
+    Response(PlayerToGameResponse),
+    Request(PlayerToGameRequest),
 }
-
-pub type PlayerToGameResponseFrame = WithRequestId<PlayerToGameResponse>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PlayerToGameResponse {
@@ -68,8 +60,6 @@ pub enum PlayerToGameResponse {
 pub struct ResponseMainPhaseAction {
     pub action: MainPhaseAction,
 }
-
-pub type PlayerToGameRequestFrame = WithRequestId<PlayerToGameRequest>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PlayerToGameRequest {

@@ -1,29 +1,24 @@
 use serde::{Serialize, Deserialize};
 
-use super::base::WithRequestId;
-
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LobbyToPlayerMessage {
     Request(LobbyToPlayerRequest),
-    Response(LobbyToPlayerResponseFrame),
+    Response(LobbyToPlayerResponse),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LobbyToPlayerRequest {
     Notify(LobbyToPlayerNotification),
-    RequestData(LobbyToPlayerRequestDataFrame),
+    RequestData(LobbyToPlayerRequestData),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LobbyToPlayerNotification {}
-pub type LobbyToPlayerRequestDataFrame = WithRequestId<LobbyToPlayerRequestData>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LobbyToPlayerRequestData {
     AreYouAlive
 }
-
-pub type LobbyToPlayerResponseFrame = WithRequestId<LobbyToPlayerResponse>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LobbyToPlayerResponse {
@@ -44,18 +39,14 @@ pub struct LobbyRoomInfo{
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PlayerToLobbyMessage{
-    Response(PlayerToLobbyResponseFrame),
-    Request(PlayerToLobbyRequestFrame)
+    Response(PlayerToLobbyResponse),
+    Request(PlayerToLobbyRequest)
 }
-
-pub type PlayerToLobbyResponseFrame = WithRequestId<PlayerToLobbyResponse>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PlayerToLobbyResponse {
-    IAmAlive
+    Ack
  }
-
-pub type PlayerToLobbyRequestFrame = WithRequestId<PlayerToLobbyRequest>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PlayerToLobbyRequest {

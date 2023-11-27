@@ -1,8 +1,5 @@
 use crate::networking::{ClientConnectionReader, ClientConnectionWriter};
-use furuyoni_lib::net::frames::{
-    ClientMessageFrame, GameToPlayerMessage, GameToPlayerRequest, GameToPlayerResponseFrame,
-    LobbyToPlayerMessage, ServerMessageFrame,
-};
+use furuyoni_lib::net::frames::{ClientMessageFrame, GameToPlayerMessage, GameToPlayerRequest, GameToPlayerResponse, LobbyToPlayerMessage, ServerMessageFrame};
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::sync::mpsc;
@@ -18,7 +15,7 @@ pub enum ReceivePostsError {
 pub async fn receive_posts<T: AsyncRead + Unpin>(
     mut reader: ClientConnectionReader<T>,
     game_request_tx: mpsc::Sender<GameToPlayerRequest>,
-    game_response_tx: mpsc::Sender<GameToPlayerResponseFrame>,
+    game_response_tx: mpsc::Sender<GameToPlayerResponse>,
 ) -> Result<(), ReceivePostsError> {
     loop {
         match reader.read_frame().await {

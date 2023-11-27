@@ -3,22 +3,14 @@ use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
 use furuyoni_lib::net::frames::{
     GameToPlayerNotification, GameToPlayerRequest, GameToPlayerRequestData, PlayerToGameResponse,
-    PlayerToGameResponseFrame, ResponseMainPhaseAction, WithRequestId,
+    ResponseMainPhaseAction,
 };
-use furuyoni_lib::net::message_channel::MessageChannelResponseError;
-use furuyoni_lib::net::Responder;
+use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::rules::{PlayerPos, ViewableState};
 use futures_lite::future;
 use tokio::sync::oneshot;
 
-type PlayerToGameResponder = Box<
-    dyn Responder<
-            PlayerToGameResponseFrame,
-            Request = GameToPlayerRequest,
-            Error = MessageChannelResponseError,
-        > + Send
-        + Sync,
->;
+type PlayerToGameResponder = MessageChannel<GameToPlayerRequest, PlayerToGameResponse>;
 
 pub struct PlayerPlugin;
 

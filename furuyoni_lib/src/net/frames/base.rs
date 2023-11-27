@@ -22,17 +22,6 @@ pub trait InputFrame {
 pub trait Frame: OutputFrame + InputFrame {}
 impl<T> Frame for T where T: OutputFrame + InputFrame {}
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct WithRequestId<T> {
-    pub request_id: u32,
-    pub data: T,
-}
-impl<T> WithRequestId<T> {
-    pub fn new(request_id: u32, data: T) -> Self {
-        Self { request_id, data }
-    }
-}
-
 pub fn parse<T: for<'a> Deserialize<'a>>(src: &mut Cursor<&[u8]>) -> Result<T, ParseError> {
     let line = get_line(src)?.to_vec();
     let str = String::from_utf8(line)?;

@@ -1,5 +1,5 @@
 
-// max추가, Add 삭제하고 transfer 추가.
+// max추가(const parameter), Add 삭제하고 transfer 추가.
 #[derive(Debug)]
 pub(crate) struct Petals {
     count: u32,

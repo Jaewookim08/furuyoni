@@ -9,7 +9,7 @@ pub enum MessageSendError {
 }
 
 pub trait MessageSender<TMessage> {
-    fn send_message(&self, message: TMessage) -> Result<(), MessageSendError>;
+    fn send(&self, message: TMessage) -> Result<(), MessageSendError>;
 }
 
 trait MyFunc {
@@ -33,8 +33,8 @@ for MessageMap<TInnerSender, F>
     where
         F: Fn(TMessageIn) -> TMessageOut,
 {
-    fn send_message(&self, message: TMessageIn) -> Result<(), MessageSendError> {
-        self.sender.send_message((self.f)(message))
+    fn send(&self, message: TMessageIn) -> Result<(), MessageSendError> {
+        self.sender.send((self.f)(message))
     }
 }
 
@@ -61,7 +61,7 @@ for &mpsc::Sender<TMessage>
 {
     /// This function fails when the inner channel is full. This limitation is to make this function
     /// non-async and therefore easier to use with locks.
-    fn send_message(&self, message: TMessage) -> Result<(), MessageSendError> {
+    fn send(&self, message: TMessage) -> Result<(), MessageSendError> {
         self.try_send(message)
             .map_err(|e| match e {
                 TrySendError::Full(_) => {
@@ -77,7 +77,7 @@ for &mpsc::Sender<TMessage>
 impl<TMessage> MessageSender<TMessage>
 for mpsc::Sender<TMessage>
 {
-    fn send_message(&self, message: TMessage) -> Result<(), MessageSendError> {
-        (&self).send_message(message)
+    fn send(&self, message: TMessage) -> Result<(), MessageSendError> {
+        (&self).send(message)
     }
 }
