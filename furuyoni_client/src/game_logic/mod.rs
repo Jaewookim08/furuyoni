@@ -1,13 +1,15 @@
 use crate::game_logic::GameLogicError::InvalidRequest;
+use crate::systems::picker;
 use bevy::prelude::*;
 use bevy_tokio_tasks::*;
 use furuyoni_lib::net::frames::{GameToPlayerRequest, PlayerToGameResponse};
 use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::net::message_sender::MessageSendError;
 use furuyoni_lib::net::MessageRecvError;
+use furuyoni_lib::player_actions::{BasicActionCost, MainPhaseAction, PlayBasicAction};
 use furuyoni_lib::rules::{PlayerPos, ViewableState};
+use std::sync::Arc;
 use thiserror::Error;
-use tokio::net::TcpStream;
 
 type PlayerToGameResponder = MessageChannel<PlayerToGameResponse, GameToPlayerRequest>;
 
@@ -49,11 +51,23 @@ pub(crate) async fn run_game(
     loop {
         match responder.receive().await? {
             GameToPlayerRequest::NotifyEvent(e) => {
-                // board.play_event()
                 todo!()
             }
             GameToPlayerRequest::RequestMainPhaseAction(req) => {
-                todo!()
+                let allowed_actions = Arc::new(req.performable_basic_actions);
+                let picked = picker::pick_basic_action(ctx.clone(), allowed_actions, true).await;
+                // Todo: check picked val? 서버에서도 하니까 넘어갈까.
+
+                let main_phase_action = match picked {
+                    None => MainPhaseAction::EndMainPhase,
+                    Some(action) => {
+                        MainPhaseAction::PlayBasicAction(PlayBasicAction::new(
+                            action,
+                            /* todo */ BasicActionCost::Vigor,
+                        ))
+                    }
+                };
+                responder.send(PlayerToGameResponse::MainPhaseAction(main_phase_action))?;
             }
             r => return Err(InvalidRequest(r)),
         }

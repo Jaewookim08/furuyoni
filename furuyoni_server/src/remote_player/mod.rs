@@ -46,7 +46,7 @@ impl Player for RemotePlayer {
         let response = self.channel.receive().await.map_err(|_| ())?;
 
         if let PlayerToGameResponse::MainPhaseAction(response) = response {
-            Ok(response.action)
+            Ok(response)
         } else {
             Err(())
         }

@@ -48,7 +48,7 @@ pub fn spawn_async_tasks(runtime: ResMut<TokioTasksRuntime>) {
         let (player_to_game_requester, player_to_game_responder, post_office_task) =
             spawn_post_office(socket);
 
-        game_logic::run_game(player_to_game_responder, ctx).await?;
+        game_logic::run_game(player_to_game_responder, ctx.clone()).await?;
 
         post_office_task.abort();
 

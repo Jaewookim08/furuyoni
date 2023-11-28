@@ -43,12 +43,7 @@ pub enum PlayerToGameMessage {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PlayerToGameResponse {
     AcknowledgeGameStart,
-    MainPhaseAction(ResponseMainPhaseAction),
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ResponseMainPhaseAction {
-    pub action: MainPhaseAction,
+    MainPhaseAction(MainPhaseAction),
 }
 
 #[derive(Serialize, Deserialize, Debug)]

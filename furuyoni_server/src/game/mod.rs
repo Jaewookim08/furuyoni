@@ -52,6 +52,7 @@ struct PhaseState {
     phase: Phase,
 }
 
+// Todo: 내부 파일로 넣고 applyEvent로만 수정이 가능하도록..
 struct BoardState {
     distance: Petals,
     dust: Petals,
