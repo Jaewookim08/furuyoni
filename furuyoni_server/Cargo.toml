@@ -15,3 +15,4 @@ tokio = { version = "1.34", features = ["full"] }
 furuyoni_lib = { path = "../furuyoni_lib" }
 rand = "0.8.5"
 thiserror = "1.0"
+serde = { version = "1.0.193", features = ["derive"] }

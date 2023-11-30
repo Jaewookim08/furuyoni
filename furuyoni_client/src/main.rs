@@ -16,7 +16,7 @@ use bevy_editor_pls::prelude::*;
 use bevy_tokio_tasks::{TokioTasksPlugin, TokioTasksRuntime};
 use furuyoni_lib::net::frames::*;
 use furuyoni_lib::net::message_sender::IntoMessageMap;
-use furuyoni_lib::player_actions::BasicAction;
+use furuyoni_lib::rules::player_actions::BasicAction;
 use thiserror::Error;
 use tokio::net::TcpStream;
 

@@ -1,7 +1,10 @@
-use crate::player_actions::{BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector};
-use crate::rules::{PlayerPos, ViewableState};
+use crate::rules::player_actions::{
+    BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
+};
+use crate::rules::PlayerPos;
 
-use crate::events::GameEvent;
+use crate::rules::events::GameEvent;
+use crate::rules::states::ViewableState;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]

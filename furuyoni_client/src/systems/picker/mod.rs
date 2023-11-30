@@ -1,7 +1,7 @@
 use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::*;
 use bevy_tokio_tasks::TaskContext;
-use furuyoni_lib::player_actions::{BasicAction, MainPhaseAction};
+use furuyoni_lib::rules::player_actions::{BasicAction, MainPhaseAction};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::oneshot;

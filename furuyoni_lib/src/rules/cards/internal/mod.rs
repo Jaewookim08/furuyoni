@@ -1,4 +1,4 @@
-use crate::attack::Attack;
+use crate::rules::attack::Attack;
 use serde::{Deserialize, Serialize};
 
 mod yurina;

@@ -1,10 +1,12 @@
-mod states;
-use serde::{Deserialize, Serialize};
+pub mod attack;
+pub mod cards;
+pub mod condition;
+pub mod effects;
+pub mod events;
+pub mod player_actions;
+pub mod states;
 
-pub use {
-    states::ViewableOpponentState, states::ViewablePlayerState, states::ViewablePlayerStates,
-    states::ViewableSelfState, states::ViewableState,
-};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum Phase {
@@ -26,4 +28,9 @@ impl PlayerPos {
             PlayerPos::P2 => Self::P1,
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PetalPosition {
+    Aura(PlayerPos),
 }

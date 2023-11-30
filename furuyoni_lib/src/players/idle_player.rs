@@ -1,5 +1,7 @@
-use crate::player_actions::{BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector};
-use crate::rules::ViewableState;
+use crate::rules::player_actions::{
+    BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
+};
+use crate::rules::states::*;
 use async_trait::async_trait;
 
 pub struct IdlePlayer {}

@@ -1,5 +1,5 @@
-use crate::cards::Card;
-use crate::players::PlayerData;
+use crate::rules::cards::Card;
+use crate::rules::states::players_data::PlayersData;
 use crate::rules::{Phase, PlayerPos};
 use serde::{Deserialize, Serialize};
 
@@ -101,4 +101,4 @@ pub struct ViewableState {
     pub player_states: ViewablePlayerStates,
 }
 
-pub type ViewablePlayerStates = PlayerData<ViewablePlayerState>;
+pub type ViewablePlayerStates = PlayersData<ViewablePlayerState>;

@@ -6,8 +6,9 @@ use furuyoni_lib::net::frames::{GameToPlayerRequest, PlayerToGameResponse};
 use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::net::message_sender::MessageSendError;
 use furuyoni_lib::net::MessageRecvError;
-use furuyoni_lib::player_actions::{BasicActionCost, MainPhaseAction, PlayBasicAction};
-use furuyoni_lib::rules::{PlayerPos, ViewableState};
+use furuyoni_lib::rules::player_actions::{BasicActionCost, MainPhaseAction};
+use furuyoni_lib::rules::states::*;
+use furuyoni_lib::rules::PlayerPos;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -61,10 +62,10 @@ pub(crate) async fn run_game(
                 let main_phase_action = match picked {
                     None => MainPhaseAction::EndMainPhase,
                     Some(action) => {
-                        MainPhaseAction::PlayBasicAction(PlayBasicAction::new(
+                        MainPhaseAction::PlayBasicAction {
                             action,
-                            /* todo */ BasicActionCost::Vigor,
-                        ))
+                            cost: /* todo */BasicActionCost::Vigor,
+                        }
                     }
                 };
                 responder.send(PlayerToGameResponse::MainPhaseAction(main_phase_action))?;

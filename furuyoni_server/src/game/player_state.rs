@@ -1,8 +1,8 @@
-use std::collections::VecDeque;
-use furuyoni_lib::cards::Card;
-use furuyoni_lib::rules::{ViewableOpponentState, ViewableSelfState};
 use crate::game::petals::Petals;
 use crate::game::Vigor;
+use furuyoni_lib::rules::cards::Card;
+use furuyoni_lib::rules::states::*;
+use std::collections::VecDeque;
 
 #[derive(Debug)]
 pub(crate) struct PlayerState {
@@ -33,7 +33,6 @@ impl Default for PlayerState {
         }
     }
 }
-
 
 impl From<&PlayerState> for ViewableOpponentState {
     fn from(player_state: &PlayerState) -> Self {

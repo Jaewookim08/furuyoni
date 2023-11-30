@@ -1,5 +1,5 @@
 use super::*;
-use crate::attack::{Attack, AttackDamage};
+use crate::rules::attack::{Attack, AttackDamage};
 
 pub const SLASH: CardData = CardData {
     basic_data: CardBasicData {

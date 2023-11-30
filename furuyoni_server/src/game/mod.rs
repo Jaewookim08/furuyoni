@@ -1,23 +1,21 @@
 mod game_controlflow;
+mod game_state;
 mod petals;
 mod player_state;
 
 use petals::Petals;
 
 use derive_more::Neg;
-use furuyoni_lib::cards::Card;
-use furuyoni_lib::player_actions::{
-    BasicAction, BasicActionCost, HandSelector, MainPhaseAction, PlayBasicAction,
-    PlayableCardSelector,
+use furuyoni_lib::players::Player;
+use furuyoni_lib::rules::player_actions::{
+    BasicAction, BasicActionCost, HandSelector, MainPhaseAction, PlayableCardSelector,
 };
-use furuyoni_lib::players::{Player, PlayerData};
-use furuyoni_lib::rules::{
-    Phase, PlayerPos, ViewableOpponentState, ViewablePlayerState, ViewablePlayerStates,
-    ViewableSelfState, ViewableState,
-};
+use furuyoni_lib::rules::{Phase, PlayerPos};
 
 use crate::game::game_controlflow::GameControlFlow::{BreakPhase, Continue};
 use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};
+use furuyoni_lib::rules::cards::Card;
+use furuyoni_lib::rules::states::*;
 use player_state::PlayerState;
 use std::cmp;
 use std::collections::VecDeque;
@@ -41,7 +39,7 @@ pub enum GameResult {
     Winner(PlayerPos),
 }
 
-type Players = PlayerData<Box<dyn Player + Send + Sync>>;
+type Players = PlayersData<Box<dyn Player + Send + Sync>>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Neg)]
 pub struct Vigor(i32);
@@ -59,7 +57,7 @@ struct BoardState {
     player_states: PlayerStates,
 }
 
-type PlayerStates = PlayerData<PlayerState>;
+type PlayerStates = PlayersData<PlayerState>;
 
 pub async fn run_game(
     player_1: Box<dyn Player + Sync + Send>,
@@ -197,7 +195,7 @@ async fn handle_player_actions(
 
         match action {
             MainPhaseAction::EndMainPhase => return Ok(Continue),
-            MainPhaseAction::PlayBasicAction(PlayBasicAction { action, cost }) => {
+            MainPhaseAction::PlayBasicAction { action, cost } => {
                 pay_basic_action_cost(board_state, turn_player_pos, cost)?;
                 play_basic_action(board_state, turn_player_pos, action)?;
                 continue;

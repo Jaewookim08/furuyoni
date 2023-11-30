@@ -1,6 +1,8 @@
 use crate::ReflectComponent;
 use bevy::prelude::Component;
 use bevy::reflect::Reflect;
+use furuyoni_lib::rules::states::{ViewablePlayerState, ViewableState};
+use furuyoni_lib::rules::PlayerPos;
 
 // use crate::systems::picker::{PickedEvent, RequestPick};
 // use bevy::prelude::*;

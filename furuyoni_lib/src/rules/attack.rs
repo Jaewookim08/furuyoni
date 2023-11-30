@@ -1,5 +1,5 @@
-use crate::condition::Condition;
-use crate::effects::Effect;
+use crate::rules::condition::Condition;
+use crate::rules::effects::Effect;
 
 pub type Damage = Option<u32>;
 

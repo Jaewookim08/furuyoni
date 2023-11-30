@@ -2002,6 +2002,7 @@ dependencies = [
  "furuyoni_lib",
  "futures",
  "rand",
+ "serde",
  "thiserror",
  "tokio",
 ]

@@ -1,7 +1,7 @@
-use crate::player_actions::{
-    BasicAction, BasicActionCost, MainPhaseAction, PlayBasicAction, PlayableCardSelector,
+use crate::rules::player_actions::{
+    BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
-use crate::rules::ViewableState;
+use crate::rules::states::*;
 use async_trait::async_trait;
 
 pub struct CliPlayer {}
@@ -24,10 +24,10 @@ impl super::Player for CliPlayer {
         if index == performable_basic_actions.len() {
             Ok(MainPhaseAction::EndMainPhase)
         } else {
-            Ok(MainPhaseAction::PlayBasicAction(PlayBasicAction::new(
-                performable_basic_actions[index],
-                BasicActionCost::Vigor,
-            )))
+            Ok(MainPhaseAction::PlayBasicAction {
+                action: performable_basic_actions[index],
+                cost: BasicActionCost::Vigor,
+            })
         }
     }
 }

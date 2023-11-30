@@ -1,15 +1,16 @@
 use async_trait::async_trait;
-use furuyoni_lib::events::GameEvent;
 use furuyoni_lib::net::frames::{
     GameToPlayerRequest, PlayerToGameResponse, RequestMainPhaseAction,
 };
 use furuyoni_lib::net::message_channel::MessageChannel;
 
-use furuyoni_lib::player_actions::{
+use furuyoni_lib::players::Player;
+use furuyoni_lib::rules::events::GameEvent;
+use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
-use furuyoni_lib::players::Player;
-use furuyoni_lib::rules::{PlayerPos, ViewableState};
+use furuyoni_lib::rules::states::ViewableState;
+use furuyoni_lib::rules::PlayerPos;
 
 type ChannelT = MessageChannel<GameToPlayerRequest, PlayerToGameResponse>;
 
