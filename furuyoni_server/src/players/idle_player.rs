@@ -1,10 +1,10 @@
-use crate::rules::player_actions::{
+use async_trait::async_trait;
+use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
-use crate::rules::states::*;
-use async_trait::async_trait;
+use furuyoni_lib::rules::states::*;
 
-pub struct IdlePlayer {}
+pub(crate) struct IdlePlayer {}
 
 #[async_trait]
 impl super::Player for IdlePlayer {

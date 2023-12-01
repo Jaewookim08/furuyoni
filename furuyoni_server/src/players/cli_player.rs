@@ -1,10 +1,10 @@
-use crate::rules::player_actions::{
+use async_trait::async_trait;
+use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
-use crate::rules::states::*;
-use async_trait::async_trait;
+use furuyoni_lib::rules::states::*;
 
-pub struct CliPlayer {}
+pub(crate) struct CliPlayer {}
 
 #[async_trait]
 impl super::Player for CliPlayer {

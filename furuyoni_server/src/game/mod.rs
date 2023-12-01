@@ -5,8 +5,8 @@ mod player_state;
 
 use furuyoni_lib::rules::states::petals::Petals;
 
+use crate::players::Player;
 use derive_more::Neg;
-use furuyoni_lib::players::Player;
 use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, HandSelector, MainPhaseAction, PlayableCardSelector,
 };
@@ -263,7 +263,7 @@ async fn notify_game_start(
         board_state: &BoardState,
         pos: PlayerPos,
     ) -> Result<(), GameError> {
-        p.notify_game_start(
+        p.check_game_start(
             &get_player_viewable_state(phase_state, board_state, pos),
             pos,
         )

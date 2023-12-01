@@ -4,7 +4,7 @@ use furuyoni_lib::net::frames::{
 };
 use furuyoni_lib::net::message_channel::MessageChannel;
 
-use furuyoni_lib::players::Player;
+use crate::players::Player;
 use furuyoni_lib::rules::events::GameEvent;
 use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
@@ -14,7 +14,7 @@ use furuyoni_lib::rules::PlayerPos;
 
 type ChannelT = MessageChannel<GameToPlayerRequest, PlayerToGameResponse>;
 
-pub struct RemotePlayer {
+pub(crate) struct RemotePlayer {
     channel: ChannelT,
 }
 
@@ -53,7 +53,7 @@ impl Player for RemotePlayer {
         }
     }
 
-    async fn notify_game_start(&mut self, state: &ViewableState, pos: PlayerPos) -> Result<(), ()> {
+    async fn check_game_start(&mut self, state: &ViewableState, pos: PlayerPos) -> Result<(), ()> {
         self.channel
             .send(GameToPlayerRequest::RequestGameStart {
                 state: state.clone(),

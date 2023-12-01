@@ -3,23 +3,19 @@
 #![feature(let_chains)]
 extern crate furuyoni_lib;
 
+mod game;
+
+mod main_channels;
+mod networking;
+pub mod players;
+
 use crate::furuyoni_lib::net::message_sender::IntoMessageMap;
 use furuyoni_lib::net::frames::*;
 use furuyoni_lib::net::message_channel::MessageChannel;
-use furuyoni_lib::players::IdlePlayer;
 use furuyoni_lib::rules::PlayerPos;
-
-mod game;
-
-mod networking;
+use players::{IdlePlayer, RemotePlayer};
 
 use networking::{post_office, ServerConnectionReader, ServerConnectionWriter};
-
-mod remote_player;
-
-use remote_player::RemotePlayer;
-
-mod main_channels;
 
 use crate::game::GameResult;
 use tokio::net::{TcpListener, TcpStream};
