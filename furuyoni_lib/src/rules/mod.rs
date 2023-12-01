@@ -28,6 +28,10 @@ impl PlayerPos {
             PlayerPos::P2 => Self::P1,
         }
     }
+
+    pub fn iter() -> impl Iterator<Item = PlayerPos> {
+        [PlayerPos::P1, PlayerPos::P2].into_iter()
+    }
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone, Copy)]

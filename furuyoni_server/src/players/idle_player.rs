@@ -1,3 +1,4 @@
+use crate::game_watcher::GameObserver;
 use async_trait::async_trait;
 use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
@@ -18,3 +19,4 @@ impl super::Player for IdlePlayer {
         Ok(MainPhaseAction::EndMainPhase)
     }
 }
+impl GameObserver for IdlePlayer {}

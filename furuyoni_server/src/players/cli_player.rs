@@ -1,3 +1,4 @@
+use crate::game_watcher::GameObserver;
 use async_trait::async_trait;
 use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
@@ -32,6 +33,7 @@ impl super::Player for CliPlayer {
     }
 }
 
+impl GameObserver for CliPlayer {}
 impl CliPlayer {
     fn print_state(state: &ViewableState) {
         println!(" == state == ");

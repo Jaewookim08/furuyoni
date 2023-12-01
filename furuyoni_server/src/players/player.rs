@@ -1,3 +1,4 @@
+use crate::game_watcher::GameObserver;
 use async_trait::async_trait;
 use furuyoni_lib::rules::events::GameEvent;
 use furuyoni_lib::rules::player_actions::{
@@ -7,7 +8,7 @@ use furuyoni_lib::rules::states::*;
 use furuyoni_lib::rules::PlayerPos;
 
 #[async_trait]
-pub(crate) trait Player {
+pub(crate) trait Player: GameObserver {
     async fn get_main_phase_action(
         &mut self,
         state: &ViewableState,
@@ -21,10 +22,6 @@ pub(crate) trait Player {
         _state: &ViewableState,
         _pos: PlayerPos,
     ) -> Result<(), ()> {
-        Ok(())
-    }
-
-    fn notify_event(&mut self, _event: GameEvent) -> Result<(), ()> {
         Ok(())
     }
 }

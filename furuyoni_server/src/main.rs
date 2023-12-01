@@ -5,6 +5,7 @@ extern crate furuyoni_lib;
 
 mod game;
 
+mod game_watcher;
 mod main_channels;
 mod networking;
 pub mod players;
@@ -17,7 +18,7 @@ use players::{IdlePlayer, RemotePlayer};
 
 use networking::{post_office, ServerConnectionReader, ServerConnectionWriter};
 
-use crate::game::GameResult;
+use crate::game::{Game, GameResult};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
@@ -57,9 +58,9 @@ async fn spawn_game(socket: TcpStream) {
     let p1 = RemotePlayer::new(game_to_player_requester);
     let p2 = IdlePlayer {};
 
-    let res = game::run_game(Box::new(p1), Box::new(p2))
-        .await
-        .expect("todo");
+    let (game, observable) = Game::create_game();
+
+    let res = game.run(Box::new(p1), Box::new(p2)).await.expect("todo");
     let winner_str = match res {
         GameResult::Draw => "Draw",
         GameResult::Winner(winner) => match winner {

@@ -3,9 +3,10 @@ use furuyoni_lib::net::frames::{
     GameToPlayerRequest, PlayerToGameResponse, RequestMainPhaseAction,
 };
 use furuyoni_lib::net::message_channel::MessageChannel;
-
-use crate::players::Player;
 use furuyoni_lib::rules::events::GameEvent;
+
+use crate::game_watcher::{GameObserver, NotifyFailedError};
+use crate::players::Player;
 use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
@@ -69,11 +70,12 @@ impl Player for RemotePlayer {
             Err(())
         }
     }
-
-    fn notify_event(&mut self, event: GameEvent) -> Result<(), ()> {
+}
+impl GameObserver for RemotePlayer {
+    fn notify_event(&mut self, event: &GameEvent) -> Result<(), NotifyFailedError> {
         self.channel
-            .send(GameToPlayerRequest::NotifyEvent(event))
-            .map_err(|_| ())?;
+            .send(GameToPlayerRequest::NotifyEvent((*event).clone()))
+            .map_err(|_| NotifyFailedError)?;
         Ok(())
     }
 }
