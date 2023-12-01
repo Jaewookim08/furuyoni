@@ -1,6 +1,7 @@
-use crate::game::petals::Petals;
 use crate::game::PlayerStates;
 use furuyoni_lib::rules::events::UpdateBoardState;
+use furuyoni_lib::rules::states::petals::Petals;
+use furuyoni_lib::rules::PetalPosition;
 use std::ops::Deref;
 use thiserror::Error;
 
@@ -10,6 +11,10 @@ pub(crate) enum InvalidBoardUpdateError {
     HandSelectorOutOfBounds,
     #[error("Vigor has been pushed to go below 0.")]
     NegativeVigor,
+    #[error(
+        "Invalid petal transfer: the transfer will result in negative or over-max petal value."
+    )]
+    InvalidPetalTransfer,
 }
 
 pub(crate) struct BoardStateInner {
@@ -32,7 +37,6 @@ impl BoardState {
             },
         }
     }
-
     pub fn apply_update(
         &mut self,
         update: UpdateBoardState,
@@ -40,8 +44,21 @@ impl BoardState {
         let board_state = &mut self.inner;
 
         match update {
-            UpdateBoardState::TransferPetals { .. } => {
-                todo!()
+            UpdateBoardState::TransferPetals { from, to, amount } => {
+                let from_petals = self.get_petals_mut(from);
+                let from_new = from_petals
+                    .count
+                    .checked_sub(amount)
+                    .ok_or(InvalidBoardUpdateError::InvalidPetalTransfer)?;
+
+                let to_petals = self.get_petals_mut(to);
+                let to_new = to_petals.count + amount;
+                if let Some(max) = to_petals.max && to_new > max {
+                    return Err(InvalidBoardUpdateError::InvalidPetalTransfer);
+                }
+
+                self.get_petals_mut(from).count = from_new;
+                self.get_petals_mut(to).count = to_new;
             }
             UpdateBoardState::AddToVigor { player, diff } => {
                 const MAX_VIGOR: i32 = 2;
@@ -71,6 +88,17 @@ impl BoardState {
         }
 
         Ok(())
+    }
+
+    fn get_petals_mut(&mut self, petal_position: PetalPosition) -> &'_ mut Petals {
+        let inner = &mut self.inner;
+        match petal_position {
+            PetalPosition::Distance => &mut inner.distance,
+            PetalPosition::Dust => &mut inner.dust,
+            PetalPosition::Aura(player) => &mut inner.player_states[player].aura,
+            PetalPosition::Flare(player) => &mut inner.player_states[player].flare,
+            PetalPosition::Life(player) => &mut inner.player_states[player].life,
+        }
     }
 }
 

@@ -1,10 +1,9 @@
 mod board_state;
 mod game_controlflow;
-mod petals;
 mod phase_state;
 mod player_state;
 
-use petals::Petals;
+use furuyoni_lib::rules::states::petals::Petals;
 
 use derive_more::Neg;
 use furuyoni_lib::players::Player;
@@ -21,7 +20,6 @@ use furuyoni_lib::rules::cards::Card;
 use furuyoni_lib::rules::events::{GameEvent, UpdateBoardState, UpdatePhaseState};
 use furuyoni_lib::rules::states::*;
 use player_state::PlayerState;
-use std::cmp;
 use std::collections::VecDeque;
 use std::future::Future;
 use std::marker::{Send, Sync};
@@ -245,7 +243,11 @@ fn initialize_game_states() -> (PhaseState, BoardState) {
     // Initialize states.
     let phase_state = PhaseState::new(1, start_player, Phase::Beginning);
 
-    let board_state = BoardState::new(Petals::new(10), Petals::new(0), default_player_states());
+    let board_state = BoardState::new(
+        Petals::new(10, Some(10)),
+        Petals::new(0, None),
+        default_player_states(),
+    );
 
     (phase_state, board_state)
 }
@@ -396,8 +398,8 @@ fn get_player_viewable_state(
         turn_player: phase_state.turn_player,
         phase: phase_state.phase,
         turn_number: phase_state.turn,
-        distance: board.distance.get_count(),
-        dust: board.dust.get_count(),
+        distance: board.distance.clone(),
+        dust: board.dust.clone(),
         player_states: ViewablePlayerStates::new(
             get_player_state(PlayerPos::P1),
             get_player_state(PlayerPos::P2),

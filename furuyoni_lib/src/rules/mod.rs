@@ -30,7 +30,7 @@ impl PlayerPos {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone, Copy)]
 pub enum PetalPosition {
     Distance,
     Dust,

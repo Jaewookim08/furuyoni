@@ -1,4 +1,6 @@
 #![feature(try_trait_v2)]
+#![feature(adt_const_params)]
+#![feature(let_chains)]
 extern crate furuyoni_lib;
 
 use crate::furuyoni_lib::net::message_sender::IntoMessageMap;

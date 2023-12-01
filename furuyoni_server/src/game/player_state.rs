@@ -1,6 +1,6 @@
-use crate::game::petals::Petals;
 use crate::game::Vigor;
 use furuyoni_lib::rules::cards::Card;
+use furuyoni_lib::rules::states::petals::Petals;
 use furuyoni_lib::rules::states::*;
 use std::collections::VecDeque;
 
@@ -27,9 +27,9 @@ impl Default for PlayerState {
             played_pile: vec![],
             discard_pile: vec![],
             vigor: Vigor(0),
-            aura: Petals::new(3),
-            life: Petals::new(10),
-            flare: Petals::new(0),
+            aura: Petals::new(3, Some(5)),
+            life: Petals::new(10, Some(10)),
+            flare: Petals::new(0, None),
         }
     }
 }
@@ -44,9 +44,9 @@ impl From<&PlayerState> for ViewableOpponentState {
             discard_pile_count: player_state.discard_pile.len(),
 
             vigor: player_state.vigor.0,
-            aura: player_state.aura.get_count(),
-            life: player_state.life.get_count(),
-            flare: player_state.flare.get_count(),
+            aura: player_state.aura.clone(),
+            life: player_state.life.clone(),
+            flare: player_state.flare.clone(),
         }
     }
 }
@@ -61,9 +61,9 @@ impl From<&PlayerState> for ViewableSelfState {
             discard_pile: player_state.discard_pile.clone(),
 
             vigor: player_state.vigor.0,
-            aura: player_state.aura.get_count(),
-            life: player_state.life.get_count(),
-            flare: player_state.flare.get_count(),
+            aura: player_state.aura.clone(),
+            life: player_state.life.clone(),
+            flare: player_state.flare.clone(),
         }
     }
 }

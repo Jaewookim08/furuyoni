@@ -1,4 +1,5 @@
 use crate::rules::cards::Card;
+use crate::rules::states::petals::Petals;
 use crate::rules::states::players_data::PlayersData;
 use crate::rules::{Phase, PlayerPos};
 use serde::{Deserialize, Serialize};
@@ -23,39 +24,39 @@ impl ViewablePlayerState {
         }
     }
 
-    pub fn get_aura(&self) -> u32 {
+    pub fn get_aura(&self) -> &Petals {
         match self {
-            ViewablePlayerState::SelfState(s) => s.aura,
-            ViewablePlayerState::Opponent(o) => o.aura,
+            ViewablePlayerState::SelfState(s) => &s.aura,
+            ViewablePlayerState::Opponent(o) => &o.aura,
         }
     }
-    pub fn get_aura_mut(&mut self) -> &mut u32 {
+    pub fn get_aura_mut(&mut self) -> &mut Petals {
         match self {
             ViewablePlayerState::SelfState(s) => &mut s.aura,
             ViewablePlayerState::Opponent(o) => &mut o.aura,
         }
     }
 
-    pub fn get_life(&self) -> u32 {
+    pub fn get_life(&self) -> &Petals {
         match self {
-            ViewablePlayerState::SelfState(s) => s.life,
-            ViewablePlayerState::Opponent(o) => o.life,
+            ViewablePlayerState::SelfState(s) => &s.life,
+            ViewablePlayerState::Opponent(o) => &o.life,
         }
     }
-    pub fn get_life_mut(&mut self) -> &mut u32 {
+    pub fn get_life_mut(&mut self) -> &mut Petals {
         match self {
             ViewablePlayerState::SelfState(s) => &mut s.life,
             ViewablePlayerState::Opponent(o) => &mut o.life,
         }
     }
 
-    pub fn get_flare(&self) -> u32 {
+    pub fn get_flare(&self) -> &Petals {
         match self {
-            ViewablePlayerState::SelfState(s) => s.flare,
-            ViewablePlayerState::Opponent(o) => o.flare,
+            ViewablePlayerState::SelfState(s) => &s.flare,
+            ViewablePlayerState::Opponent(o) => &o.flare,
         }
     }
-    pub fn get_flare_mut(&mut self) -> &mut u32 {
+    pub fn get_flare_mut(&mut self) -> &mut Petals {
         match self {
             ViewablePlayerState::SelfState(s) => &mut s.flare,
             ViewablePlayerState::Opponent(o) => &mut o.flare,
@@ -72,9 +73,9 @@ pub struct ViewableOpponentState {
     pub discard_pile_count: usize,
 
     pub vigor: i32,
-    pub aura: u32,
-    pub life: u32,
-    pub flare: u32,
+    pub aura: Petals,
+    pub life: Petals,
+    pub flare: Petals,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -86,9 +87,9 @@ pub struct ViewableSelfState {
     pub discard_pile: Vec<Card>,
 
     pub vigor: i32,
-    pub aura: u32,
-    pub life: u32,
-    pub flare: u32,
+    pub aura: Petals,
+    pub life: Petals,
+    pub flare: Petals,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -96,8 +97,8 @@ pub struct ViewableState {
     pub turn_number: u32,
     pub turn_player: PlayerPos,
     pub phase: Phase,
-    pub distance: u32,
-    pub dust: u32,
+    pub distance: Petals,
+    pub dust: Petals,
     pub player_states: ViewablePlayerStates,
 }
 

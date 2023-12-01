@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+pub mod petals;
 mod players_data;
 mod viewable_player_states;
 

@@ -83,6 +83,7 @@ impl PlayerValuePicker {
     }
 }
 
+// Todo: refactor using PetalsPos.
 #[derive(Debug, Reflect, Default)]
 pub enum StateStringPicker {
     #[default]
@@ -92,6 +93,7 @@ pub enum StateStringPicker {
     PlayerValue(PlayerValuePicker),
 }
 
+// Todo: remove. We have PetalsPos.
 #[derive(Debug, Reflect, Default)]
 pub enum PlayerValuePickerType {
     #[default]
