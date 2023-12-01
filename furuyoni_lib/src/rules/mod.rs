@@ -32,5 +32,10 @@ impl PlayerPos {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PetalPosition {
+    Distance,
+    Dust,
     Aura(PlayerPos),
+    Flare(PlayerPos),
+    Life(PlayerPos),
+    // Todo: 부여패.
 }

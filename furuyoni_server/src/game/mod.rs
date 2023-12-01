@@ -1,6 +1,7 @@
+mod board_state;
 mod game_controlflow;
-mod game_state;
 mod petals;
+mod phase_state;
 mod player_state;
 
 use petals::Petals;
@@ -10,11 +11,14 @@ use furuyoni_lib::players::Player;
 use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, HandSelector, MainPhaseAction, PlayableCardSelector,
 };
-use furuyoni_lib::rules::{Phase, PlayerPos};
+use furuyoni_lib::rules::{PetalPosition, Phase, PlayerPos};
 
+use crate::game::board_state::*;
 use crate::game::game_controlflow::GameControlFlow::{BreakPhase, Continue};
 use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};
+use crate::game::phase_state::*;
 use furuyoni_lib::rules::cards::Card;
+use furuyoni_lib::rules::events::{GameEvent, UpdateBoardState, UpdatePhaseState};
 use furuyoni_lib::rules::states::*;
 use player_state::PlayerState;
 use std::cmp;
@@ -27,11 +31,13 @@ use tokio::join;
 const GET_ACTION_RETRY_TIMES: usize = 3;
 
 #[derive(Error, Debug)]
-pub enum GameError {
+pub(crate) enum GameError {
     #[error("Failed to communicate with a player.")]
     PlayerCommunicationFail(PlayerPos),
     #[error("An invalid action has been requested from the player.")]
     InvalidActionRequested(PlayerPos),
+    #[error("{0}")]
+    InvalidBoardUpdate(#[from] InvalidBoardUpdateError),
 }
 
 pub enum GameResult {
@@ -44,22 +50,9 @@ type Players = PlayersData<Box<dyn Player + Send + Sync>>;
 #[derive(Debug, Copy, Clone, PartialEq, Neg)]
 pub struct Vigor(i32);
 
-struct PhaseState {
-    turn_number: u32,
-    turn_player: PlayerPos,
-    phase: Phase,
-}
-
-// Todo: 내부 파일로 넣고 applyEvent로만 수정이 가능하도록..
-struct BoardState {
-    distance: Petals,
-    dust: Petals,
-    player_states: PlayerStates,
-}
-
 type PlayerStates = PlayersData<PlayerState>;
 
-pub async fn run_game(
+pub(crate) async fn run_game(
     player_1: Box<dyn Player + Sync + Send>,
     player_2: Box<dyn Player + Sync + Send>,
 ) -> Result<GameResult, GameError> {
@@ -70,20 +63,30 @@ pub async fn run_game(
     notify_game_start(&mut players, &phase_state, &board_state).await?;
 
     // Define phase modifying functions.
-    fn next_phase(phase_state: &mut PhaseState) {
+    fn next_phase(phase_state: &mut PhaseState) -> Result<(), GameError> {
         match phase_state.phase {
-            Phase::Beginning => phase_state.phase = Phase::Main,
-            Phase::Main => phase_state.phase = Phase::End,
-            Phase::End => next_turn(phase_state),
+            Phase::Beginning => {
+                update_phase_and_notify(phase_state, UpdatePhaseState::SetPhase(Phase::Main));
+            }
+            Phase::Main => {
+                update_phase_and_notify(phase_state, UpdatePhaseState::SetPhase(Phase::Main));
+            }
+            Phase::End => next_turn(phase_state)?,
         }
+        Ok(())
     }
 
-    fn next_turn(phase_state: &mut PhaseState) {
-        *phase_state = PhaseState {
-            turn_number: phase_state.turn_number + 1,
-            turn_player: phase_state.turn_player.other(),
-            phase: Phase::Beginning,
-        }
+    fn next_turn(phase_state: &mut PhaseState) -> Result<(), GameError> {
+        update_phase_and_notify(
+            phase_state,
+            UpdatePhaseState::SetTurn {
+                turn_player: phase_state.turn_player.other(),
+                turn: phase_state.turn + 1,
+            },
+        );
+
+        update_phase_and_notify(phase_state, UpdatePhaseState::SetPhase(Phase::Beginning));
+        Ok(())
     }
 
     // phase loop
@@ -97,10 +100,10 @@ pub async fn run_game(
         };
 
         match phase_result {
-            Continue => next_phase(&mut phase_state),
+            Continue => next_phase(&mut phase_state)?,
             BreakPhase(phase_break) => match phase_break {
-                PhaseBreak::EndPhase => next_phase(&mut phase_state),
-                PhaseBreak::EndTurn => next_turn(&mut phase_state),
+                PhaseBreak::EndPhase => next_phase(&mut phase_state)?,
+                PhaseBreak::EndTurn => next_turn(&mut phase_state)?,
                 PhaseBreak::EndGame(game_result) => {
                     return Ok(game_result);
                 }
@@ -109,22 +112,41 @@ pub async fn run_game(
     }
 }
 
+fn notify_all(event: GameEvent) -> Result<(), GameError> {
+    Ok(())
+}
+
+fn update_phase_and_notify(phase_state: &mut PhaseState, update: UpdatePhaseState) {
+    phase_state.apply_update(update);
+    // Todo: watchers
+}
+fn update_board_and_notify(
+    board_state: &mut BoardState,
+    update: UpdateBoardState,
+) -> Result<(), GameError> {
+    board_state.apply_update(update)?;
+    Ok(())
+}
+
 async fn run_beginning_phase(
     players: &mut Players,
     phase_state: &PhaseState,
     board_state: &mut BoardState,
 ) -> Result<GameControlFlow, GameError> {
     // Skip beginning phase for the first two turns.
-    if phase_state.turn_number <= 2 {
+    if phase_state.turn <= 2 {
         return Ok(Continue);
     }
 
     // Add vigor
-    add_to_vigor(
-        &mut board_state.player_states[phase_state.turn_player],
-        Vigor(1),
-    )
-    .unwrap();
+    update_board_and_notify(
+        board_state,
+        UpdateBoardState::AddToVigor {
+            player: phase_state.turn_player,
+            diff: 1,
+        },
+    )?;
+
     // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
 
     Ok(Continue)
@@ -221,17 +243,9 @@ fn initialize_game_states() -> (PhaseState, BoardState) {
     };
 
     // Initialize states.
-    let phase_state = PhaseState {
-        turn_number: 1,
-        turn_player: start_player,
-        phase: Phase::Beginning,
-    };
+    let phase_state = PhaseState::new(1, start_player, Phase::Beginning);
 
-    let board_state = BoardState {
-        distance: Petals::new(10),
-        dust: Petals::new(0),
-        player_states: default_player_states(),
-    };
+    let board_state = BoardState::new(Petals::new(10), Petals::new(0), default_player_states());
 
     (phase_state, board_state)
 }
@@ -311,34 +325,30 @@ fn play_basic_action(
     player: PlayerPos,
     action: BasicAction,
 ) -> Result<GameControlFlow, GameError> {
-    let player_data = &mut board_state.player_states[player];
+    notify_all(GameEvent::PerformBasicAction { player, action })?;
 
-    // Todo: lambda로 map_err 한 줄로 줄이기?
+    let mut transfer_aura = |from, to| {
+        update_board_and_notify(
+            board_state,
+            UpdateBoardState::TransferPetals {
+                from,
+                to,
+                amount: 1,
+            },
+        )
+    };
     match action {
         BasicAction::MoveForward => {
-            // Todo: Petals max 추가, transfer.
-            player_data.aura += board_state
-                .distance
-                .take(1)
-                .map_err(|()| GameError::InvalidActionRequested(player))?;
+            transfer_aura(PetalPosition::Distance, PetalPosition::Aura(player))?;
         }
         BasicAction::MoveBackward => {
-            board_state.distance += player_data
-                .aura
-                .take(1)
-                .map_err(|()| GameError::InvalidActionRequested(player))?;
+            transfer_aura(PetalPosition::Aura(player), PetalPosition::Distance)?;
         }
         BasicAction::Recover => {
-            player_data.aura += board_state
-                .dust
-                .take(1)
-                .map_err(|()| GameError::InvalidActionRequested(player))?;
+            transfer_aura(PetalPosition::Dust, PetalPosition::Aura(player))?;
         }
         BasicAction::Focus => {
-            player_data.flare += player_data
-                .aura
-                .take(1)
-                .map_err(|()| GameError::InvalidActionRequested(player))?;
+            transfer_aura(PetalPosition::Aura(player), PetalPosition::Flare(player))?;
         }
     }
 
@@ -350,20 +360,17 @@ fn pay_basic_action_cost(
     player: PlayerPos,
     cost: BasicActionCost,
 ) -> Result<(), GameError> {
-    let player_state = &mut board_state.player_states[player];
     match cost {
         BasicActionCost::Hand(selector) => {
-            let hand = &mut player_state.hand;
-
-            if selector.0 > hand.len() {
-                return Err(GameError::InvalidActionRequested(player));
-            }
-            let card = hand.remove(selector.0);
-
-            player_state.discard_pile.push(card)
+            update_board_and_notify(
+                board_state,
+                UpdateBoardState::DiscardCard { player, selector },
+            )?;
         }
-        BasicActionCost::Vigor => add_to_vigor(player_state, -Vigor(1))
-            .map_err(|()| GameError::InvalidActionRequested(player))?,
+        BasicActionCost::Vigor => update_board_and_notify(
+            board_state,
+            UpdateBoardState::AddToVigor { player, diff: -1 },
+        )?,
     }
 
     Ok(())
@@ -388,7 +395,7 @@ fn get_player_viewable_state(
     ViewableState {
         turn_player: phase_state.turn_player,
         phase: phase_state.phase,
-        turn_number: phase_state.turn_number,
+        turn_number: phase_state.turn,
         distance: board.distance.get_count(),
         dust: board.dust.get_count(),
         player_states: ViewablePlayerStates::new(
@@ -396,21 +403,4 @@ fn get_player_viewable_state(
             get_player_state(PlayerPos::P2),
         ),
     }
-}
-
-// Todo: impl Add for Vigor
-fn add_to_vigor(player_state: &mut PlayerState, diff: Vigor) -> Result<(), ()> {
-    const MAX_VIGOR: i32 = 2;
-    const MIN_VIGOR: i32 = 0;
-
-    let vigor = &mut player_state.vigor;
-
-    let new = vigor.0 + diff.0;
-
-    if new < MIN_VIGOR {
-        return Err(());
-    }
-
-    vigor.0 = cmp::min(MAX_VIGOR, new);
-    Ok(())
 }
