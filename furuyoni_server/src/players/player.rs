@@ -17,7 +17,7 @@ pub(crate) trait Player: GameObserver {
         available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> Result<MainPhaseAction, ()>;
 
-    async fn check_game_start(&mut self, _pos: PlayerPos) -> Result<(), ()> {
+    async fn request_game_start(&mut self, _pos: PlayerPos) -> Result<(), ()> {
         Ok(())
     }
 }

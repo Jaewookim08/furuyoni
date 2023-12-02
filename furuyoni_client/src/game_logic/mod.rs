@@ -36,7 +36,7 @@ pub(crate) async fn run_game(
 ) -> Result<(), GameLogicError> {
     // wait for the initial state
     match responder.receive().await? {
-        GameToPlayerRequest::SetGameState(state) => {
+        GameToPlayerRequest::InitializeGameState(state) => {
             ctx.run_on_main_thread(move |ctx| {
                 ctx.world.insert_resource(BoardState { 0: state });
             })
@@ -61,7 +61,7 @@ pub(crate) async fn run_game(
     // main logic loop.
     loop {
         match responder.receive().await? {
-            r @ GameToPlayerRequest::NotifyEvent(_) => {
+            GameToPlayerRequest::NotifyEvent(event) => {
                 // Todo:
             }
             GameToPlayerRequest::RequestMainPhaseAction(req) => {
@@ -79,6 +79,19 @@ pub(crate) async fn run_game(
                     }
                 };
                 responder.send(PlayerToGameResponse::MainPhaseAction(main_phase_action))?;
+            }
+            GameToPlayerRequest::CheckGameState(state) => {
+                ctx.run_on_main_thread(move |ctx| {
+                    let resource = ctx
+                        .world
+                        .get_resource::<BoardState>()
+                        .expect("Resource BoardState is missing.");
+                    if resource.0 != state {
+                        todo!("update states...")
+                    }
+                })
+                .await;
+                todo!()
             }
             r => return Err(InvalidRequest(r)),
         }

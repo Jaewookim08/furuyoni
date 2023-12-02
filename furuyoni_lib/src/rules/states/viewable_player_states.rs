@@ -103,3 +103,5 @@ pub struct ViewableState {
 }
 
 pub type ViewablePlayerStates = PlayersData<ViewablePlayerState>;
+
+// Todo: ViewablePlayerState를 enum으로 나누는 게 아니라 개별 element를 나누기?

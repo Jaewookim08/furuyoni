@@ -25,6 +25,14 @@ impl RemotePlayer {
     }
 }
 
+impl RemotePlayer {
+    fn send_state(&mut self, state: &ViewableState) -> Result<(), ()> {
+        self.channel
+            .send(GameToPlayerRequest::CheckGameState(state.clone()))
+            .map_err(|_| ())?;
+        Ok(())
+    }
+}
 #[async_trait]
 impl Player for RemotePlayer {
     async fn get_main_phase_action(
@@ -34,16 +42,17 @@ impl Player for RemotePlayer {
         performable_basic_actions: &Vec<BasicAction>,
         available_basic_action_costs: &Vec<BasicActionCost>,
     ) -> Result<MainPhaseAction, ()> {
+        self.send_state(state)?;
+
         self.channel
             .send(GameToPlayerRequest::RequestMainPhaseAction(
                 RequestMainPhaseAction {
-                    state: state.clone(),
                     playable_cards: playable_cards.clone(),
                     performable_basic_actions: performable_basic_actions.clone(),
                     available_basic_action_costs: available_basic_action_costs.clone(),
                 },
             ))
-            .expect("Todo: add error type for Player");
+            .map_err(|_| ())?;
 
         let response = self.channel.receive().await.map_err(|_| ())?;
 
@@ -54,7 +63,7 @@ impl Player for RemotePlayer {
         }
     }
 
-    async fn check_game_start(&mut self, pos: PlayerPos) -> Result<(), ()> {
+    async fn request_game_start(&mut self, pos: PlayerPos) -> Result<(), ()> {
         self.channel
             .send(GameToPlayerRequest::RequestGameStart { pos })
             .map_err(|_| ())?;
@@ -71,7 +80,7 @@ impl Player for RemotePlayer {
 impl GameObserver for RemotePlayer {
     fn initialize_state(&mut self, _state: &ViewableState) -> Result<(), NotifyFailedError> {
         self.channel
-            .send(GameToPlayerRequest::SetGameState(_state.clone()))
+            .send(GameToPlayerRequest::InitializeGameState(_state.clone()))
             .map_err(|_| NotifyFailedError)?;
         Ok(())
     }

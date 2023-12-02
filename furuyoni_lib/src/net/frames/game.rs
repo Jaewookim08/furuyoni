@@ -16,14 +16,14 @@ pub enum GameToPlayerMessage {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameToPlayerRequest {
     NotifyEvent(GameEvent),
-    SetGameState(ViewableState),
+    InitializeGameState(ViewableState),
+    CheckGameState(ViewableState),
     RequestMainPhaseAction(RequestMainPhaseAction),
     RequestGameStart { pos: PlayerPos },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RequestMainPhaseAction {
-    pub state: ViewableState,
     pub playable_cards: Vec<PlayableCardSelector>,
     pub performable_basic_actions: Vec<BasicAction>,
     pub available_basic_action_costs: Vec<BasicActionCost>,

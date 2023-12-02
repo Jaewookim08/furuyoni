@@ -156,7 +156,7 @@ impl Game {
             p: &mut (impl Player + ?Sized + Send),
             pos: PlayerPos,
         ) -> Result<(), GameError> {
-            p.check_game_start(pos)
+            p.request_game_start(pos)
                 .await
                 .map_err(|_| GameError::PlayerCommunicationFail(pos))
         }
