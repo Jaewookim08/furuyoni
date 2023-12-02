@@ -185,14 +185,8 @@ impl Game {
 
         // Add vigor
         let turn_player = handle.state.phase_state.turn_player;
-        update_state_and_notify(
-            &mut handle,
-            players,
-            UpdateGameState::AddToVigor {
-                player: turn_player,
-                diff: 1,
-            },
-        )?;
+
+        add_to_vigor(&mut handle, players, turn_player, 1)?;
 
         // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
         Ok(Continue)
@@ -450,6 +444,28 @@ fn pay_basic_action_cost(
     Ok(())
 }
 
+fn add_to_vigor(
+    handle: &mut GameHandle,
+    players: &mut Players,
+    player: PlayerPos,
+    diff: i32,
+) -> Result<(), GameError> {
+    const MAX_VIGOR: i32 = 2;
+
+    let vigor = handle.state.board_state.player_states[player].vigor;
+    let real_diff = std::cmp::min(diff, MAX_VIGOR - vigor.0);
+
+    update_state_and_notify(
+        handle,
+        players,
+        UpdateGameState::AddToVigor {
+            player,
+            diff: real_diff,
+        },
+    )?;
+
+    Ok(())
+}
 fn get_viewable_state(viewed_from: ObservePosition, state: &GameState) -> StateView {
     let GameStateInner {
         board_state,
@@ -460,7 +476,7 @@ fn get_viewable_state(viewed_from: ObservePosition, state: &GameState) -> StateV
     StateView {
         turn_player: phase_state.turn_player,
         phase: phase_state.phase,
-        turn_number: phase_state.turn,
+        turn: phase_state.turn,
         distance: board_state.distance.clone(),
         dust: board_state.dust.clone(),
         player_states: PlayerStateViews::new(

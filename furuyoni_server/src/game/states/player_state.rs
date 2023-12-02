@@ -50,7 +50,7 @@ impl PlayerState {
         };
 
         PlayerStateView {
-            hands: CardsView::from(&self.hand, can_view_personals),
+            hand: CardsView::from(&self.hand, can_view_personals),
             deck: CardsView::from(&self.deck.clone().into(), can_view_all),
             enhancements: self.enhancements.clone(),
             played_pile: self.played_pile.clone(),

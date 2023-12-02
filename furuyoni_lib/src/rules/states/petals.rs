@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Petals {
     pub count: u32,
+    // Todo: Consider removing max.
     pub max: Option<u32>,
 }
 

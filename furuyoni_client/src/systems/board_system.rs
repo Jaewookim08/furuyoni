@@ -123,7 +123,7 @@ fn get_string(self_pos: PlayerPos, state: &StateView, picker: &StateStringPicker
     match picker {
         StateStringPicker::Dust => state.dust.count.to_string(),
         StateStringPicker::Distance => state.distance.count.to_string(),
-        StateStringPicker::Turn => state.turn_number.to_string(),
+        StateStringPicker::Turn => state.turn.to_string(),
         StateStringPicker::PlayerValue(PlayerValuePicker { pos, value_type }) => {
             let pos = match pos {
                 PlayerRelativePos::Me => self_pos,

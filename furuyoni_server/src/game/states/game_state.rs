@@ -18,8 +18,8 @@ pub(crate) struct GameState {
 pub(crate) enum InvalidGameUpdateError {
     #[error("There was no card that matches the hand selector.")]
     HandSelectorOutOfBounds,
-    #[error("Vigor has been pushed to go below 0.")]
-    NegativeVigor,
+    #[error("Vigor has been pushed to go below 0 or above 2.")]
+    InvalidVigor,
     #[error(
         "Invalid petal transfer: the transfer will result in negative or over-max petal value."
     )]
@@ -60,18 +60,11 @@ impl GameState {
                 board_state.get_petals_mut(to).count = to_new;
             }
             UpdateGameState::AddToVigor { player, diff } => {
-                const MAX_VIGOR: i32 = 2;
-                const MIN_VIGOR: i32 = 0;
-
-                let vigor = &mut board_state.player_states[player].vigor;
-
-                let new = vigor.0 + diff;
-
-                if new < MIN_VIGOR {
-                    return Err(InvalidGameUpdateError::NegativeVigor);
+                let vigor = &mut self.inner.board_state.player_states[player].vigor;
+                vigor.0 += diff;
+                if vigor.0 < 0 || vigor.0 > 2 {
+                    return Err(InvalidGameUpdateError::InvalidVigor);
                 }
-
-                vigor.0 = std::cmp::min(MAX_VIGOR, new);
             }
             UpdateGameState::DiscardCard { player, selector } => {
                 let player_state = &mut board_state.player_states[player];

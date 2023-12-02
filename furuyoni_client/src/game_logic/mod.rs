@@ -87,7 +87,7 @@ pub(crate) async fn run_game(
                         .get_resource::<BoardState>()
                         .expect("Resource BoardState is missing.");
                     if resource.0 != state {
-                        todo!("update states...")
+                        todo!("handle state mismatch: resynchronize...")
                     }
                 })
                 .await;
