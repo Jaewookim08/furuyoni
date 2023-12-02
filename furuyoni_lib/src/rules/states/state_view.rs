@@ -2,7 +2,7 @@ use crate::rules::cards::Card;
 use crate::rules::events::UpdateGameState;
 use crate::rules::states::petals::Petals;
 use crate::rules::states::players_data::PlayersData;
-use crate::rules::{PetalPosition, Phase, PlayerPos};
+use crate::rules::{PetalsPosition, Phase, PlayerPos};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -74,13 +74,13 @@ pub enum InvalidGameViewUpdateError {
 }
 
 impl StateView {
-    fn get_petals_mut(&mut self, petal_position: PetalPosition) -> &'_ mut Petals {
+    fn get_petals_mut(&mut self, petal_position: PetalsPosition) -> &'_ mut Petals {
         match petal_position {
-            PetalPosition::Distance => &mut self.distance,
-            PetalPosition::Dust => &mut self.dust,
-            PetalPosition::Aura(player) => &mut self.player_states[player].aura,
-            PetalPosition::Flare(player) => &mut self.player_states[player].flare,
-            PetalPosition::Life(player) => &mut self.player_states[player].life,
+            PetalsPosition::Distance => &mut self.distance,
+            PetalsPosition::Dust => &mut self.dust,
+            PetalsPosition::Aura(player) => &mut self.player_states[player].aura,
+            PetalsPosition::Flare(player) => &mut self.player_states[player].flare,
+            PetalsPosition::Life(player) => &mut self.player_states[player].life,
         }
     }
 

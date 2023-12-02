@@ -4,9 +4,7 @@ mod systems;
 
 use crate::game_logic::GameLogicError;
 use crate::networking::post_office::spawn_post_office;
-use crate::systems::board_system::{
-    PlayerRelativePos, PlayerValuePicker, PlayerValuePickerType, StateLabel, StateStringPicker,
-};
+use crate::systems::board_system::{BoardPlugin, PlayerRelativePos, StateLabel, StateStringPicker};
 use crate::systems::picker::{BasicActionButton, PickerPlugin, SkipButton};
 use bevy::app::AppExit;
 use bevy::prelude::*;
@@ -33,6 +31,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(PickerPlugin)
+        .add_plugins(BoardPlugin)
         .add_plugins(TokioTasksPlugin::default())
         .add_plugins(EditorPlugin::default())
         .add_systems(Startup, (setup, spawn_logic_thread))
@@ -121,78 +120,54 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         10.,
         10.,
         "Life",
-        StateStringPicker::PlayerValue(PlayerValuePicker::new(
-            PlayerRelativePos::Opponent,
-            PlayerValuePickerType::Life,
-        )),
+        StateStringPicker::Life(PlayerRelativePos::Opponent),
     );
     spawn_label(
         10.,
         10. + LH * 1.,
         "Flare",
-        StateStringPicker::PlayerValue(PlayerValuePicker::new(
-            PlayerRelativePos::Opponent,
-            PlayerValuePickerType::Flare,
-        )),
+        StateStringPicker::Flare(PlayerRelativePos::Opponent),
     );
 
     spawn_label(
         10.,
         10. + LH * 2.,
         "Aura",
-        StateStringPicker::PlayerValue(PlayerValuePicker::new(
-            PlayerRelativePos::Opponent,
-            PlayerValuePickerType::Aura,
-        )),
+        StateStringPicker::Aura(PlayerRelativePos::Opponent),
     );
 
     spawn_label(
         10.,
         10. + LH * 3.,
         "Vigor",
-        StateStringPicker::PlayerValue(PlayerValuePicker::new(
-            PlayerRelativePos::Opponent,
-            PlayerValuePickerType::Vigor,
-        )),
+        StateStringPicker::Vigor(PlayerRelativePos::Opponent),
     );
 
     spawn_label(
         80.,
         70.,
         "Life",
-        StateStringPicker::PlayerValue(PlayerValuePicker::new(
-            PlayerRelativePos::Me,
-            PlayerValuePickerType::Life,
-        )),
+        StateStringPicker::Life(PlayerRelativePos::Me),
     );
 
     spawn_label(
         80.,
         70. + LH * 1.,
         "Flare",
-        StateStringPicker::PlayerValue(PlayerValuePicker::new(
-            PlayerRelativePos::Me,
-            PlayerValuePickerType::Flare,
-        )),
+        StateStringPicker::Flare(PlayerRelativePos::Me),
     );
 
     spawn_label(
         80.,
         70. + LH * 2.,
         "Aura",
-        StateStringPicker::PlayerValue(PlayerValuePicker::new(
-            PlayerRelativePos::Me,
-            PlayerValuePickerType::Aura,
-        )),
+        StateStringPicker::Aura(PlayerRelativePos::Me),
     );
     spawn_label(
         80.,
         70. + LH * 3.,
         "Vigor",
-        StateStringPicker::PlayerValue(PlayerValuePicker::new(
-            PlayerRelativePos::Me,
-            PlayerValuePickerType::Vigor,
-        )),
+        StateStringPicker::Vigor(PlayerRelativePos::Me),
     );
     spawn_label(85., 20., "Turn", StateStringPicker::Turn);
     spawn_label(50., 40., "Distance", StateStringPicker::Distance);

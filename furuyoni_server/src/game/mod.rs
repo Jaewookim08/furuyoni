@@ -9,7 +9,7 @@ use derive_more::Neg;
 use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, HandSelector, MainPhaseAction, PlayableCardSelector,
 };
-use furuyoni_lib::rules::{ObservePosition, PetalPosition, Phase, PlayerPos};
+use furuyoni_lib::rules::{ObservePosition, PetalsPosition, Phase, PlayerPos};
 
 use crate::game::game_controlflow::GameControlFlow::{BreakPhase, Continue};
 use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};
@@ -404,16 +404,16 @@ fn play_basic_action(
     };
     match action {
         BasicAction::MoveForward => {
-            transfer_aura(PetalPosition::Distance, PetalPosition::Aura(player))?;
+            transfer_aura(PetalsPosition::Distance, PetalsPosition::Aura(player))?;
         }
         BasicAction::MoveBackward => {
-            transfer_aura(PetalPosition::Aura(player), PetalPosition::Distance)?;
+            transfer_aura(PetalsPosition::Aura(player), PetalsPosition::Distance)?;
         }
         BasicAction::Recover => {
-            transfer_aura(PetalPosition::Dust, PetalPosition::Aura(player))?;
+            transfer_aura(PetalsPosition::Dust, PetalsPosition::Aura(player))?;
         }
         BasicAction::Focus => {
-            transfer_aura(PetalPosition::Aura(player), PetalPosition::Flare(player))?;
+            transfer_aura(PetalsPosition::Aura(player), PetalsPosition::Flare(player))?;
         }
     }
 

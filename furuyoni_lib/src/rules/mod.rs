@@ -35,7 +35,7 @@ impl PlayerPos {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone, Copy)]
-pub enum PetalPosition {
+pub enum PetalsPosition {
     Distance,
     Dust,
     Aura(PlayerPos),

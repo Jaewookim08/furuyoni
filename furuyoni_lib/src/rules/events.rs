@@ -1,5 +1,5 @@
 use crate::rules::player_actions::{BasicAction, HandSelector};
-use crate::rules::{PetalPosition, Phase, PlayerPos};
+use crate::rules::{PetalsPosition, Phase, PlayerPos};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -10,8 +10,8 @@ pub enum UpdateGameState {
     },
     SetPhase(Phase),
     TransferPetals {
-        from: PetalPosition,
-        to: PetalPosition,
+        from: PetalsPosition,
+        to: PetalsPosition,
         amount: u32,
     },
     AddToVigor {
