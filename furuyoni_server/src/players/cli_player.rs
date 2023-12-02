@@ -11,7 +11,7 @@ pub(crate) struct CliPlayer {}
 impl super::Player for CliPlayer {
     async fn get_main_phase_action(
         &mut self,
-        state: &ViewableState,
+        state: &StateView,
         _playable_cards: &Vec<PlayableCardSelector>,
         performable_basic_actions: &Vec<BasicAction>,
         _available_basic_action_costs: &Vec<BasicActionCost>,
@@ -35,7 +35,7 @@ impl super::Player for CliPlayer {
 
 impl GameObserver for CliPlayer {}
 impl CliPlayer {
-    fn print_state(state: &ViewableState) {
+    fn print_state(state: &StateView) {
         println!(" == state == ");
         println!("{state:?}");
         println!(" =========== ");

@@ -1,7 +1,7 @@
 use crate::ReflectComponent;
 use bevy::prelude::Component;
 use bevy::reflect::Reflect;
-use furuyoni_lib::rules::states::{ViewablePlayerState, ViewableState};
+use furuyoni_lib::rules::states::{PlayerStateView, StateView};
 use furuyoni_lib::rules::PlayerPos;
 
 // use crate::systems::picker::{PickedEvent, RequestPick};
@@ -119,7 +119,7 @@ impl StateLabel {
     }
 }
 
-fn get_string(self_pos: PlayerPos, state: &ViewableState, picker: &StateStringPicker) -> String {
+fn get_string(self_pos: PlayerPos, state: &StateView, picker: &StateStringPicker) -> String {
     match picker {
         StateStringPicker::Dust => state.dust.count.to_string(),
         StateStringPicker::Distance => state.distance.count.to_string(),
@@ -137,14 +137,14 @@ fn get_string(self_pos: PlayerPos, state: &ViewableState, picker: &StateStringPi
 }
 
 fn get_string_from_player(
-    player_state: &ViewablePlayerState,
+    player_state: &PlayerStateView,
     picker: &PlayerValuePickerType,
 ) -> String {
     match picker {
-        PlayerValuePickerType::Life => player_state.get_life().count.to_string(),
-        PlayerValuePickerType::Flare => player_state.get_flare().count.to_string(),
-        PlayerValuePickerType::Aura => player_state.get_aura().count.to_string(),
-        PlayerValuePickerType::Vigor => player_state.get_vigor().to_string(),
+        PlayerValuePickerType::Life => player_state.life.count.to_string(),
+        PlayerValuePickerType::Flare => player_state.flare.count.to_string(),
+        PlayerValuePickerType::Aura => player_state.aura.count.to_string(),
+        PlayerValuePickerType::Vigor => player_state.vigor.to_string(),
     }
 }
 //

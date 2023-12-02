@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 mod yurina;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Card {
     Slash,
     Brandish,

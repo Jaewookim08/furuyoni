@@ -1,7 +1,8 @@
 use crate::game::Vigor;
 use furuyoni_lib::rules::cards::Card;
 use furuyoni_lib::rules::states::petals::Petals;
-use furuyoni_lib::rules::states::*;
+use furuyoni_lib::rules::states::{CardsView, PlayerStateView};
+use furuyoni_lib::rules::{ObservePosition, PlayerPos};
 use std::collections::VecDeque;
 
 #[derive(Debug)]
@@ -34,36 +35,30 @@ impl Default for PlayerState {
     }
 }
 
-impl From<&PlayerState> for ViewableOpponentState {
-    fn from(player_state: &PlayerState) -> Self {
-        ViewableOpponentState {
-            hand_count: player_state.hand.len(),
-            deck_count: player_state.deck.len(),
-            enhancements: player_state.enhancements.clone(),
-            played_pile: player_state.played_pile.clone(),
-            discard_pile_count: player_state.discard_pile.len(),
+impl PlayerState {
+    pub fn as_viewed_from(
+        &self,
+        owner: PlayerPos,
+        observed_from: ObservePosition,
+    ) -> PlayerStateView {
+        let (can_view_personals, can_view_all) = {
+            match observed_from {
+                ObservePosition::RelativeTo(p) => (p == owner, false),
+                ObservePosition::MasterView => (true, true),
+                ObservePosition::ByStander => (false, false),
+            }
+        };
 
-            vigor: player_state.vigor.0,
-            aura: player_state.aura.clone(),
-            life: player_state.life.clone(),
-            flare: player_state.flare.clone(),
-        }
-    }
-}
-
-impl From<&PlayerState> for ViewableSelfState {
-    fn from(player_state: &PlayerState) -> Self {
-        ViewableSelfState {
-            hands: player_state.hand.clone(),
-            deck_count: player_state.deck.len(),
-            enhancements: player_state.enhancements.clone(),
-            played_pile: player_state.played_pile.clone(),
-            discard_pile: player_state.discard_pile.clone(),
-
-            vigor: player_state.vigor.0,
-            aura: player_state.aura.clone(),
-            life: player_state.life.clone(),
-            flare: player_state.flare.clone(),
+        PlayerStateView {
+            hands: CardsView::from(&self.hand, can_view_personals),
+            deck: CardsView::from(&self.deck.clone().into(), can_view_all),
+            enhancements: self.enhancements.clone(),
+            played_pile: self.played_pile.clone(),
+            discard_pile: CardsView::from(&self.discard_pile, can_view_personals),
+            vigor: self.vigor.0,
+            aura: self.aura.clone(),
+            life: self.life.clone(),
+            flare: self.flare.clone(),
         }
     }
 }

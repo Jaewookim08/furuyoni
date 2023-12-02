@@ -11,7 +11,7 @@ use furuyoni_lib::rules::PlayerPos;
 pub(crate) trait Player: GameObserver {
     async fn get_main_phase_action(
         &mut self,
-        state: &ViewableState,
+        state: &StateView,
         playable_cards: &Vec<PlayableCardSelector>,
         performable_basic_actions: &Vec<BasicAction>,
         available_basic_action_costs: &Vec<BasicActionCost>,

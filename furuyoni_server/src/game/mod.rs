@@ -450,33 +450,22 @@ fn pay_basic_action_cost(
     Ok(())
 }
 
-fn get_viewable_state(viewed_from: ObservePosition, state: &GameState) -> ViewableState {
+fn get_viewable_state(viewed_from: ObservePosition, state: &GameState) -> StateView {
     let GameStateInner {
         board_state,
         phase_state,
     } = state.deref();
     let player_states = &board_state.player_states;
 
-    let get_player_state = |player: PlayerPos| -> ViewablePlayerState {
-        let player_state = &player_states[player];
-        let open = ViewablePlayerState::SelfState(ViewableSelfState::from(player_state));
-
-        match viewed_from {
-            ObservePosition::MasterView => open,
-            ObservePosition::RelativeTo(p) if { p == player } => open,
-            _ => ViewablePlayerState::Opponent(ViewableOpponentState::from(player_state)),
-        }
-    };
-
-    ViewableState {
+    StateView {
         turn_player: phase_state.turn_player,
         phase: phase_state.phase,
         turn_number: phase_state.turn,
         distance: board_state.distance.clone(),
         dust: board_state.dust.clone(),
-        player_states: ViewablePlayerStates::new(
-            get_player_state(PlayerPos::P1),
-            get_player_state(PlayerPos::P2),
+        player_states: PlayerStateViews::new(
+            player_states[PlayerPos::P1].as_viewed_from(PlayerPos::P1, viewed_from),
+            player_states[PlayerPos::P2].as_viewed_from(PlayerPos::P2, viewed_from),
         ),
     }
 }

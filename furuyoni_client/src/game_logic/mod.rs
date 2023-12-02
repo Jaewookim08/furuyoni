@@ -15,7 +15,7 @@ use thiserror::Error;
 type PlayerToGameResponder = MessageChannel<PlayerToGameResponse, GameToPlayerRequest>;
 
 #[derive(Resource)]
-pub(crate) struct BoardState(pub ViewableState);
+pub(crate) struct BoardState(pub StateView);
 
 #[derive(Resource)]
 pub(crate) struct SelfPlayerPos(pub PlayerPos);

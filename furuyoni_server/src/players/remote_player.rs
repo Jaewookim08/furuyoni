@@ -10,7 +10,7 @@ use crate::players::Player;
 use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, MainPhaseAction, PlayableCardSelector,
 };
-use furuyoni_lib::rules::states::ViewableState;
+use furuyoni_lib::rules::states::StateView;
 use furuyoni_lib::rules::PlayerPos;
 
 type ChannelT = MessageChannel<GameToPlayerRequest, PlayerToGameResponse>;
@@ -26,7 +26,7 @@ impl RemotePlayer {
 }
 
 impl RemotePlayer {
-    fn send_state(&mut self, state: &ViewableState) -> Result<(), ()> {
+    fn send_state(&mut self, state: &StateView) -> Result<(), ()> {
         self.channel
             .send(GameToPlayerRequest::CheckGameState(state.clone()))
             .map_err(|_| ())?;
@@ -37,7 +37,7 @@ impl RemotePlayer {
 impl Player for RemotePlayer {
     async fn get_main_phase_action(
         &mut self,
-        state: &ViewableState,
+        state: &StateView,
         playable_cards: &Vec<PlayableCardSelector>,
         performable_basic_actions: &Vec<BasicAction>,
         available_basic_action_costs: &Vec<BasicActionCost>,
@@ -78,7 +78,7 @@ impl Player for RemotePlayer {
     }
 }
 impl GameObserver for RemotePlayer {
-    fn initialize_state(&mut self, _state: &ViewableState) -> Result<(), NotifyFailedError> {
+    fn initialize_state(&mut self, _state: &StateView) -> Result<(), NotifyFailedError> {
         self.channel
             .send(GameToPlayerRequest::InitializeGameState(_state.clone()))
             .map_err(|_| NotifyFailedError)?;

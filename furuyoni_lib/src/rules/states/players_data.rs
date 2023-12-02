@@ -2,7 +2,7 @@ use crate::rules::PlayerPos;
 use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct PlayersData<TData> {
     pub p1_data: TData,
     pub p2_data: TData,

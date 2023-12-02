@@ -11,7 +11,7 @@ pub(crate) struct IdlePlayer {}
 impl super::Player for IdlePlayer {
     async fn get_main_phase_action(
         &mut self,
-        _state: &ViewableState,
+        _state: &StateView,
         _playable_cards: &Vec<PlayableCardSelector>,
         _performable_basic_actions: &Vec<BasicAction>,
         _available_basic_action_costs: &Vec<BasicActionCost>,

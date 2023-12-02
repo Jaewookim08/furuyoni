@@ -4,7 +4,7 @@ use crate::rules::player_actions::{
 use crate::rules::PlayerPos;
 
 use crate::rules::events::GameEvent;
-use crate::rules::states::ViewableState;
+use crate::rules::states::StateView;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -16,8 +16,8 @@ pub enum GameToPlayerMessage {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameToPlayerRequest {
     NotifyEvent(GameEvent),
-    InitializeGameState(ViewableState),
-    CheckGameState(ViewableState),
+    InitializeGameState(StateView),
+    CheckGameState(StateView),
     RequestMainPhaseAction(RequestMainPhaseAction),
     RequestGameStart { pos: PlayerPos },
 }
@@ -31,7 +31,7 @@ pub struct RequestMainPhaseAction {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameToPlayerResponse {
-    State(ViewableState),
+    State(StateView),
     Ack,
 }
 
