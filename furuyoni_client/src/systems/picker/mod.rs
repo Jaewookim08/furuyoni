@@ -1,27 +1,65 @@
 use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::*;
 use bevy_tokio_tasks::TaskContext;
-use furuyoni_lib::rules::player_actions::{BasicAction, MainPhaseAction};
+use furuyoni_lib::rules::player_actions::{BasicAction, BasicActionCost, MainPhaseAction};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::oneshot;
 
 pub struct PickerPlugin;
 
+pub enum PickMainPhaseActionResult {
+    PayBasicActionCost(BasicActionCost),
+    EndMainPhase,
+}
+
+pub async fn pick_main_phase_action(
+    ctx: TaskContext,
+    allowed_costs: Arc<Vec<BasicActionCost>>,
+) -> PickMainPhaseActionResult {
+    loop {
+        let allowed_costs = allowed_costs.clone();
+        let picked = pick_anything(ctx.clone(), move |p| match p {
+            Pickable::EndMainPhase => true,
+            Pickable::Vigor => allowed_costs.contains(&BasicActionCost::Vigor),
+            _ => false,
+        })
+        .await;
+
+        match picked {
+            Pickable::EndMainPhase => return PickMainPhaseActionResult::EndMainPhase,
+            Pickable::Vigor => {
+                return PickMainPhaseActionResult::PayBasicActionCost(BasicActionCost::Vigor)
+            }
+            _ => { /*retry */ }
+        }
+    }
+}
+
+pub enum PickBasicActionResult {
+    BasicAction(BasicAction),
+    Cancel,
+}
+
 pub async fn pick_basic_action(
     ctx: TaskContext,
     allowed_basic_actions: Arc<Vec<BasicAction>>,
-    allow_skip: bool,
-) -> Option<BasicAction> {
-    let picked = pick_anything(ctx, allowed_basic_actions, allow_skip).await;
+) -> PickBasicActionResult {
+    loop {
+        let allowed_basic_actions = allowed_basic_actions.clone();
+        let picked = pick_anything(ctx.clone(), move |p| match p {
+            Pickable::Cancel => true,
+            Pickable::BasicAction(b) => allowed_basic_actions.contains(&b),
+            _ => false,
+        })
+        .await;
 
-    match picked {
-        Pickable::Skip => return None,
-        Pickable::BasicActionButton(action) => return Some(action),
-        _ => todo!("retry?"),
+        match picked {
+            Pickable::Cancel => return PickBasicActionResult::Cancel,
+            Pickable::BasicAction(action) => return PickBasicActionResult::BasicAction(action),
+            _ => { /*retry */ }
+        }
     }
-
-    todo!()
 }
 
 #[derive(Resource)]
@@ -29,30 +67,12 @@ struct PickerCallBack {
     sender: Option<oneshot::Sender<Pickable>>,
 }
 
-#[derive(Component, Reflect, Default)]
-#[reflect(Component)]
-pub struct SkipButton;
-
-#[derive(Component, Reflect, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[reflect_value(Serialize, Deserialize, Component)]
-pub struct BasicActionButton {
-    pub action: BasicAction,
-}
-
-impl Default for BasicActionButton {
-    fn default() -> Self {
-        Self {
-            action: BasicAction::MoveForward,
-        }
-    }
-}
-
 impl Plugin for PickerPlugin {
     fn build(&self, app: &mut App) {
         app
             // .add_state::<PickingState>()
-            .register_type::<SkipButton>()
-            .register_type::<BasicActionButton>()
+            .register_type::<Pickable>()
+            .register_type::<PickerButton>()
             .add_systems(
                 Update,
                 (poll_pickers.run_if(resource_exists::<PickerCallBack>()),),
@@ -60,24 +80,32 @@ impl Plugin for PickerPlugin {
     }
 }
 
-#[derive(Debug)]
-enum Pickable {
-    Skip,
-    BasicActionButton(BasicAction),
+#[derive(Default, Debug, Component, Reflect)]
+#[reflect(Component)]
+pub(crate) struct PickerButton {
+    pub pickable: Pickable,
+}
+
+#[derive(Default, Debug, Reflect, Serialize, Deserialize, Clone)]
+#[reflect_value(Serialize, Deserialize)]
+pub enum Pickable {
+    #[default]
+    Cancel,
+    EndMainPhase,
+    BasicAction(BasicAction),
+    Vigor,
 }
 
 async fn pick_anything(
     mut ctx: TaskContext,
-    allowed_basic_actions: Arc<Vec<BasicAction>>,
-    allow_skip: bool,
+    predicate: impl Fn(&Pickable) -> bool + Send + Sync + 'static,
 ) -> Pickable {
     let (tx, rx) = oneshot::channel();
 
     ctx.run_on_main_thread(move |ctx| {
         ctx.world
             .insert_resource(PickerCallBack { sender: Some(tx) });
-        ctx.world
-            .run_system_once(enable_pickers_with(allowed_basic_actions, allow_skip));
+        ctx.world.run_system_once(enable_pickers_with(predicate));
     })
     .await;
 
@@ -94,60 +122,35 @@ async fn pick_anything(
 }
 
 fn enable_pickers_with(
-    enabled_basic_actions: Arc<Vec<BasicAction>>,
-    enable_skip: bool,
-) -> impl Fn(
-    ParamSet<(
-        Query<&mut Visibility, With<SkipButton>>,
-        Query<(&BasicActionButton, &mut Visibility)>,
-    )>,
-) {
-    move |mut set: ParamSet<(
-        Query<&mut Visibility, With<SkipButton>>,
-        Query<(&BasicActionButton, &mut Visibility)>,
-    )>| {
-        for mut v in set.p0().iter_mut() {
-            *v = if enable_skip {
+    predicate: impl Fn(&Pickable) -> bool + Send + Sync,
+) -> impl Fn(Query<(&PickerButton, &mut Visibility)>) + Send + Sync {
+    move |mut query: Query<(&PickerButton, &mut Visibility)>| {
+        for (picker_button, mut visibility) in query.iter_mut() {
+            *visibility = if predicate(&picker_button.pickable) {
                 Visibility::Inherited
             } else {
                 Visibility::Hidden
             };
-        }
-
-        for (ba, mut v) in set.p1().iter_mut() {
-            *v = if enabled_basic_actions.contains(&ba.action) {
-                Visibility::Inherited
-            } else {
-                Visibility::Hidden
-            }
         }
     }
 }
 
 fn poll_pickers(
     mut callback: ResMut<PickerCallBack>,
-    basic_action_buttons: Query<(&Interaction, &BasicActionButton), Changed<Interaction>>,
-    skip_buttons: Query<&Interaction, (Changed<Interaction>, With<SkipButton>)>,
+    basic_action_buttons: Query<(&Interaction, &PickerButton), Changed<Interaction>>,
 ) {
     if callback.sender.is_none() {
         return;
     }
 
     let picked = 'picked: {
-        for (interaction, ba) in basic_action_buttons.iter() {
+        for (interaction, picker) in basic_action_buttons.iter() {
             match interaction {
-                // Todo: bevy ui update되면 released 처리 방식 따라 수정.
+                // Todo: bevy ui update되면 맞춰서 수정. 기왕이면 released에.
                 Interaction::Pressed => {
-                    break 'picked Some(Pickable::BasicActionButton(ba.action));
+                    break 'picked Some(&picker.pickable);
                 }
                 _ => {}
-            }
-        }
-
-        for interaction in skip_buttons.iter() {
-            match interaction {
-                Interaction::Pressed => break 'picked Some(Pickable::Skip),
-                _ => (),
             }
         }
 
@@ -156,13 +159,11 @@ fn poll_pickers(
 
     if let Some(picked) = picked {
         let sender = callback.sender.take().unwrap();
-        sender.send(picked).expect("todo");
+        sender.send(picked.clone()).expect("todo");
     }
 }
 
-fn disable_picker_buttons(
-    mut buttons: Query<&mut Visibility, Or<(With<SkipButton>, With<BasicActionButton>)>>,
-) {
+fn disable_picker_buttons(mut buttons: Query<&mut Visibility, With<PickerButton>>) {
     for mut v in buttons.iter_mut() {
         *v = Visibility::Hidden;
     }

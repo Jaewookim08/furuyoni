@@ -5,7 +5,7 @@ mod systems;
 use crate::game_logic::GameLogicError;
 use crate::networking::post_office::spawn_post_office;
 use crate::systems::board_system::{BoardPlugin, PlayerRelativePos, StateLabel, StateStringPicker};
-use crate::systems::picker::{BasicActionButton, PickerPlugin, SkipButton};
+use crate::systems::picker::{Pickable, PickerButton, PickerPlugin};
 use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy::text::TextStyle;
@@ -144,27 +144,27 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     );
 
     spawn_label(
-        80.,
+        83.,
         70.,
         "Life",
         StateStringPicker::Life(PlayerRelativePos::Me),
     );
 
     spawn_label(
-        80.,
+        83.,
         70. + LH * 1.,
         "Flare",
         StateStringPicker::Flare(PlayerRelativePos::Me),
     );
 
     spawn_label(
-        80.,
+        83.,
         70. + LH * 2.,
         "Aura",
         StateStringPicker::Aura(PlayerRelativePos::Me),
     );
     spawn_label(
-        80.,
+        83.,
         70. + LH * 3.,
         "Vigor",
         StateStringPicker::Vigor(PlayerRelativePos::Me),
@@ -186,18 +186,20 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     // vertically center child text
                     align_items: AlignItems::Center,
                     position_type: PositionType::Absolute,
-                    left: Val::Percent(21.),
-                    top: Val::Percent(20.),
+                    right: Val::Percent(20.),
+                    bottom: Val::Percent(20.),
                     ..default()
                 },
                 background_color: Color::rgb(125. / 256., 13. / 256., 40.0 / 256.).into(),
                 ..default()
             },
-            SkipButton,
+            PickerButton {
+                pickable: Pickable::Cancel,
+            },
         ))
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(
-                "Skip",
+                "Cancel",
                 TextStyle {
                     font: font.clone(),
                     font_size: 40.0,
@@ -206,7 +208,69 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ));
         });
 
-    let mut spawn_ba_button = |l, t, str: &str, action| {
+    commands
+        .spawn((
+            ButtonBundle {
+                style: Style {
+                    width: Val::Px(150.0),
+                    height: Val::Px(65.0),
+                    // center button
+                    margin: UiRect::all(Val::Auto),
+                    // horizontally center child text
+                    justify_content: JustifyContent::Center,
+                    // vertically center child text
+                    align_items: AlignItems::Center,
+                    position_type: PositionType::Absolute,
+                    right: Val::Percent(20.),
+                    bottom: Val::Percent(20.),
+                    ..default()
+                },
+                background_color: Color::rgb(125. / 256., 13. / 256., 40.0 / 256.).into(),
+                ..default()
+            },
+            PickerButton {
+                pickable: Pickable::EndMainPhase,
+            },
+        ))
+        .with_children(|parent| {
+            parent.spawn(TextBundle::from_section(
+                "End Main",
+                TextStyle {
+                    font: font.clone(),
+                    font_size: 40.0,
+                    color: Color::rgb(0.9, 0.9, 0.9),
+                },
+            ));
+        });
+
+    commands.spawn((
+        ButtonBundle {
+            style: Style {
+                width: Val::Px(155.0),
+                height: Val::Px(58.0),
+                // center button
+                margin: UiRect::all(Val::Auto),
+                // horizontally center child text
+                justify_content: JustifyContent::Center,
+                // vertically center child text
+                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                left: Val::Percent(82.5),
+                top: Val::Percent(87.4),
+                border: UiRect::all(Val::Px(4.0)),
+                ..default()
+            },
+            background_color: Color::rgba(0.2, 0.5, 0.3, 0.3).into(),
+            border_color: BorderColor(Color::WHITE),
+
+            ..default()
+        },
+        PickerButton {
+            pickable: Pickable::Vigor,
+        },
+    ));
+
+    let mut spawn_ba_button = |bottom, right, str: &str, action| {
         commands
             .spawn((
                 ButtonBundle {
@@ -220,14 +284,16 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         // vertically center child text
                         align_items: AlignItems::Center,
                         position_type: PositionType::Absolute,
-                        top: Val::Percent(t),
-                        left: Val::Percent(l),
+                        right: Val::Percent(right),
+                        bottom: Val::Percent(bottom),
                         ..default()
                     },
                     background_color: Color::rgb(0.2, 0.5, 0.3).into(),
                     ..default()
                 },
-                BasicActionButton { action },
+                PickerButton {
+                    pickable: Pickable::BasicAction(action),
+                },
             ))
             .with_children(|parent| {
                 parent.spawn(TextBundle::from_section(
@@ -241,8 +307,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             });
     };
 
-    spawn_ba_button(-5., 20., "Forward", BasicAction::MoveForward);
-    spawn_ba_button(8., 20., "Backward", BasicAction::MoveBackward);
-    spawn_ba_button(-5., 30., "Focus", BasicAction::Focus);
-    spawn_ba_button(8., 30., "Recover", BasicAction::Recover);
+    spawn_ba_button(20., 46., "Forward", BasicAction::MoveForward);
+    spawn_ba_button(10., 46., "Backward", BasicAction::MoveBackward);
+    spawn_ba_button(20., 33., "Focus", BasicAction::Focus);
+    spawn_ba_button(10., 33., "Recover", BasicAction::Recover);
 }

@@ -1,5 +1,6 @@
 use crate::game_logic::GameLogicError::InvalidRequest;
 use crate::systems::picker;
+use crate::systems::picker::{PickBasicActionResult, PickMainPhaseActionResult};
 use bevy::prelude::*;
 use bevy_tokio_tasks::*;
 use furuyoni_lib::net::frames::{GameToPlayerRequest, PlayerToGameResponse};
@@ -79,20 +80,37 @@ pub(crate) async fn run_game(
                 }
             }
             GameToPlayerRequest::RequestMainPhaseAction(req) => {
+                let allowed_costs = Arc::new(req.available_basic_action_costs);
                 let allowed_actions = Arc::new(req.performable_basic_actions);
-                let picked = picker::pick_basic_action(ctx.clone(), allowed_actions, true).await;
 
-                // skip checking the validity of the picked value. The server will do it for us.
-                let main_phase_action = match picked {
-                    None => MainPhaseAction::EndMainPhase,
-                    Some(action) => {
-                        MainPhaseAction::PlayBasicAction {
-                            action,
-                            cost: /* todo */BasicActionCost::Vigor,
+                let action = loop {
+                    let picked_main_action =
+                        picker::pick_main_phase_action(ctx.clone(), allowed_costs.clone()).await;
+                    match picked_main_action {
+                        PickMainPhaseActionResult::PayBasicActionCost(cost) => {
+                            let picked_basic_action =
+                                picker::pick_basic_action(ctx.clone(), allowed_actions.clone())
+                                    .await;
+
+                            match picked_basic_action {
+                                PickBasicActionResult::BasicAction(basic_action) => {
+                                    break MainPhaseAction::PlayBasicAction {
+                                        action: basic_action,
+                                        cost,
+                                    }
+                                }
+                                PickBasicActionResult::Cancel => {
+                                    continue;
+                                }
+                            }
+                        }
+                        PickMainPhaseActionResult::EndMainPhase => {
+                            break MainPhaseAction::EndMainPhase
                         }
                     }
                 };
-                responder.send(PlayerToGameResponse::MainPhaseAction(main_phase_action))?;
+
+                responder.send(PlayerToGameResponse::MainPhaseAction(action))?;
             }
             GameToPlayerRequest::CheckGameState(state) => {
                 ctx.run_on_main_thread(move |ctx| {
