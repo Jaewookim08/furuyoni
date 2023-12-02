@@ -6,6 +6,7 @@ use furuyoni_lib::net::frames::{GameToPlayerRequest, PlayerToGameResponse};
 use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::net::message_sender::MessageSendError;
 use furuyoni_lib::net::MessageRecvError;
+use furuyoni_lib::rules::events::GameEvent;
 use furuyoni_lib::rules::player_actions::{BasicActionCost, MainPhaseAction};
 use furuyoni_lib::rules::states::*;
 use furuyoni_lib::rules::PlayerPos;
@@ -22,12 +23,14 @@ pub(crate) struct SelfPlayerPos(pub PlayerPos);
 
 #[derive(Debug, Error)]
 pub(crate) enum GameLogicError {
-    #[error("Failed to receive a request from the server.")]
+    #[error("Failed to receive a request from the server: {0}")]
     RequestReceiveFailed(#[from] MessageRecvError),
-    #[error("Failed to send back a response to the server.")]
+    #[error("Failed to send back a response to the server : {0}")]
     ResponseSendFailed(#[from] MessageSendError),
     #[error("Received an invalid request from the server: {0:?}")]
     InvalidRequest(GameToPlayerRequest),
+    #[error("Tried to do an invalid update to the game state: {0}")]
+    InvalidUpdate(#[from] InvalidGameViewUpdateError),
 }
 
 pub(crate) async fn run_game(
@@ -62,13 +65,24 @@ pub(crate) async fn run_game(
     loop {
         match responder.receive().await? {
             GameToPlayerRequest::NotifyEvent(event) => {
-                // Todo:
+                // Todo: move to board.
+                match event {
+                    GameEvent::StateUpdated(update) => {
+                        ctx.run_on_main_thread(move |ctx| -> Result<(), GameLogicError> {
+                            let mut state = ctx.world.get_resource_mut::<BoardState>().unwrap();
+                            state.0.apply_update(&update)?;
+                            Ok(())
+                        })
+                        .await?;
+                    }
+                    GameEvent::PerformBasicAction { .. } => {}
+                }
             }
             GameToPlayerRequest::RequestMainPhaseAction(req) => {
                 let allowed_actions = Arc::new(req.performable_basic_actions);
                 let picked = picker::pick_basic_action(ctx.clone(), allowed_actions, true).await;
-                // Todo: check picked val? 서버에서도 하니까 넘어갈까.
 
+                // skip checking the validity of the picked value. The server will do it for us.
                 let main_phase_action = match picked {
                     None => MainPhaseAction::EndMainPhase,
                     Some(action) => {
@@ -87,11 +101,13 @@ pub(crate) async fn run_game(
                         .get_resource::<BoardState>()
                         .expect("Resource BoardState is missing.");
                     if resource.0 != state {
+                        eprintln!("Error: state mismatch.");
+                        eprintln!("server state: {:?}", state);
+                        eprintln!("client state: {:?}", resource.0);
                         todo!("handle state mismatch: resynchronize...")
                     }
                 })
                 .await;
-                todo!()
             }
             r => return Err(InvalidRequest(r)),
         }

@@ -68,7 +68,7 @@ async fn spawn_game(socket: TcpStream) {
             PlayerPos::P2 => "P2",
         },
     };
-    println!("Game ended. Winner: {winner_str}");
+    println!("Game ended. Winner: {}", winner_str);
 
     post_office_task.abort();
 }
