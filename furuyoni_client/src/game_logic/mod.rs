@@ -34,11 +34,21 @@ pub(crate) async fn run_game(
     mut responder: PlayerToGameResponder,
     mut ctx: TaskContext,
 ) -> Result<(), GameLogicError> {
-    // wait for the game start message
+    // wait for the initial state
     match responder.receive().await? {
-        GameToPlayerRequest::RequestGameStart { pos, state } => {
+        GameToPlayerRequest::SetGameState(state) => {
             ctx.run_on_main_thread(move |ctx| {
                 ctx.world.insert_resource(BoardState { 0: state });
+            })
+            .await;
+        }
+        r => return Err(InvalidRequest(r)),
+    }
+
+    // wait for the game start message
+    match responder.receive().await? {
+        GameToPlayerRequest::RequestGameStart { pos } => {
+            ctx.run_on_main_thread(move |ctx| {
                 ctx.world.insert_resource(SelfPlayerPos { 0: pos });
             })
             .await;
@@ -52,7 +62,7 @@ pub(crate) async fn run_game(
     loop {
         match responder.receive().await? {
             GameToPlayerRequest::NotifyEvent(e) => {
-                todo!()
+                // Todo:
             }
             GameToPlayerRequest::RequestMainPhaseAction(req) => {
                 let allowed_actions = Arc::new(req.performable_basic_actions);

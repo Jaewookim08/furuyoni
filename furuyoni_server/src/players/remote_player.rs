@@ -54,12 +54,9 @@ impl Player for RemotePlayer {
         }
     }
 
-    async fn check_game_start(&mut self, state: &ViewableState, pos: PlayerPos) -> Result<(), ()> {
+    async fn check_game_start(&mut self, pos: PlayerPos) -> Result<(), ()> {
         self.channel
-            .send(GameToPlayerRequest::RequestGameStart {
-                state: state.clone(),
-                pos,
-            })
+            .send(GameToPlayerRequest::RequestGameStart { pos })
             .map_err(|_| ())?;
 
         let response = self.channel.receive().await.map_err(|_| ())?;
@@ -72,6 +69,13 @@ impl Player for RemotePlayer {
     }
 }
 impl GameObserver for RemotePlayer {
+    fn initialize_state(&mut self, _state: &ViewableState) -> Result<(), NotifyFailedError> {
+        self.channel
+            .send(GameToPlayerRequest::SetGameState(_state.clone()))
+            .map_err(|_| NotifyFailedError)?;
+        Ok(())
+    }
+
     fn notify_event(&mut self, event: &GameEvent) -> Result<(), NotifyFailedError> {
         self.channel
             .send(GameToPlayerRequest::NotifyEvent((*event).clone()))

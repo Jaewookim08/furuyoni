@@ -43,3 +43,13 @@ pub enum PetalPosition {
     Life(PlayerPos),
     // Todo: 부여패.
 }
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone, Copy)]
+pub enum ObservePosition {
+    /// Can view hidden information open to the given player.
+    RelativeTo(PlayerPos),
+    /// Can view all hidden information.
+    MasterView,
+    /// Can see only open information.
+    ByStander,
+}

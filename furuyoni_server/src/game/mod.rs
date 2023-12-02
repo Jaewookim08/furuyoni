@@ -1,4 +1,5 @@
 mod game_controlflow;
+mod observable_game;
 mod states;
 
 use furuyoni_lib::rules::states::petals::Petals;
@@ -8,13 +9,13 @@ use derive_more::Neg;
 use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, HandSelector, MainPhaseAction, PlayableCardSelector,
 };
-use furuyoni_lib::rules::{PetalPosition, Phase, PlayerPos};
+use furuyoni_lib::rules::{ObservePosition, PetalPosition, Phase, PlayerPos};
 
 use crate::game::game_controlflow::GameControlFlow::{BreakPhase, Continue};
 use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};
+use crate::game::observable_game::{event_filter_information, ObservableGame};
 use crate::game::states::*;
 use crate::game_watcher::{GameObserver, NotifyFailedError};
-use crate::players;
 use furuyoni_lib::rules::cards::Card;
 use furuyoni_lib::rules::events::{GameEvent, UpdateGameState};
 use furuyoni_lib::rules::states::*;
@@ -25,6 +26,7 @@ use std::marker::{Send, Sync};
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, Mutex};
 use thiserror::Error;
+use tokio::join;
 
 const GET_ACTION_RETRY_TIMES: usize = 3;
 
@@ -50,43 +52,45 @@ type Players = PlayersData<Box<dyn Player + Send + Sync>>;
 #[derive(Debug, Copy, Clone, PartialEq, Neg)]
 pub struct Vigor(i32);
 
+struct ObserverWithPos {
+    position: ObservePosition,
+    observer: Box<dyn GameObserver + Send>,
+}
+
 struct GameHandle {
     state: GameState,
-    observers: Vec<Box<dyn GameObserver + Send>>,
+    observers: Vec<ObserverWithPos>,
 }
 
 pub(crate) struct Game {
     handle: Arc<Mutex<GameHandle>>,
 }
 
-pub(crate) struct ObservableGame {
-    handle: Arc<Mutex<GameHandle>>,
-}
-
 impl Game {
     pub fn create_game() -> (Game, ObservableGame) {
-        let shared = Arc::new(Mutex::new(GameHandle {
+        let handle = Arc::new(Mutex::new(GameHandle {
             state: initialize_game_states(),
             observers: Vec::new(),
         }));
 
         let game = Game {
-            handle: shared.clone(),
+            handle: handle.clone(),
         };
 
-        let observable = ObservableGame { handle: shared };
+        let observable = ObservableGame::new(handle);
 
         (game, observable)
     }
 
     pub async fn run(
-        self,
+        mut self,
         player_1: Box<dyn Player + Sync + Send>,
         player_2: Box<dyn Player + Sync + Send>,
     ) -> Result<GameResult, GameError> {
         let mut players = Players::new(player_1, player_2);
 
-        // Todo: notify_game_start(&mut players, &phase_state, &board_state).await?;
+        broadcast_viewable_state(self.handle.lock().unwrap().deref_mut(), &mut players)?;
+        self.notify_game_start(&mut players).await?;
 
         // Define phase modifying functions.
         fn next_phase(handle: &mut GameHandle, players: &mut Players) -> Result<(), GameError> {
@@ -148,39 +152,25 @@ impl Game {
     }
 
     async fn notify_game_start(&mut self, players: &mut Players) -> Result<(), GameError> {
-        todo!()
-        // async fn notify_start(
-        //     p: &mut (impl Player + ?Sized + Send),
-        //     phase_state: &PhaseState,
-        //     board_state: &BoardState,
-        //     pos: PlayerPos,
-        // ) -> Result<(), GameError> {
-        //     p.check_game_start(
-        //         &get_player_viewable_state(phase_state, board_state, pos),
-        //         pos,
-        //     )
-        //     .await
-        //     .map_err(|_| GameError::PlayerCommunicationFail(pos))
-        // }
-        //
-        // let (a, b) = join!(
-        //     notify_start(
-        //         &mut *players.p1_data,
-        //         phase_state,
-        //         board_state,
-        //         PlayerPos::P1
-        //     ),
-        //     notify_start(
-        //         &mut *players.p2_data,
-        //         phase_state,
-        //         board_state,
-        //         PlayerPos::P2
-        //     )
-        // );
-        //
-        // (a?, b?);
-        //
-        // Ok(())
+        async fn notify_start(
+            p: &mut (impl Player + ?Sized + Send),
+            pos: PlayerPos,
+        ) -> Result<(), GameError> {
+            p.check_game_start(pos)
+                .await
+                .map_err(|_| GameError::PlayerCommunicationFail(pos))
+        }
+
+        let PlayersData { p1_data, p2_data } = players;
+
+        let (a, b) = join!(
+            notify_start(p1_data.deref_mut(), PlayerPos::P1),
+            notify_start(p2_data.deref_mut(), PlayerPos::P2)
+        );
+
+        (a?, b?);
+
+        Ok(())
     }
 
     async fn run_beginning_phase(
@@ -244,7 +234,10 @@ impl Game {
                     let turn_player_pos = handle.state.phase_state.turn_player;
                     (
                         turn_player_pos,
-                        get_player_viewable_state(&handle.state, turn_player_pos),
+                        get_viewable_state(
+                            ObservePosition::RelativeTo(turn_player_pos),
+                            &handle.state,
+                        ),
                     )
                 };
 
@@ -300,19 +293,44 @@ fn update_state_and_notify(
     handle.state.apply_update(&update)?;
 
     let e = GameEvent::StateUpdated(update);
-    for p in PlayerPos::iter() {
-        players[p].notify_event(&e)?;
-    }
-    for observer in handle.observers.iter_mut() {
-        // ignore observer errors.
-        // Todo: remove from list when error occurs.
-        let _ = observer.notify_event(&e);
-    }
-
+    notify_all(players, &mut handle.observers, &e)?;
     Ok(())
 }
 
-fn notify_all(event: GameEvent) -> Result<(), GameError> {
+fn broadcast_viewable_state(
+    handle: &mut GameHandle,
+    players: &mut Players,
+) -> Result<(), GameError> {
+    for p in PlayerPos::iter() {
+        players[p].initialize_state(&get_viewable_state(
+            ObservePosition::RelativeTo(p),
+            &handle.state,
+        ))?;
+    }
+    for ObserverWithPos { observer, position } in handle.observers.iter_mut() {
+        // ignore observer errors.
+        // Todo: remove from list when error occurs.
+        let _ = observer.initialize_state(&get_viewable_state(*position, &handle.state));
+    }
+    Ok(())
+}
+
+fn notify_all(
+    players: &mut Players,
+    observers: &mut Vec<ObserverWithPos>,
+    event: &GameEvent,
+) -> Result<(), GameError> {
+    for p in PlayerPos::iter() {
+        players[p].notify_event(&event_filter_information(
+            ObservePosition::RelativeTo(p),
+            event,
+        ))?;
+    }
+    for ObserverWithPos { observer, position } in observers.iter_mut() {
+        // ignore observer errors.
+        // Todo: remove from list when error occurs.
+        let _ = observer.notify_event(&event_filter_information(*position, event));
+    }
     Ok(())
 }
 
@@ -373,7 +391,11 @@ fn play_basic_action(
     player: PlayerPos,
     action: BasicAction,
 ) -> Result<GameControlFlow, GameError> {
-    notify_all(GameEvent::PerformBasicAction { player, action })?;
+    notify_all(
+        players,
+        &mut handle.observers,
+        &GameEvent::PerformBasicAction { player, action },
+    )?;
 
     let mut transfer_aura = |from, to| {
         update_state_and_notify(
@@ -428,7 +450,7 @@ fn pay_basic_action_cost(
     Ok(())
 }
 
-fn get_player_viewable_state(state: &GameState, viewed_from: PlayerPos) -> ViewableState {
+fn get_viewable_state(viewed_from: ObservePosition, state: &GameState) -> ViewableState {
     let GameStateInner {
         board_state,
         phase_state,
@@ -437,10 +459,12 @@ fn get_player_viewable_state(state: &GameState, viewed_from: PlayerPos) -> Viewa
 
     let get_player_state = |player: PlayerPos| -> ViewablePlayerState {
         let player_state = &player_states[player];
-        if player == viewed_from {
-            ViewablePlayerState::SelfState(ViewableSelfState::from(player_state))
-        } else {
-            ViewablePlayerState::Opponent(ViewableOpponentState::from(player_state))
+        let open = ViewablePlayerState::SelfState(ViewableSelfState::from(player_state));
+
+        match viewed_from {
+            ObservePosition::MasterView => open,
+            ObservePosition::RelativeTo(p) if { p == player } => open,
+            _ => ViewablePlayerState::Opponent(ViewableOpponentState::from(player_state)),
         }
     };
 

@@ -16,11 +16,9 @@ pub enum GameToPlayerMessage {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameToPlayerRequest {
     NotifyEvent(GameEvent),
+    SetGameState(ViewableState),
     RequestMainPhaseAction(RequestMainPhaseAction),
-    RequestGameStart {
-        state: ViewableState,
-        pos: PlayerPos,
-    },
+    RequestGameStart { pos: PlayerPos },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
