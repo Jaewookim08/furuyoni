@@ -1,13 +1,20 @@
-use crate::game::states::phase_state::PhaseState;
-use crate::game::states::BoardState;
+use crate::game::states::player_state::PlayerState;
 use furuyoni_lib::rules::events::UpdateGameState;
+use furuyoni_lib::rules::states::petals::Petals;
+use furuyoni_lib::rules::states::PlayersData;
+use furuyoni_lib::rules::{PetalsPosition, Phase, PlayerPos};
 use std::ops::Deref;
 use thiserror::Error;
 
-// Todo: Merge phase_state and board_state.
+pub(crate) type PlayerStates = PlayersData<PlayerState>;
+
 pub(crate) struct GameStateInner {
-    pub phase_state: PhaseState,
-    pub board_state: BoardState,
+    pub turn: u32,
+    pub turn_player: PlayerPos,
+    pub phase: Phase,
+    pub distance: Petals,
+    pub dust: Petals,
+    pub player_states: PlayerStates,
 }
 
 pub(crate) struct GameState {
@@ -26,48 +33,68 @@ pub(crate) enum InvalidGameUpdateError {
     InvalidPetalTransfer,
 }
 
+impl GameStateInner {
+    fn get_petals_mut(&mut self, petal_position: PetalsPosition) -> &'_ mut Petals {
+        match petal_position {
+            PetalsPosition::Distance => &mut self.distance,
+            PetalsPosition::Dust => &mut self.dust,
+            PetalsPosition::Aura(player) => &mut self.player_states[player].aura,
+            PetalsPosition::Flare(player) => &mut self.player_states[player].flare,
+            PetalsPosition::Life(player) => &mut self.player_states[player].life,
+        }
+    }
+}
+
 impl GameState {
-    pub fn new(phase_state: PhaseState, board_state: BoardState) -> Self {
+    pub fn new(
+        turn: u32,
+        turn_player: PlayerPos,
+        phase: Phase,
+        distance: Petals,
+        dust: Petals,
+        player_states: PlayerStates,
+    ) -> Self {
         Self {
             inner: GameStateInner {
-                phase_state,
-                board_state,
+                turn,
+                turn_player,
+                phase,
+                distance,
+                dust,
+                player_states,
             },
         }
     }
 
     pub fn apply_update(&mut self, update: &UpdateGameState) -> Result<(), InvalidGameUpdateError> {
-        let GameStateInner {
-            phase_state,
-            board_state,
-        } = &mut self.inner;
+        let state = &mut self.inner;
 
         match *update {
             UpdateGameState::TransferPetals { from, to, amount } => {
-                let from_petals = board_state.get_petals_mut(from);
+                let from_petals = state.get_petals_mut(from);
                 let from_new = from_petals
                     .count
                     .checked_sub(amount)
                     .ok_or(InvalidGameUpdateError::InvalidPetalTransfer)?;
 
-                let to_petals = board_state.get_petals_mut(to);
+                let to_petals = state.get_petals_mut(to);
                 let to_new = to_petals.count + amount;
                 if let Some(max) = to_petals.max && to_new > max {
                     return Err(InvalidGameUpdateError::InvalidPetalTransfer);
                 }
 
-                board_state.get_petals_mut(from).count = from_new;
-                board_state.get_petals_mut(to).count = to_new;
+                state.get_petals_mut(from).count = from_new;
+                state.get_petals_mut(to).count = to_new;
             }
             UpdateGameState::AddToVigor { player, diff } => {
-                let vigor = &mut self.inner.board_state.player_states[player].vigor;
+                let vigor = &mut state.player_states[player].vigor;
                 vigor.0 += diff;
                 if vigor.0 < 0 || vigor.0 > 2 {
                     return Err(InvalidGameUpdateError::InvalidVigor);
                 }
             }
             UpdateGameState::DiscardCard { player, selector } => {
-                let player_state = &mut board_state.player_states[player];
+                let player_state = &mut state.player_states[player];
                 let hand = &mut player_state.hand;
 
                 if selector.0 > hand.len() {
@@ -78,11 +105,11 @@ impl GameState {
                 player_state.discard_pile.push(card)
             }
             UpdateGameState::SetTurn { turn, turn_player } => {
-                phase_state.turn = turn;
-                phase_state.turn_player = turn_player;
+                state.turn = turn;
+                state.turn_player = turn_player;
             }
             UpdateGameState::SetPhase(phase) => {
-                phase_state.phase = phase;
+                state.phase = phase;
             }
         }
 

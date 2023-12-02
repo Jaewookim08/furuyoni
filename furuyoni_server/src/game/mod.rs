@@ -94,7 +94,7 @@ impl Game {
 
         // Define phase modifying functions.
         fn next_phase(handle: &mut GameHandle, players: &mut Players) -> Result<(), GameError> {
-            match handle.state.phase_state.phase {
+            match handle.state.phase {
                 Phase::Beginning => {
                     update_state_and_notify(
                         handle,
@@ -119,8 +119,8 @@ impl Game {
                 handle,
                 players,
                 UpdateGameState::SetTurn {
-                    turn_player: handle.state.phase_state.turn_player.other(),
-                    turn: handle.state.phase_state.turn + 1,
+                    turn_player: handle.state.turn_player.other(),
+                    turn: handle.state.turn + 1,
                 },
             )?;
 
@@ -130,7 +130,7 @@ impl Game {
 
         // phase loop
         loop {
-            let current_phase = self.handle.lock().unwrap().state.phase_state.phase;
+            let current_phase = self.handle.lock().unwrap().state.phase;
             let phase_result: GameControlFlow = match current_phase {
                 Phase::Beginning => self.run_beginning_phase(&mut players).await?,
                 Phase::Main => self.run_main_phase(&mut players).await?,
@@ -179,12 +179,12 @@ impl Game {
     ) -> Result<GameControlFlow, GameError> {
         let mut handle = self.handle.lock().unwrap();
         // Skip beginning phase for the first two turns.
-        if handle.state.phase_state.turn <= 2 {
+        if handle.state.turn <= 2 {
             return Ok(Continue);
         }
 
         // Add vigor
-        let turn_player = handle.state.phase_state.turn_player;
+        let turn_player = handle.state.turn_player;
 
         add_to_vigor(&mut handle, players, turn_player, 1)?;
 
@@ -225,7 +225,7 @@ impl Game {
             let action = loop {
                 let (turn_player_pos, viewable_state) = {
                     let handle = self.handle.lock().unwrap();
-                    let turn_player_pos = handle.state.phase_state.turn_player;
+                    let turn_player_pos = handle.state.turn_player;
                     (
                         turn_player_pos,
                         get_viewable_state(
@@ -248,7 +248,7 @@ impl Game {
 
                 let mut handle = self.handle.lock().unwrap();
 
-                if validate_main_phase_action(&handle.state.board_state, &action) {
+                if validate_main_phase_action(&handle.state, &action) {
                     break action;
                 }
                 cnt_try += 1;
@@ -258,7 +258,7 @@ impl Game {
             };
 
             let mut handle = self.handle.lock().unwrap();
-            let turn_player_pos = handle.state.phase_state.turn_player;
+            let turn_player_pos = handle.state.turn_player;
 
             match action {
                 MainPhaseAction::EndMainPhase => return Ok(Continue),
@@ -273,7 +273,7 @@ impl Game {
                 }
             };
 
-            fn validate_main_phase_action(_state: &BoardState, _action: &MainPhaseAction) -> bool {
+            fn validate_main_phase_action(_state: &GameState, _action: &MainPhaseAction) -> bool {
                 true // Todo:
             }
         }
@@ -336,16 +336,14 @@ fn initialize_game_states() -> GameState {
         PlayerPos::P2
     };
 
-    // Initialize states.
-    let phase_state = PhaseState::new(1, start_player, Phase::Beginning);
-
-    let board_state = BoardState::new(
+    GameState::new(
+        1,
+        start_player,
+        Phase::Beginning,
         Petals::new(10, Some(10)),
         Petals::new(0, None),
         default_player_states(),
-    );
-
-    GameState::new(phase_state, board_state)
+    )
 }
 
 /// Return default player states. Only used for debugging.
@@ -452,7 +450,7 @@ fn add_to_vigor(
 ) -> Result<(), GameError> {
     const MAX_VIGOR: i32 = 2;
 
-    let vigor = handle.state.board_state.player_states[player].vigor;
+    let vigor = handle.state.player_states[player].vigor;
     let real_diff = std::cmp::min(diff, MAX_VIGOR - vigor.0);
 
     update_state_and_notify(
@@ -467,18 +465,14 @@ fn add_to_vigor(
     Ok(())
 }
 fn get_viewable_state(viewed_from: ObservePosition, state: &GameState) -> StateView {
-    let GameStateInner {
-        board_state,
-        phase_state,
-    } = state.deref();
-    let player_states = &board_state.player_states;
+    let player_states = &state.player_states;
 
     StateView {
-        turn_player: phase_state.turn_player,
-        phase: phase_state.phase,
-        turn: phase_state.turn,
-        distance: board_state.distance.clone(),
-        dust: board_state.dust.clone(),
+        turn_player: state.turn_player,
+        phase: state.phase,
+        turn: state.turn,
+        distance: state.distance.clone(),
+        dust: state.dust.clone(),
         player_states: PlayerStateViews::new(
             player_states[PlayerPos::P1].as_viewed_from(PlayerPos::P1, viewed_from),
             player_states[PlayerPos::P2].as_viewed_from(PlayerPos::P2, viewed_from),
