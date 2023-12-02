@@ -208,34 +208,40 @@ impl Game {
         &self,
         players: &mut Players,
     ) -> Result<GameControlFlow, GameError> {
+        let turn_player = self.handle.lock().unwrap().state.turn_player;
+
         // main phase actions loop.
         loop {
-            // Todo: implement selecting playable actions
-            let doable_basic_actions = vec![
-                BasicAction::MoveForward,
-                BasicAction::MoveBackward,
-                BasicAction::Focus,
-                BasicAction::Recover,
-            ];
-            let playable_cards = vec![PlayableCardSelector::Hand(HandSelector(0))];
-            let available_costs = vec![BasicActionCost::Vigor];
+            let (doable_basic_actions, playable_cards, available_costs) = {
+                let handle = self.handle.lock().unwrap();
+                let doable_basic_actions = [
+                    BasicAction::MoveForward,
+                    BasicAction::MoveBackward,
+                    BasicAction::Focus,
+                    BasicAction::Recover,
+                ]
+                .into_iter()
+                .filter(|action| can_play_basic_action(&handle.state, turn_player, action))
+                .collect();
+
+                let playable_cards = vec![]; // Todo:
+                let available_costs = (0..handle.state.player_states[turn_player].hand.len())
+                    .map(|i| BasicActionCost::Hand(HandSelector(i)))
+                    .chain([BasicActionCost::Vigor].into_iter())
+                    .filter(|cost| can_pay_basic_action_cost(&handle.state, turn_player, cost))
+                    .collect();
+                (doable_basic_actions, playable_cards, available_costs)
+            };
 
             // Todo: some reusable retry function.
             let mut cnt_try = 0;
             let action = loop {
-                let (turn_player_pos, viewable_state) = {
+                let viewable_state = {
                     let handle = self.handle.lock().unwrap();
-                    let turn_player_pos = handle.state.turn_player;
-                    (
-                        turn_player_pos,
-                        get_viewable_state(
-                            ObservePosition::RelativeTo(turn_player_pos),
-                            &handle.state,
-                        ),
-                    )
+                    get_viewable_state(ObservePosition::RelativeTo(turn_player), &handle.state)
                 };
 
-                let action = players[turn_player_pos]
+                let action = players[turn_player]
                     .get_main_phase_action(
                         &viewable_state,
                         &playable_cards,
@@ -243,7 +249,7 @@ impl Game {
                         &available_costs,
                     )
                     .await
-                    .map_err(|_| GameError::PlayerCommunicationFail(turn_player_pos))?;
+                    .map_err(|_| GameError::PlayerCommunicationFail(turn_player))?;
                 // Todo: handle result.
 
                 let mut handle = self.handle.lock().unwrap();
@@ -253,7 +259,7 @@ impl Game {
                 }
                 cnt_try += 1;
                 if cnt_try >= GET_ACTION_RETRY_TIMES {
-                    return Err(GameError::InvalidActionRequested(turn_player_pos));
+                    return Err(GameError::InvalidActionRequested(turn_player));
                 }
             };
 
@@ -377,6 +383,30 @@ fn default_player_states() -> PlayerStates {
     PlayerStates::new(p1_state, p2_state)
 }
 
+fn get_master_interval(state: &GameState) -> i32 {
+    2
+}
+
+fn can_play_basic_action(state: &GameState, player: PlayerPos, action: &BasicAction) -> bool {
+    let mut can_transfer_petals = |from, to| can_transfer_petals(state, from, to, 1);
+
+    match action {
+        BasicAction::MoveForward => {
+            can_transfer_petals(PetalsPosition::Distance, PetalsPosition::Aura(player))
+                && state.distance.count as i32 > get_master_interval(state)
+        }
+        BasicAction::MoveBackward => {
+            can_transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Distance)
+        }
+        BasicAction::Recover => {
+            can_transfer_petals(PetalsPosition::Dust, PetalsPosition::Aura(player))
+        }
+        BasicAction::Focus => {
+            can_transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Flare(player))
+        }
+    }
+}
+
 fn play_basic_action(
     handle: &mut GameHandle,
     players: &mut Players,
@@ -389,33 +419,32 @@ fn play_basic_action(
         &GameEvent::PerformBasicAction { player, action },
     )?;
 
-    let mut transfer_aura = |from, to| {
-        update_state_and_notify(
-            handle,
-            players,
-            UpdateGameState::TransferPetals {
-                from,
-                to,
-                amount: 1,
-            },
-        )
-    };
+    let mut transfer_petals = |from, to| transfer_petals(handle, players, from, to, 1);
     match action {
         BasicAction::MoveForward => {
-            transfer_aura(PetalsPosition::Distance, PetalsPosition::Aura(player))?;
+            transfer_petals(PetalsPosition::Distance, PetalsPosition::Aura(player))?;
         }
         BasicAction::MoveBackward => {
-            transfer_aura(PetalsPosition::Aura(player), PetalsPosition::Distance)?;
+            transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Distance)?;
         }
         BasicAction::Recover => {
-            transfer_aura(PetalsPosition::Dust, PetalsPosition::Aura(player))?;
+            transfer_petals(PetalsPosition::Dust, PetalsPosition::Aura(player))?;
         }
         BasicAction::Focus => {
-            transfer_aura(PetalsPosition::Aura(player), PetalsPosition::Flare(player))?;
+            transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Flare(player))?;
         }
     }
 
     Ok(Continue)
+}
+
+fn can_pay_basic_action_cost(state: &GameState, player: PlayerPos, cost: &BasicActionCost) -> bool {
+    match cost {
+        BasicActionCost::Hand(HandSelector(i)) => {
+            *i < state.player_states[player].hand.len() // Todo: poison cards
+        }
+        BasicActionCost::Vigor => can_add_to_vigor(state, player, -1),
+    }
 }
 
 fn pay_basic_action_cost(
@@ -440,6 +469,10 @@ fn pay_basic_action_cost(
     }
 
     Ok(())
+}
+
+fn can_add_to_vigor(state: &GameState, player: PlayerPos, diff: i32) -> bool {
+    state.player_states[player].vigor.0 + diff >= 0
 }
 
 fn add_to_vigor(
@@ -478,4 +511,35 @@ fn get_viewable_state(viewed_from: ObservePosition, state: &GameState) -> StateV
             player_states[PlayerPos::P2].as_viewed_from(PlayerPos::P2, viewed_from),
         ),
     }
+}
+
+fn can_transfer_petals(
+    state: &GameState,
+    from: PetalsPosition,
+    to: PetalsPosition,
+    amount: u32,
+) -> bool {
+    if state.get_petals(from).count < amount {
+        return false;
+    }
+    let to_petals = state.get_petals(to);
+    if let Some(max) = to_petals.max && to_petals.count + amount > max {
+        return false
+    }
+
+    true
+}
+
+fn transfer_petals(
+    handle: &mut GameHandle,
+    players: &mut Players,
+    from: PetalsPosition,
+    to: PetalsPosition,
+    amount: u32,
+) -> Result<(), GameError> {
+    update_state_and_notify(
+        handle,
+        players,
+        UpdateGameState::TransferPetals { from, to, amount },
+    )
 }

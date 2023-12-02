@@ -43,6 +43,16 @@ impl GameStateInner {
             PetalsPosition::Life(player) => &mut self.player_states[player].life,
         }
     }
+
+    pub fn get_petals(&self, petal_position: PetalsPosition) -> &Petals {
+        match petal_position {
+            PetalsPosition::Distance => &self.distance,
+            PetalsPosition::Dust => &self.dust,
+            PetalsPosition::Aura(player) => &self.player_states[player].aura,
+            PetalsPosition::Flare(player) => &self.player_states[player].flare,
+            PetalsPosition::Life(player) => &self.player_states[player].life,
+        }
+    }
 }
 
 impl GameState {
