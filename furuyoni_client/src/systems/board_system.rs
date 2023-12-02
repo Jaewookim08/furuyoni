@@ -118,51 +118,35 @@ impl StateLabel {
         }
     }
 }
-//
-// #[derive(Resource)]
-// enum BoardState {
-//     Idle,
-//     PlayingGameEvent,
-//     WaitForMainPhaseAction {
-//         callback: Option<oneshot::Sender<MainPhaseAction>>,
-//     },
-// }
-//
-// fn board_is_idle(board_state: Res<BoardState>) -> bool {
-//     match board_state.into_inner() {
-//         BoardState::Idle => true,
-//         _ => false,
-//     }
-// }
-//
-// fn get_string(self_pos: PlayerPos, state: &ViewableState, picker: &StateStringPicker) -> String {
-//     match picker {
-//         StateStringPicker::Dust => state.dust.to_string(),
-//         StateStringPicker::Distance => state.distance.to_string(),
-//         StateStringPicker::Turn => state.turn_number.to_string(),
-//         StateStringPicker::PlayerValue(PlayerValuePicker { pos, value_type }) => {
-//             let pos = match pos {
-//                 PlayerRelativePos::Me => self_pos,
-//                 PlayerRelativePos::Opponent => self_pos.other(),
-//             };
-//             let player = &state.player_states[pos];
-//
-//             get_string_from_player(player, value_type)
-//         }
-//     }
-// }
-//
-// fn get_string_from_player(
-//     player_state: &ViewablePlayerState,
-//     picker: &PlayerValuePickerType,
-// ) -> String {
-//     match picker {
-//         PlayerValuePickerType::Life => player_state.get_life().to_string(),
-//         PlayerValuePickerType::Flare => player_state.get_flare().to_string(),
-//         PlayerValuePickerType::Aura => player_state.get_aura().to_string(),
-//         PlayerValuePickerType::Vigor => player_state.get_vigor().to_string(),
-//     }
-// }
+
+fn get_string(self_pos: PlayerPos, state: &ViewableState, picker: &StateStringPicker) -> String {
+    match picker {
+        StateStringPicker::Dust => state.dust.count.to_string(),
+        StateStringPicker::Distance => state.distance.count.to_string(),
+        StateStringPicker::Turn => state.turn_number.to_string(),
+        StateStringPicker::PlayerValue(PlayerValuePicker { pos, value_type }) => {
+            let pos = match pos {
+                PlayerRelativePos::Me => self_pos,
+                PlayerRelativePos::Opponent => self_pos.other(),
+            };
+            let player = &state.player_states[pos];
+
+            get_string_from_player(player, value_type)
+        }
+    }
+}
+
+fn get_string_from_player(
+    player_state: &ViewablePlayerState,
+    picker: &PlayerValuePickerType,
+) -> String {
+    match picker {
+        PlayerValuePickerType::Life => player_state.get_life().count.to_string(),
+        PlayerValuePickerType::Flare => player_state.get_flare().count.to_string(),
+        PlayerValuePickerType::Aura => player_state.get_aura().count.to_string(),
+        PlayerValuePickerType::Vigor => player_state.get_vigor().to_string(),
+    }
+}
 //
 // fn apply_event(game_state: &mut BoardState, event: &GameEvent) {
 //     let state = &mut game_state.0;

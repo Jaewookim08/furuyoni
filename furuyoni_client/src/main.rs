@@ -8,12 +8,13 @@ use crate::systems::board_system::{
     PlayerRelativePos, PlayerValuePicker, PlayerValuePickerType, StateLabel, StateStringPicker,
 };
 use crate::systems::picker::{BasicActionButton, PickerPlugin, SkipButton};
+use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy::text::TextStyle;
 use bevy::ui::PositionType;
 use bevy::DefaultPlugins;
 use bevy_editor_pls::prelude::*;
-use bevy_tokio_tasks::{TokioTasksPlugin, TokioTasksRuntime};
+use bevy_tokio_tasks::{TaskContext, TokioTasksPlugin, TokioTasksRuntime};
 use furuyoni_lib::net::frames::*;
 use furuyoni_lib::net::message_sender::IntoMessageMap;
 use furuyoni_lib::rules::player_actions::BasicAction;
@@ -34,26 +35,42 @@ fn main() {
         .add_plugins(PickerPlugin)
         .add_plugins(TokioTasksPlugin::default())
         .add_plugins(EditorPlugin::default())
-        .add_systems(Startup, (setup, spawn_async_tasks))
+        .add_systems(Startup, (setup, spawn_logic_thread))
         // .add_systems(Startup, load_scene)
         .run();
 }
 
-pub fn spawn_async_tasks(runtime: ResMut<TokioTasksRuntime>) {
-    runtime.spawn_background_task(|ctx| async move {
-        let socket = TcpStream::connect("127.0.0.1:4255")
-            .await
-            .map_err(|e| Error::ConnectionFailed(e))?;
-
-        let (player_to_game_requester, player_to_game_responder, post_office_task) =
-            spawn_post_office(socket);
-
-        game_logic::run_game(player_to_game_responder, ctx.clone()).await?;
-
-        post_office_task.abort();
-
-        Ok::<(), Error>(())
+pub(crate) fn spawn_logic_thread(runtime: ResMut<TokioTasksRuntime>) {
+    runtime.spawn_background_task(|mut ctx| async move {
+        let result = run_logic_thread(ctx.clone()).await;
+        match result {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("{e}");
+                ctx.run_on_main_thread(move |ctx| {
+                    ctx.world.send_event(AppExit);
+                })
+                .await;
+            }
+        }
     });
+}
+
+pub(crate) async fn run_logic_thread(ctx: TaskContext) -> Result<(), Error> {
+    let socket = TcpStream::connect("127.0.0.1:4255")
+        .await
+        .map_err(|e| Error::ConnectionFailed(e))?;
+
+    let (player_to_game_requester, player_to_game_responder, post_office_task) =
+        spawn_post_office(socket);
+
+    game_logic::run_game(player_to_game_responder, ctx.clone()).await?;
+
+    // unreachable.
+    // Todo: run_game이 에러난 경우에도 실행되게...
+    post_office_task.abort();
+
+    Ok(())
 }
 
 fn load_scene(asset_server: Res<AssetServer>, mut scene_spawner: ResMut<SceneSpawner>) {

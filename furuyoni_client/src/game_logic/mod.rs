@@ -24,9 +24,9 @@ pub(crate) struct SelfPlayerPos(pub PlayerPos);
 pub(crate) enum GameLogicError {
     #[error("Failed to receive a request from the server.")]
     RequestReceiveFailed(#[from] MessageRecvError),
-    #[error("Failed to send back a response to the server")]
+    #[error("Failed to send back a response to the server.")]
     ResponseSendFailed(#[from] MessageSendError),
-    #[error("Received an invalid request from the server.")]
+    #[error("Received an invalid request from the server: {0:?}")]
     InvalidRequest(GameToPlayerRequest),
 }
 
@@ -61,7 +61,7 @@ pub(crate) async fn run_game(
     // main logic loop.
     loop {
         match responder.receive().await? {
-            GameToPlayerRequest::NotifyEvent(e) => {
+            r @ GameToPlayerRequest::NotifyEvent(_) => {
                 // Todo:
             }
             GameToPlayerRequest::RequestMainPhaseAction(req) => {
