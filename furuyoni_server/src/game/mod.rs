@@ -254,7 +254,7 @@ impl Game {
 
                 let mut handle = self.handle.lock().unwrap();
 
-                if validate_main_phase_action(&handle.state, &action) {
+                if can_play_main_phase_action(&handle.state, turn_player, &action) {
                     break action;
                 }
                 cnt_try += 1;
@@ -264,24 +264,13 @@ impl Game {
             };
 
             let mut handle = self.handle.lock().unwrap();
-            let turn_player_pos = handle.state.turn_player;
+            assert!(can_play_main_phase_action(
+                &handle.state,
+                turn_player,
+                &action
+            ));
 
-            match action {
-                MainPhaseAction::EndMainPhase => return Ok(Continue),
-                MainPhaseAction::PlayBasicAction { action, cost } => {
-                    pay_basic_action_cost(&mut handle, players, turn_player_pos, cost)?;
-                    play_basic_action(&mut handle, players, turn_player_pos, action)?;
-                    continue;
-                }
-                MainPhaseAction::PlayCard(_) => {
-                    todo!();
-                    continue;
-                }
-            };
-
-            fn validate_main_phase_action(_state: &GameState, _action: &MainPhaseAction) -> bool {
-                true // Todo:
-            }
+            play_main_phase_action(&mut handle, players, turn_player, action)??;
         }
     }
 }
@@ -497,6 +486,41 @@ fn add_to_vigor(
 
     Ok(())
 }
+
+fn can_play_main_phase_action(
+    state: &GameState,
+    player: PlayerPos,
+    action: &MainPhaseAction,
+) -> bool {
+    match action {
+        MainPhaseAction::EndMainPhase => true,
+        MainPhaseAction::PlayBasicAction { action, cost } => {
+            can_pay_basic_action_cost(state, player, cost)
+                && can_play_basic_action(state, player, action)
+        }
+        MainPhaseAction::PlayCard(_) => false,
+    }
+}
+
+fn play_main_phase_action(
+    handle: &mut GameHandle,
+    players: &mut Players,
+    player: PlayerPos,
+    action: MainPhaseAction,
+) -> Result<GameControlFlow, GameError> {
+    match action {
+        MainPhaseAction::EndMainPhase => Ok(BreakPhase(PhaseBreak::EndPhase)),
+        MainPhaseAction::PlayBasicAction { action, cost } => {
+            pay_basic_action_cost(handle, players, player, cost)?;
+            play_basic_action(handle, players, player, action)?;
+            Ok(Continue)
+        }
+        MainPhaseAction::PlayCard(_) => {
+            todo!();
+        }
+    }
+}
+
 fn get_viewable_state(viewed_from: ObservePosition, state: &GameState) -> StateView {
     let player_states = &state.player_states;
 
