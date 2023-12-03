@@ -1,5 +1,5 @@
 use crate::game::Vigor;
-use furuyoni_lib::rules::cards::Card;
+use furuyoni_lib::rules::cards::Cards;
 use furuyoni_lib::rules::states::petals::Petals;
 use furuyoni_lib::rules::states::{CardsView, PlayerStateView};
 use furuyoni_lib::rules::{ObservePosition, PlayerPos};
@@ -7,11 +7,11 @@ use std::collections::VecDeque;
 
 #[derive(Debug)]
 pub(crate) struct PlayerState {
-    pub hand: Vec<Card>,
-    pub deck: VecDeque<Card>,
-    pub enhancements: Vec<Card>,
-    pub played_pile: Vec<Card>,
-    pub discard_pile: Vec<Card>,
+    pub hand: Cards,
+    pub deck: Cards,
+    pub enhancements: Cards,
+    pub played_pile: Cards,
+    pub discard_pile: Cards,
 
     pub vigor: Vigor,
     pub aura: Petals,
@@ -23,7 +23,7 @@ impl Default for PlayerState {
     fn default() -> Self {
         Self {
             hand: vec![],
-            deck: VecDeque::default(),
+            deck: Vec::default(),
             enhancements: vec![],
             played_pile: vec![],
             discard_pile: vec![],
@@ -51,7 +51,7 @@ impl PlayerState {
 
         PlayerStateView {
             hand: CardsView::from(&self.hand, can_view_personals),
-            deck: CardsView::from(&self.deck.clone().into(), can_view_all),
+            deck: CardsView::from(&self.deck.clone(), can_view_all),
             enhancements: self.enhancements.clone(),
             played_pile: self.played_pile.clone(),
             discard_pile: CardsView::from(&self.discard_pile, can_view_personals),

@@ -344,7 +344,7 @@ fn initialize_game_states() -> GameState {
 /// Return default player states. Only used for debugging.
 fn default_player_states() -> PlayerStates {
     let p1_state = PlayerState {
-        deck: VecDeque::from([
+        deck: Vec::from([
             Card::Slash,
             Card::Slash,
             Card::Slash,
@@ -357,7 +357,7 @@ fn default_player_states() -> PlayerStates {
     };
 
     let p2_state = PlayerState {
-        deck: VecDeque::from([
+        deck: Vec::from([
             Card::Slash,
             Card::Slash,
             Card::Slash,

@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 mod yurina;
 
+pub type Cards = Vec<Card>;
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Card {
     Slash,
