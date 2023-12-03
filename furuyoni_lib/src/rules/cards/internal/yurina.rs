@@ -2,11 +2,10 @@ use super::*;
 use crate::rules::attack::{Attack, AttackDamage};
 
 pub const SLASH: CardData = CardData {
-    basic_data: CardBasicData {
-        card_back: CardBack::Normal,
-        id_str: "NA-01-yurina-O-N1",
-    },
-    play_data: CardPlayData::AttackCard(AttackCard {
+    id_str: "NA-01-yurina-O-N1",
+    card_type: CardType::Normal,
+    card_sub_type: CardSubType::None,
+    play_data: CardPlayData::AttackCard {
         attack: Attack {
             base_damage: AttackDamage {
                 aura_damage: Some(3),
@@ -16,15 +15,14 @@ pub const SLASH: CardData = CardData {
             after_attack: &[],
             damage_modifiers: &[],
         },
-    }),
+    },
 };
 
 pub const BRANDISH: CardData = CardData {
-    basic_data: CardBasicData {
-        card_back: CardBack::Normal,
-        id_str: "NA-02-yurina-O-N2",
-    },
-    play_data: CardPlayData::AttackCard(AttackCard {
+    id_str: "NA-02-yurina-O-N2",
+    card_type: CardType::Normal,
+    card_sub_type: CardSubType::None,
+    play_data: CardPlayData::AttackCard {
         attack: Attack {
             base_damage: AttackDamage {
                 aura_damage: Some(2),
@@ -34,5 +32,5 @@ pub const BRANDISH: CardData = CardData {
             after_attack: &[],
             damage_modifiers: &[],
         },
-    }),
+    },
 };

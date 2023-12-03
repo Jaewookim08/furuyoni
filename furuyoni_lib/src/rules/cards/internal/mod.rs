@@ -20,25 +20,24 @@ impl Card {
     }
 }
 
-pub enum CardBack {
+pub enum CardType {
     Normal,
-    Special,
+    Special { flare_cost: u32 },
 }
 
 pub struct CardData {
-    pub basic_data: CardBasicData,
+    pub id_str: &'static str,
+    pub card_type: CardType,
+    pub card_sub_type: CardSubType,
     pub play_data: CardPlayData,
 }
 
-pub struct CardBasicData {
-    pub card_back: CardBack,
-    pub id_str: &'static str,
-}
-
 pub enum CardPlayData {
-    AttackCard(AttackCard),
+    AttackCard { attack: Attack },
 }
 
-pub struct AttackCard {
-    pub attack: Attack,
+pub enum CardSubType {
+    None,
+    Reaction,
+    Throughout,
 }
