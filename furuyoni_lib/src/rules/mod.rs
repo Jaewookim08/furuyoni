@@ -8,13 +8,6 @@ pub mod states;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-pub enum Phase {
-    Beginning,
-    Main,
-    End,
-}
-
 #[derive(Serialize, Deserialize, Eq, PartialEq, Copy, Clone, Debug)]
 pub enum PlayerPos {
     P1,
@@ -32,16 +25,6 @@ impl PlayerPos {
     pub fn iter() -> impl Iterator<Item = PlayerPos> {
         [PlayerPos::P1, PlayerPos::P2].into_iter()
     }
-}
-
-#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone, Copy)]
-pub enum PetalsPosition {
-    Distance,
-    Dust,
-    Aura(PlayerPos),
-    Flare(PlayerPos),
-    Life(PlayerPos),
-    // Todo: 부여패.
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone, Copy)]

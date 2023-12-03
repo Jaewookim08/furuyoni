@@ -1,6 +1,6 @@
 use crate::game::Vigor;
 use furuyoni_lib::rules::cards::Cards;
-use furuyoni_lib::rules::states::petals::Petals;
+use furuyoni_lib::rules::states::Petals;
 use furuyoni_lib::rules::states::{CardsView, PlayerStateView};
 use furuyoni_lib::rules::{ObservePosition, PlayerPos};
 use std::collections::VecDeque;

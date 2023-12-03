@@ -1,8 +1,7 @@
 use crate::game::states::player_state::PlayerState;
 use furuyoni_lib::rules::events::UpdateGameState;
-use furuyoni_lib::rules::states::petals::Petals;
-use furuyoni_lib::rules::states::PlayersData;
-use furuyoni_lib::rules::{PetalsPosition, Phase, PlayerPos};
+use furuyoni_lib::rules::states::{Petals, PetalsPosition, Phase, PlayersData};
+use furuyoni_lib::rules::PlayerPos;
 use std::ops::Deref;
 use thiserror::Error;
 

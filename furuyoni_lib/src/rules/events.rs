@@ -1,5 +1,7 @@
 use crate::rules::player_actions::{BasicAction, HandSelector};
-use crate::rules::{PetalsPosition, Phase, PlayerPos};
+use crate::rules::states::PetalsPosition;
+use crate::rules::states::Phase;
+use crate::rules::PlayerPos;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -2,14 +2,14 @@ mod game_controlflow;
 mod observable_game;
 mod states;
 
-use furuyoni_lib::rules::states::petals::Petals;
+use furuyoni_lib::rules::states::Petals;
 
 use crate::players::Player;
 use derive_more::Neg;
 use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, HandSelector, MainPhaseAction, PlayableCardSelector,
 };
-use furuyoni_lib::rules::{ObservePosition, PetalsPosition, Phase, PlayerPos};
+use furuyoni_lib::rules::{ObservePosition, PlayerPos};
 
 use crate::game::game_controlflow::GameControlFlow::{BreakPhase, Continue};
 use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};

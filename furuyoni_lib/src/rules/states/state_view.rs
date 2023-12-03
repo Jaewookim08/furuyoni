@@ -2,7 +2,8 @@ use crate::rules::cards::{Card, Cards};
 use crate::rules::events::UpdateGameState;
 use crate::rules::states::petals::Petals;
 use crate::rules::states::players_data::PlayersData;
-use crate::rules::{PetalsPosition, Phase, PlayerPos};
+use crate::rules::states::{PetalsPosition, Phase};
+use crate::rules::PlayerPos;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
