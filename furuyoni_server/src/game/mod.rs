@@ -221,14 +221,14 @@ impl Game {
                     BasicAction::Recover,
                 ]
                 .into_iter()
-                .filter(|action| can_play_basic_action(&handle.state, turn_player, action))
+                .filter(|action| can_play_basic_action(&handle.state, turn_player, *action))
                 .collect();
 
                 let playable_cards = vec![]; // Todo:
                 let available_costs = (0..handle.state.player_states[turn_player].hand.len())
                     .map(|i| BasicActionCost::Hand(HandSelector(i)))
                     .chain([BasicActionCost::Vigor].into_iter())
-                    .filter(|cost| can_pay_basic_action_cost(&handle.state, turn_player, cost))
+                    .filter(|cost| can_pay_basic_action_cost(&handle.state, turn_player, *cost))
                     .collect();
                 (doable_basic_actions, playable_cards, available_costs)
             };
@@ -254,7 +254,7 @@ impl Game {
 
                 let mut handle = self.handle.lock().unwrap();
 
-                if can_play_main_phase_action(&handle.state, turn_player, &action) {
+                if can_play_main_phase_action(&handle.state, turn_player, action) {
                     break action;
                 }
                 cnt_try += 1;
@@ -267,7 +267,7 @@ impl Game {
             assert!(can_play_main_phase_action(
                 &handle.state,
                 turn_player,
-                &action
+                action
             ));
 
             play_main_phase_action(&mut handle, players, turn_player, action)??;
@@ -281,8 +281,11 @@ fn update_state_and_notify(
 ) -> Result<(), GameError> {
     handle.state.apply_update(update)?;
 
-    let e = GameEvent::StateUpdated(update);
-    notify_all(players, &mut handle.observers, &e)?;
+    notify_all(
+        players,
+        &mut handle.observers,
+        GameEvent::StateUpdated(update),
+    )?;
     Ok(())
 }
 
@@ -307,10 +310,10 @@ fn broadcast_viewable_state(
 fn notify_all(
     players: &mut Players,
     observers: &mut Vec<ObserverWithPos>,
-    event: &GameEvent,
+    event: GameEvent,
 ) -> Result<(), GameError> {
     for p in PlayerPos::iter() {
-        players[p].notify_event(&event_filter_information(
+        players[p].notify_event(event_filter_information(
             ObservePosition::RelativeTo(p),
             event,
         ))?;
@@ -318,7 +321,7 @@ fn notify_all(
     for ObserverWithPos { observer, position } in observers.iter_mut() {
         // ignore observer errors.
         // Todo: remove from list when error occurs.
-        let _ = observer.notify_event(&event_filter_information(*position, event));
+        let _ = observer.notify_event(event_filter_information(*position, event));
     }
     Ok(())
 }
@@ -376,7 +379,7 @@ fn get_master_interval(state: &GameState) -> i32 {
     2
 }
 
-fn can_play_basic_action(state: &GameState, player: PlayerPos, action: &BasicAction) -> bool {
+fn can_play_basic_action(state: &GameState, player: PlayerPos, action: BasicAction) -> bool {
     let mut can_transfer_petals = |from, to| can_transfer_petals(state, from, to, 1);
 
     match action {
@@ -405,7 +408,7 @@ fn play_basic_action(
     notify_all(
         players,
         &mut handle.observers,
-        &GameEvent::PerformBasicAction { player, action },
+        GameEvent::PerformBasicAction { player, action },
     )?;
 
     let mut transfer_petals = |from, to| transfer_petals(handle, players, from, to, 1);
@@ -427,9 +430,9 @@ fn play_basic_action(
     Ok(Continue)
 }
 
-fn can_pay_basic_action_cost(state: &GameState, player: PlayerPos, cost: &BasicActionCost) -> bool {
+fn can_pay_basic_action_cost(state: &GameState, player: PlayerPos, cost: BasicActionCost) -> bool {
     match cost {
-        BasicActionCost::Hand(selector) => can_discard_card_from_hand(state, player, *selector),
+        BasicActionCost::Hand(selector) => can_discard_card_from_hand(state, player, selector),
         BasicActionCost::Vigor => can_add_to_vigor(state, player, -1),
     }
 }
@@ -480,7 +483,7 @@ fn add_to_vigor(
 fn can_play_main_phase_action(
     state: &GameState,
     player: PlayerPos,
-    action: &MainPhaseAction,
+    action: MainPhaseAction,
 ) -> bool {
     match action {
         MainPhaseAction::EndMainPhase => true,

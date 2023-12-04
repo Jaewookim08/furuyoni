@@ -30,7 +30,7 @@ impl ObservableGame {
     }
 }
 
-pub(crate) fn event_filter_information(position: ObservePosition, event: &GameEvent) -> GameEvent {
+pub(crate) fn event_filter_information(position: ObservePosition, event: GameEvent) -> GameEvent {
     // Todo:
-    event.clone()
+    event
 }

@@ -32,7 +32,7 @@ pub enum UpdateGameState {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub enum GameEvent {
     StateUpdated(UpdateGameState),
     PerformBasicAction {

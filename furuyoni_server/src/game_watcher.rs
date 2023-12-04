@@ -11,7 +11,7 @@ pub(crate) trait GameObserver {
         Ok(())
     }
 
-    fn notify_event(&mut self, _event: &GameEvent) -> Result<(), NotifyFailedError> {
+    fn notify_event(&mut self, _event: GameEvent) -> Result<(), NotifyFailedError> {
         Ok(())
     }
 }

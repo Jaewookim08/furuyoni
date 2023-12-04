@@ -85,9 +85,9 @@ impl GameObserver for RemotePlayer {
         Ok(())
     }
 
-    fn notify_event(&mut self, event: &GameEvent) -> Result<(), NotifyFailedError> {
+    fn notify_event(&mut self, event: GameEvent) -> Result<(), NotifyFailedError> {
         self.channel
-            .send(GameToPlayerRequest::NotifyEvent((*event).clone()))
+            .send(GameToPlayerRequest::NotifyEvent(event))
             .map_err(|_| NotifyFailedError)?;
         Ok(())
     }

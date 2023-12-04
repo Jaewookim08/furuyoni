@@ -86,7 +86,7 @@ pub(crate) struct PickerButton {
     pub pickable: Pickable,
 }
 
-#[derive(Default, Debug, Reflect, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Reflect, Serialize, Deserialize, Copy, Clone)]
 #[reflect_value(Serialize, Deserialize)]
 pub enum Pickable {
     #[default]
@@ -98,7 +98,7 @@ pub enum Pickable {
 
 async fn pick_anything(
     mut ctx: TaskContext,
-    predicate: impl Fn(&Pickable) -> bool + Send + Sync + 'static,
+    predicate: impl Fn(Pickable) -> bool + Send + Sync + 'static,
 ) -> Pickable {
     let (tx, rx) = oneshot::channel();
 
@@ -122,11 +122,11 @@ async fn pick_anything(
 }
 
 fn enable_pickers_with(
-    predicate: impl Fn(&Pickable) -> bool + Send + Sync,
+    predicate: impl Fn(Pickable) -> bool + Send + Sync,
 ) -> impl Fn(Query<(&PickerButton, &mut Visibility)>) + Send + Sync {
     move |mut query: Query<(&PickerButton, &mut Visibility)>| {
         for (picker_button, mut visibility) in query.iter_mut() {
-            *visibility = if predicate(&picker_button.pickable) {
+            *visibility = if predicate(picker_button.pickable) {
                 Visibility::Inherited
             } else {
                 Visibility::Hidden

@@ -71,7 +71,7 @@ pub(crate) async fn run_game(
                     GameEvent::StateUpdated(update) => {
                         ctx.run_on_main_thread(move |ctx| -> Result<(), GameLogicError> {
                             let mut state = ctx.world.get_resource_mut::<BoardState>().unwrap();
-                            state.0.apply_update(&update)?;
+                            state.0.apply_update(update)?;
                             Ok(())
                         })
                         .await?;

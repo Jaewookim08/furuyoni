@@ -1,7 +1,7 @@
 use crate::rules::PlayerPos;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
 pub struct Petals {
     pub count: u32,
     // Todo: Consider removing max.

@@ -27,7 +27,7 @@ impl PlayerPos {
     }
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Copy, Clone)]
 pub enum ObservePosition {
     /// Can view hidden information open to the given player.
     RelativeTo(PlayerPos),
