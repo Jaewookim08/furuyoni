@@ -1,10 +1,11 @@
-use crate::rules::player_actions::{BasicAction, HandSelector};
+use crate::rules::cards::{Card, CardSelector, CardsPosition};
+use crate::rules::player_actions::BasicAction;
 use crate::rules::states::PetalsPosition;
 use crate::rules::states::Phase;
 use crate::rules::PlayerPos;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub enum UpdateGameState {
     SetTurn {
         turn: u32,
@@ -20,9 +21,14 @@ pub enum UpdateGameState {
         player: PlayerPos,
         diff: i32,
     },
-    DiscardCard {
-        player: PlayerPos,
-        selector: HandSelector,
+    TransferCard {
+        from: CardSelector,
+        to: CardSelector,
+    },
+    TransferCardFromHidden {
+        from: CardsPosition,
+        to: CardSelector,
+        card: Card,
     },
 }
 

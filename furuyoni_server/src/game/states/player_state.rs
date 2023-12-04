@@ -3,13 +3,13 @@ use furuyoni_lib::rules::cards::Cards;
 use furuyoni_lib::rules::states::Petals;
 use furuyoni_lib::rules::states::{CardsView, PlayerStateView};
 use furuyoni_lib::rules::{ObservePosition, PlayerPos};
-use std::collections::VecDeque;
 
 #[derive(Debug)]
 pub(crate) struct PlayerState {
     pub hand: Cards,
     pub deck: Cards,
     pub enhancements: Cards,
+    pub playing: Cards,
     pub played_pile: Cards,
     pub discard_pile: Cards,
 
@@ -25,6 +25,7 @@ impl Default for PlayerState {
             hand: vec![],
             deck: Vec::default(),
             enhancements: vec![],
+            playing: vec![],
             played_pile: vec![],
             discard_pile: vec![],
             vigor: Vigor(0),
@@ -53,6 +54,7 @@ impl PlayerState {
             hand: CardsView::from(&self.hand, can_view_personals),
             deck: CardsView::from(&self.deck.clone(), can_view_all),
             enhancements: self.enhancements.clone(),
+            playing: self.playing.clone(),
             played_pile: self.played_pile.clone(),
             discard_pile: CardsView::from(&self.discard_pile, can_view_personals),
             vigor: self.vigor.0,

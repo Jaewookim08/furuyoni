@@ -1,11 +1,41 @@
 use crate::rules::attack::Attack;
+use crate::rules::PlayerPos;
 use serde::{Deserialize, Serialize};
 
 mod yurina;
 
 pub type Cards = Vec<Card>;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+pub enum CardsPosition {
+    Hand(PlayerPos),
+    Playing(PlayerPos),
+    Deck(PlayerPos),
+    Enhancements(PlayerPos),
+    Played(PlayerPos),
+    Discards(PlayerPos),
+}
+
+impl CardsPosition {
+    pub fn get_player_pos(&self) -> PlayerPos {
+        match self {
+            CardsPosition::Hand(p)
+            | CardsPosition::Playing(p)
+            | CardsPosition::Deck(p)
+            | CardsPosition::Enhancements(p)
+            | CardsPosition::Played(p)
+            | CardsPosition::Discards(p) => *p,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+pub struct CardSelector {
+    pub position: CardsPosition,
+    pub index: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub enum Card {
     Slash,
     Brandish,

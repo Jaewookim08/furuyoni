@@ -16,7 +16,7 @@ use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};
 use crate::game::observable_game::{event_filter_information, ObservableGame};
 use crate::game::states::*;
 use crate::game_watcher::{GameObserver, NotifyFailedError};
-use furuyoni_lib::rules::cards::Card;
+use furuyoni_lib::rules::cards::{Card, CardSelector, CardsPosition};
 use furuyoni_lib::rules::events::{GameEvent, UpdateGameState};
 use furuyoni_lib::rules::states::*;
 use states::player_state::PlayerState;
@@ -279,7 +279,7 @@ fn update_state_and_notify(
     players: &mut Players,
     update: UpdateGameState,
 ) -> Result<(), GameError> {
-    handle.state.apply_update(&update)?;
+    handle.state.apply_update(update)?;
 
     let e = GameEvent::StateUpdated(update);
     notify_all(players, &mut handle.observers, &e)?;
@@ -429,9 +429,7 @@ fn play_basic_action(
 
 fn can_pay_basic_action_cost(state: &GameState, player: PlayerPos, cost: &BasicActionCost) -> bool {
     match cost {
-        BasicActionCost::Hand(HandSelector(i)) => {
-            *i < state.player_states[player].hand.len() // Todo: poison cards
-        }
+        BasicActionCost::Hand(selector) => can_discard_card_from_hand(state, player, *selector),
         BasicActionCost::Vigor => can_add_to_vigor(state, player, -1),
     }
 }
@@ -444,17 +442,9 @@ fn pay_basic_action_cost(
 ) -> Result<(), GameError> {
     match cost {
         BasicActionCost::Hand(selector) => {
-            update_state_and_notify(
-                handle,
-                players,
-                UpdateGameState::DiscardCard { player, selector },
-            )?;
+            discard_card_from_hand(handle, players, player, selector)?;
         }
-        BasicActionCost::Vigor => update_state_and_notify(
-            handle,
-            players,
-            UpdateGameState::AddToVigor { player, diff: -1 },
-        )?,
+        BasicActionCost::Vigor => add_to_vigor(handle, players, player, -1)?,
     }
 
     Ok(())
@@ -565,5 +555,70 @@ fn transfer_petals(
         handle,
         players,
         UpdateGameState::TransferPetals { from, to, amount },
+    )
+}
+
+fn can_transfer_cards(state: &GameState, from: CardSelector, to: CardSelector) -> bool {
+    if state.get_cards(from.position).len() <= from.index {
+        return false;
+    }
+    let to_cards = state.get_cards(to.position);
+    if to_cards.len() < to.index {
+        return false;
+    }
+
+    true
+}
+
+fn transfer_cards(
+    handle: &mut GameHandle,
+    players: &mut Players,
+    from: CardSelector,
+    to: CardSelector,
+) -> Result<(), GameError> {
+    update_state_and_notify(handle, players, UpdateGameState::TransferCard { from, to })
+}
+
+fn can_discard_card_from_hand(
+    state: &GameState,
+    player: PlayerPos,
+    hand_selector: HandSelector,
+) -> bool {
+    // Todo: poision, etc..
+    // Todo: 내가 하는 것과 상대가 하는 것 구분해야 할 수도.
+
+    let discard_pile_len = state.player_states[player].discard_pile.len();
+    can_transfer_cards(
+        state,
+        CardSelector {
+            position: CardsPosition::Hand(player),
+            index: hand_selector.0,
+        },
+        CardSelector {
+            position: CardsPosition::Discards(player),
+            index: discard_pile_len,
+        },
+    );
+    true
+}
+
+fn discard_card_from_hand(
+    handle: &mut GameHandle,
+    players: &mut Players,
+    player: PlayerPos,
+    hand_selector: HandSelector,
+) -> Result<(), GameError> {
+    let discard_pile_len = handle.state.player_states[player].discard_pile.len();
+    transfer_cards(
+        handle,
+        players,
+        CardSelector {
+            position: CardsPosition::Hand(player),
+            index: hand_selector.0,
+        },
+        CardSelector {
+            position: CardsPosition::Discards(player),
+            index: discard_pile_len,
+        },
     )
 }

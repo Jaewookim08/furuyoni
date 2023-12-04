@@ -1,4 +1,5 @@
 use crate::game::states::player_state::PlayerState;
+use furuyoni_lib::rules::cards::{Cards, CardsPosition};
 use furuyoni_lib::rules::events::UpdateGameState;
 use furuyoni_lib::rules::states::{Petals, PetalsPosition, Phase, PlayersData};
 use furuyoni_lib::rules::PlayerPos;
@@ -22,14 +23,16 @@ pub(crate) struct GameState {
 
 #[derive(Debug, Error)]
 pub(crate) enum InvalidGameUpdateError {
-    #[error("There was no card that matches the hand selector.")]
-    HandSelectorOutOfBounds,
+    #[error("The given card selector's index was over the size of the cards")]
+    CardSelectorOutOfBounds,
     #[error("Vigor has been pushed to go below 0 or above 2.")]
     InvalidVigor,
     #[error(
         "Invalid petal transfer: the transfer will result in negative or over-max petal value."
     )]
     InvalidPetalTransfer,
+    #[error("An update only for state views have been requested.")]
+    UpdateOnlyForView,
 }
 
 impl GameStateInner {
@@ -50,6 +53,28 @@ impl GameStateInner {
             PetalsPosition::Aura(player) => &self.player_states[player].aura,
             PetalsPosition::Flare(player) => &self.player_states[player].flare,
             PetalsPosition::Life(player) => &self.player_states[player].life,
+        }
+    }
+
+    fn get_cards_mut(&mut self, cards_position: CardsPosition) -> &mut Cards {
+        match cards_position {
+            CardsPosition::Hand(p) => &mut self.player_states[p].hand,
+            CardsPosition::Playing(p) => &mut self.player_states[p].hand,
+            CardsPosition::Deck(p) => &mut self.player_states[p].deck,
+            CardsPosition::Enhancements(p) => &mut self.player_states[p].enhancements,
+            CardsPosition::Played(p) => &mut self.player_states[p].played_pile,
+            CardsPosition::Discards(p) => &mut self.player_states[p].discard_pile,
+        }
+    }
+
+    pub fn get_cards(&self, cards_position: CardsPosition) -> &Cards {
+        match cards_position {
+            CardsPosition::Hand(p) => &self.player_states[p].hand,
+            CardsPosition::Playing(p) => &self.player_states[p].hand,
+            CardsPosition::Deck(p) => &self.player_states[p].deck,
+            CardsPosition::Enhancements(p) => &self.player_states[p].enhancements,
+            CardsPosition::Played(p) => &self.player_states[p].played_pile,
+            CardsPosition::Discards(p) => &self.player_states[p].discard_pile,
         }
     }
 }
@@ -75,10 +100,10 @@ impl GameState {
         }
     }
 
-    pub fn apply_update(&mut self, update: &UpdateGameState) -> Result<(), InvalidGameUpdateError> {
+    pub fn apply_update(&mut self, update: UpdateGameState) -> Result<(), InvalidGameUpdateError> {
         let state = &mut self.inner;
 
-        match *update {
+        match update {
             UpdateGameState::TransferPetals { from, to, amount } => {
                 let from_petals = state.get_petals_mut(from);
                 let from_new = from_petals
@@ -102,23 +127,29 @@ impl GameState {
                     return Err(InvalidGameUpdateError::InvalidVigor);
                 }
             }
-            UpdateGameState::DiscardCard { player, selector } => {
-                let player_state = &mut state.player_states[player];
-                let hand = &mut player_state.hand;
-
-                if selector.0 > hand.len() {
-                    return Err(InvalidGameUpdateError::HandSelectorOutOfBounds);
-                }
-                let card = hand.remove(selector.0);
-
-                player_state.discard_pile.push(card)
-            }
             UpdateGameState::SetTurn { turn, turn_player } => {
                 state.turn = turn;
                 state.turn_player = turn_player;
             }
             UpdateGameState::SetPhase(phase) => {
                 state.phase = phase;
+            }
+            UpdateGameState::TransferCard { from, to } => {
+                let cards_from = self.inner.get_cards_mut(from.position);
+
+                if from.index >= cards_from.len() {
+                    return Err(InvalidGameUpdateError::CardSelectorOutOfBounds);
+                }
+                let taken = cards_from.remove(from.index);
+
+                let cards_to = self.inner.get_cards_mut(to.position);
+                if to.index > cards_to.len() {
+                    return Err(InvalidGameUpdateError::CardSelectorOutOfBounds);
+                }
+                cards_to.insert(from.index, taken);
+            }
+            UpdateGameState::TransferCardFromHidden { .. } => {
+                return Err(InvalidGameUpdateError::UpdateOnlyForView)
             }
         }
 
