@@ -1,9 +1,9 @@
-use std::ops::{ControlFlow, FromResidual, Try};
 use crate::game::{GameError, GameResult};
+use std::ops::{ControlFlow, FromResidual, Try};
 
 pub enum GameControlFlow {
     Continue,
-    BreakPhase(PhaseBreak)
+    BreakPhase(PhaseBreak),
 }
 
 pub enum PhaseBreak {
@@ -12,21 +12,24 @@ pub enum PhaseBreak {
     EndGame(GameResult),
 }
 
-impl FromResidual<GameControlFlow> for Result<GameControlFlow, GameError> {
-    fn from_residual(residual: GameControlFlow) -> Self {
-        Ok(residual)
+impl<TOk, TErr> FromResidual<PhaseBreak> for Result<TOk, TErr>
+where
+    TOk: FromResidual<PhaseBreak>,
+{
+    fn from_residual(residual: PhaseBreak) -> Self {
+        Ok(TOk::from_residual(residual))
     }
 }
 
 impl FromResidual for GameControlFlow {
     fn from_residual(residual: <Self as Try>::Residual) -> Self {
-        residual
+        Self::BreakPhase(residual)
     }
 }
 
 impl Try for GameControlFlow {
     type Output = ();
-    type Residual = Self;
+    type Residual = PhaseBreak;
 
     fn from_output(_: Self::Output) -> Self {
         Self::Continue
@@ -35,7 +38,7 @@ impl Try for GameControlFlow {
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
         match self {
             GameControlFlow::Continue => ControlFlow::Continue(()),
-            GameControlFlow::BreakPhase(b) => ControlFlow::Break( GameControlFlow::BreakPhase(b)),
+            GameControlFlow::BreakPhase(b) => ControlFlow::Break(b),
         }
     }
 }
