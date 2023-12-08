@@ -4,7 +4,10 @@ mod systems;
 
 use crate::game_logic::GameLogicError;
 use crate::networking::post_office::spawn_post_office;
-use crate::systems::board_system::{BoardPlugin, PetalsRelativePosition, PlayerRelativePos, StateLabel, StateStringPicker};
+use crate::systems::board_system::{
+    BoardPlugin, CardsRelativePosition, PetalsRelativePosition, PlayerRelativePos, StateLabel,
+    StateStringPicker,
+};
 use crate::systems::picker::{Pickable, PickerButton, PickerPlugin};
 use bevy::app::AppExit;
 use bevy::prelude::*;
@@ -169,9 +172,26 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         "Vigor",
         StateStringPicker::Vigor(PlayerRelativePos::Me),
     );
+    spawn_label(
+        75.,
+        60.,
+        "Deck",
+        StateStringPicker::CardsCount(CardsRelativePosition::Deck(PlayerRelativePos::Me)),
+    );
+
     spawn_label(85., 20., "Turn", StateStringPicker::Turn);
-    spawn_label(50., 40., "Distance", StateStringPicker::PetalsCount(PetalsRelativePosition::Distance));
-    spawn_label(50., 40. + LH * 1., "Dust", StateStringPicker::PetalsCount(PetalsRelativePosition::Dust));
+    spawn_label(
+        50.,
+        40.,
+        "Distance",
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Distance),
+    );
+    spawn_label(
+        50.,
+        40. + LH * 1.,
+        "Dust",
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Dust),
+    );
 
     commands
         .spawn((

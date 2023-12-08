@@ -1,11 +1,9 @@
 use crate::game_logic::{BoardState, SelfPlayerPos};
-use crate::ReflectComponent;
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
 use furuyoni_lib::rules::cards::CardsPosition;
 use furuyoni_lib::rules::states::{PetalsPosition, StateView};
 use furuyoni_lib::rules::PlayerPos;
-use serde::{Deserialize, Serialize};
 
 pub struct BoardPlugin;
 
