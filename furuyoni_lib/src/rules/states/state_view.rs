@@ -32,6 +32,13 @@ impl CardsView {
             CardsView::Hidden { length } => CardsViewMutRef::Hidden { length },
         }
     }
+
+    fn get_ref(&self) -> CardsViewRef {
+        match self {
+            CardsView::Open { cards } => CardsViewRef::Open { cards },
+            CardsView::Hidden { length } => CardsViewRef::Hidden { length },
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -43,6 +50,27 @@ enum CardsViewMutRef<'a> {
 impl<'a> From<&'a mut Cards> for CardsViewMutRef<'a> {
     fn from(cards: &'a mut Cards) -> Self {
         CardsViewMutRef::Open { cards }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum CardsViewRef<'a> {
+    Open { cards: &'a Cards },
+    Hidden { length: &'a usize },
+}
+
+impl<'a> CardsViewRef<'a> {
+    pub fn len(&self) -> usize {
+        match *self {
+            CardsViewRef::Open { cards } => cards.len(),
+            CardsViewRef::Hidden { length } => *length,
+        }
+    }
+}
+
+impl<'a> From<&'a Cards> for CardsViewRef<'a> {
+    fn from(cards: &'a Cards) -> Self {
+        CardsViewRef::Open { cards }
     }
 }
 
@@ -103,6 +131,16 @@ pub enum InvalidGameViewUpdateError {
 }
 
 impl StateView {
+    pub fn get_petals(&self, petal_position: PetalsPosition) -> &Petals {
+        match petal_position {
+            PetalsPosition::Distance => &self.distance,
+            PetalsPosition::Dust => &self.dust,
+            PetalsPosition::Aura(player) => &self.player_states[player].aura,
+            PetalsPosition::Flare(player) => &self.player_states[player].flare,
+            PetalsPosition::Life(player) => &self.player_states[player].life,
+        }
+    }
+
     fn get_petals_mut(&mut self, petal_position: PetalsPosition) -> &'_ mut Petals {
         match petal_position {
             PetalsPosition::Distance => &mut self.distance,
@@ -112,6 +150,18 @@ impl StateView {
             PetalsPosition::Life(player) => &mut self.player_states[player].life,
         }
     }
+
+    pub fn get_cards_view(&self, cards_position: CardsPosition) -> CardsViewRef {
+        match cards_position {
+            CardsPosition::Hand(p) => self.player_states[p].hand.get_ref(),
+            CardsPosition::Playing(p) => (&self.player_states[p].playing).into(),
+            CardsPosition::Deck(p) => self.player_states[p].deck.get_ref(),
+            CardsPosition::Enhancements(p) => (&self.player_states[p].enhancements).into(),
+            CardsPosition::Played(p) => (&self.player_states[p].played_pile).into(),
+            CardsPosition::Discards(p) => self.player_states[p].discard_pile.get_ref(),
+        }
+    }
+
     fn get_cards_view_mut(&mut self, cards_position: CardsPosition) -> CardsViewMutRef {
         match cards_position {
             CardsPosition::Hand(p) => self.player_states[p].hand.get_mut_ref(),
@@ -153,7 +203,7 @@ impl StateView {
                 let cards_from = match self.get_cards_view_mut(from.position) {
                     CardsViewMutRef::Open { cards } => cards,
                     CardsViewMutRef::Hidden { .. } => {
-                        return Err(InvalidGameViewUpdateError::VisibilityMismatch)
+                        return Err(InvalidGameViewUpdateError::VisibilityMismatch);
                     }
                 };
 
@@ -168,7 +218,7 @@ impl StateView {
             UpdateGameState::TransferCardFromHidden { from, to, card } => {
                 let cards_from_len = match self.get_cards_view_mut(from) {
                     CardsViewMutRef::Open { .. } => {
-                        return Err(InvalidGameViewUpdateError::VisibilityMismatch)
+                        return Err(InvalidGameViewUpdateError::VisibilityMismatch);
                     }
                     CardsViewMutRef::Hidden { length } => length,
                 };

@@ -4,7 +4,7 @@ mod systems;
 
 use crate::game_logic::GameLogicError;
 use crate::networking::post_office::spawn_post_office;
-use crate::systems::board_system::{BoardPlugin, PlayerRelativePos, StateLabel, StateStringPicker};
+use crate::systems::board_system::{BoardPlugin, PetalsRelativePosition, PlayerRelativePos, StateLabel, StateStringPicker};
 use crate::systems::picker::{Pickable, PickerButton, PickerPlugin};
 use bevy::app::AppExit;
 use bevy::prelude::*;
@@ -120,20 +120,20 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         10.,
         10.,
         "Life",
-        StateStringPicker::Life(PlayerRelativePos::Opponent),
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Life(PlayerRelativePos::Opponent)),
     );
     spawn_label(
         10.,
         10. + LH * 1.,
         "Flare",
-        StateStringPicker::Flare(PlayerRelativePos::Opponent),
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Flare(PlayerRelativePos::Opponent)),
     );
 
     spawn_label(
         10.,
         10. + LH * 2.,
         "Aura",
-        StateStringPicker::Aura(PlayerRelativePos::Opponent),
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Aura(PlayerRelativePos::Opponent)),
     );
 
     spawn_label(
@@ -147,21 +147,21 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         83.,
         70.,
         "Life",
-        StateStringPicker::Life(PlayerRelativePos::Me),
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Life(PlayerRelativePos::Me)),
     );
 
     spawn_label(
         83.,
         70. + LH * 1.,
         "Flare",
-        StateStringPicker::Flare(PlayerRelativePos::Me),
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Flare(PlayerRelativePos::Me)),
     );
 
     spawn_label(
         83.,
         70. + LH * 2.,
         "Aura",
-        StateStringPicker::Aura(PlayerRelativePos::Me),
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Aura(PlayerRelativePos::Me)),
     );
     spawn_label(
         83.,
@@ -170,8 +170,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         StateStringPicker::Vigor(PlayerRelativePos::Me),
     );
     spawn_label(85., 20., "Turn", StateStringPicker::Turn);
-    spawn_label(50., 40., "Distance", StateStringPicker::Distance);
-    spawn_label(50., 40. + LH * 1., "Dust", StateStringPicker::Dust);
+    spawn_label(50., 40., "Distance", StateStringPicker::PetalsCount(PetalsRelativePosition::Distance));
+    spawn_label(50., 40. + LH * 1., "Dust", StateStringPicker::PetalsCount(PetalsRelativePosition::Dust));
 
     commands
         .spawn((
