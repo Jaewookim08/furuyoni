@@ -8,6 +8,7 @@ use thiserror::Error;
 
 pub(crate) type PlayerStates = PlayersData<PlayerState>;
 
+#[derive(Debug, Clone)]
 pub(crate) struct GameStateInner {
     pub turn: u32,
     pub turn_player: PlayerPos,
@@ -17,6 +18,7 @@ pub(crate) struct GameStateInner {
     pub player_states: PlayerStates,
 }
 
+#[derive(Debug, Clone)]
 pub(crate) struct GameState {
     inner: GameStateInner,
 }
@@ -113,7 +115,9 @@ impl GameState {
 
                 let to_petals = state.get_petals_mut(to);
                 let to_new = to_petals.count + amount;
-                if let Some(max) = to_petals.max && to_new > max {
+                if let Some(max) = to_petals.max
+                    && to_new > max
+                {
                     return Err(InvalidGameUpdateError::InvalidPetalTransfer);
                 }
 
@@ -164,3 +168,4 @@ impl Deref for GameState {
         &self.inner
     }
 }
+// DerefMut is not implemented. User should use apply_update to change state.

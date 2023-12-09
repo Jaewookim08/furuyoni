@@ -52,3 +52,21 @@ impl<T> IndexMut<&PlayerPos> for PlayersData<T> {
         }
     }
 }
+
+impl<T> PlayersData<T> {
+    pub fn iter(&self) -> impl Iterator<Item = (PlayerPos, &T)> {
+        [
+            (PlayerPos::P1, &self.p1_data),
+            (PlayerPos::P2, &self.p2_data),
+        ]
+        .into_iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (PlayerPos, &mut T)> {
+        [
+            (PlayerPos::P1, &mut self.p1_data),
+            (PlayerPos::P2, &mut self.p2_data),
+        ]
+        .into_iter()
+    }
+}

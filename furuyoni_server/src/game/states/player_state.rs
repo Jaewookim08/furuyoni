@@ -4,7 +4,7 @@ use furuyoni_lib::rules::states::Petals;
 use furuyoni_lib::rules::states::{CardsView, PlayerStateView};
 use furuyoni_lib::rules::{ObservePosition, PlayerPos};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct PlayerState {
     pub hand: Cards,
     pub deck: Cards,

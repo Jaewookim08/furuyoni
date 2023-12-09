@@ -15,10 +15,11 @@ use furuyoni_lib::net::frames::*;
 use furuyoni_lib::net::message_channel::MessageChannel;
 use furuyoni_lib::rules::PlayerPos;
 use players::{IdlePlayer, RemotePlayer};
+use std::sync::Arc;
 
 use networking::{post_office, ServerConnectionReader, ServerConnectionWriter};
 
-use crate::game::{Game, GameResult};
+use crate::game::{create_game, GameResult, GameSetup};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
@@ -58,10 +59,12 @@ async fn spawn_game(socket: TcpStream) {
     let p1 = RemotePlayer::new(game_to_player_requester);
     let p2 = IdlePlayer {};
 
-    let (game, observable) = Game::create_game();
+    let (game, recorder) = create_game(Box::new(p1), Box::new(p2));
 
-    let res = game.run(Box::new(p1), Box::new(p2)).await.expect("todo");
-    let winner_str = match res {
+    let game_res = game.run().await.expect("todo: handle game run errors");
+    let recorded = Arc::into_inner(recorder).unwrap().into_recorded_game();
+
+    let winner_str = match game_res {
         GameResult::Draw => "Draw",
         GameResult::Winner(winner) => match winner {
             PlayerPos::P1 => "P1",

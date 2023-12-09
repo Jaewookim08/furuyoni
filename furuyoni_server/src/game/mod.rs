@@ -1,5 +1,5 @@
 mod game_controlflow;
-mod observable_game;
+mod game_recorder;
 mod states;
 
 use furuyoni_lib::rules::states::Petals;
@@ -13,20 +13,20 @@ use furuyoni_lib::rules::{ObservePosition, PlayerPos};
 
 use crate::game::game_controlflow::GameControlFlow::{BreakPhase, Continue};
 use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};
-use crate::game::observable_game::{event_filter_information, ObservableGame};
+use crate::game::game_recorder::{run_recorder, GameRecorder};
 use crate::game::states::*;
 use crate::game_watcher::{GameObserver, NotifyFailedError};
 use furuyoni_lib::rules::cards::{Card, CardSelector, CardsPosition};
 use furuyoni_lib::rules::events::{GameEvent, UpdateGameState};
 use furuyoni_lib::rules::states::*;
 use states::player_state::PlayerState;
-use std::collections::VecDeque;
 use std::future::Future;
 use std::marker::{Send, Sync};
 use std::ops::{Deref, DerefMut};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use thiserror::Error;
 use tokio::join;
+use tokio::sync::mpsc;
 
 const GET_ACTION_RETRY_TIMES: usize = 3;
 
@@ -52,97 +52,105 @@ type Players = PlayersData<Box<dyn Player + Send + Sync>>;
 #[derive(Debug, Copy, Clone, PartialEq, Neg)]
 pub struct Vigor(i32);
 
-struct ObserverWithPos {
-    position: ObservePosition,
-    observer: Box<dyn GameObserver + Send>,
+pub(crate) struct GameSetup {
+    game: Game,
+    event_rx: mpsc::Receiver<GameEvent>,
+    recorder: Arc<GameRecorder>,
 }
 
-struct GameHandle {
+struct Game {
     state: GameState,
-    observers: Vec<ObserverWithPos>,
+    players: Players,
+    event_tx: Option<mpsc::Sender<GameEvent>>,
+}
+pub fn create_game(
+    player_1: Box<dyn Player + Sync + Send>,
+    player_2: Box<dyn Player + Sync + Send>,
+) -> (GameSetup, Arc<GameRecorder>) {
+    let (tx, rx) = mpsc::channel(20);
+
+    let state = initialize_game_states();
+    let recorder = Arc::new(GameRecorder::new(state.clone()));
+    let game = Game {
+        state,
+        players: Players::new(player_1, player_2),
+        event_tx: Some(tx),
+    };
+
+    let setup = GameSetup {
+        game,
+        event_rx: rx,
+        recorder: recorder.clone(),
+    };
+    (setup, recorder)
 }
 
-pub(crate) struct Game {
-    handle: Arc<Mutex<GameHandle>>,
+impl GameSetup {
+    pub async fn run(mut self) -> Result<GameResult, GameError> {
+        // broadcast state.
+        let GameSetup {
+            game,
+            event_rx,
+            recorder,
+        } = self;
+
+        let recorder_task = tokio::spawn(run_recorder(event_rx, recorder));
+
+        let result = game.run().await;
+
+        let () = recorder_task.await.unwrap();
+
+        result
+    }
 }
 
 impl Game {
-    pub fn create_game() -> (Game, ObservableGame) {
-        let handle = Arc::new(Mutex::new(GameHandle {
-            state: initialize_game_states(),
-            observers: Vec::new(),
-        }));
+    pub async fn run(mut self) -> Result<GameResult, GameError> {
+        // broadcast state.
+        for (p, player) in self.players.iter_mut() {
+            player
+                .initialize_state(&get_state_view(ObservePosition::RelativeTo(p), &self.state))?;
+        }
 
-        let game = Game {
-            handle: handle.clone(),
-        };
+        self.notify_game_start().await?;
 
-        let observable = ObservableGame::new(handle);
-
-        (game, observable)
-    }
-
-    pub async fn run(
-        mut self,
-        player_1: Box<dyn Player + Sync + Send>,
-        player_2: Box<dyn Player + Sync + Send>,
-    ) -> Result<GameResult, GameError> {
-        let mut players = Players::new(player_1, player_2);
-
-        broadcast_viewable_state(self.handle.lock().unwrap().deref_mut(), &mut players)?;
-        self.notify_game_start(&mut players).await?;
-
-        // Define phase modifying functions.
-        fn next_phase(handle: &mut GameHandle, players: &mut Players) -> Result<(), GameError> {
-            match handle.state.phase {
+        // Define phase modifying functions. The phase state should only be modified using these functions.
+        fn next_phase(game: &mut Game) -> Result<(), GameError> {
+            match game.state.phase {
                 Phase::Beginning => {
-                    update_state_and_notify(
-                        handle,
-                        players,
-                        UpdateGameState::SetPhase(Phase::Main),
-                    )?;
+                    game.update_state_and_notify(UpdateGameState::SetPhase(Phase::Main))?;
                 }
                 Phase::Main => {
-                    update_state_and_notify(
-                        handle,
-                        players,
-                        UpdateGameState::SetPhase(Phase::End),
-                    )?;
+                    game.update_state_and_notify(UpdateGameState::SetPhase(Phase::End))?;
                 }
-                Phase::End => next_turn(handle, players)?,
+                Phase::End => next_turn(game)?,
             }
             Ok(())
         }
 
-        fn next_turn(handle: &mut GameHandle, players: &mut Players) -> Result<(), GameError> {
-            update_state_and_notify(
-                handle,
-                players,
-                UpdateGameState::SetTurn {
-                    turn_player: handle.state.turn_player.other(),
-                    turn: handle.state.turn + 1,
-                },
-            )?;
+        fn next_turn(game: &mut Game) -> Result<(), GameError> {
+            game.update_state_and_notify(UpdateGameState::SetTurn {
+                turn_player: game.state.turn_player.other(),
+                turn: game.state.turn + 1,
+            })?;
 
-            update_state_and_notify(handle, players, UpdateGameState::SetPhase(Phase::Beginning))?;
+            game.update_state_and_notify(UpdateGameState::SetPhase(Phase::Beginning))?;
             Ok(())
         }
 
         // phase loop
         loop {
-            let current_phase = self.handle.lock().unwrap().state.phase;
-            let phase_result: GameControlFlow = match current_phase {
-                Phase::Beginning => self.run_beginning_phase(&mut players).await?,
-                Phase::Main => self.run_main_phase(&mut players).await?,
-                Phase::End => self.run_end_phase(&mut players).await?,
+            let phase_result = match self.state.phase {
+                Phase::Beginning => self.run_beginning_phase().await?,
+                Phase::Main => self.run_main_phase().await?,
+                Phase::End => self.run_end_phase().await?,
             };
 
-            let mut handle = self.handle.lock().unwrap();
             match phase_result {
-                Continue => next_phase(&mut handle, &mut players)?,
+                Continue => next_phase(&mut self)?,
                 BreakPhase(phase_break) => match phase_break {
-                    PhaseBreak::EndPhase => next_phase(&mut handle, &mut players)?,
-                    PhaseBreak::EndTurn => next_turn(&mut handle, &mut players)?,
+                    PhaseBreak::EndPhase => next_phase(&mut self)?,
+                    PhaseBreak::EndTurn => next_turn(&mut self)?,
                     PhaseBreak::EndGame(game_result) => {
                         return Ok(game_result);
                     }
@@ -151,7 +159,32 @@ impl Game {
         }
     }
 
-    async fn notify_game_start(&mut self, players: &mut Players) -> Result<(), GameError> {
+    fn update_state_and_notify(&mut self, update: UpdateGameState) -> Result<(), GameError> {
+        self.state.apply_update(update)?;
+
+        self.notify_all(GameEvent::StateUpdated(update))?;
+        Ok(())
+    }
+
+    fn notify_all(&mut self, event: GameEvent) -> Result<(), GameError> {
+        for (pos, player) in self.players.iter_mut() {
+            player.notify_event(get_event_view(ObservePosition::RelativeTo(pos), event))?;
+        }
+        if let Some(tx) = &self.event_tx {
+            match tx.try_send(event) {
+                Err(_) => {
+                    eprintln!("Failed to send event to the game recorder.");
+                    drop(self.event_tx.take());
+                }
+                Ok(()) => {}
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn notify_game_start(&mut self) -> Result<(), GameError> {
+        // Todo: iterator to task 한 다음 전부 await하는 그런 거 없나.
         async fn notify_start(
             p: &mut (impl Player + ?Sized + Send),
             pos: PlayerPos,
@@ -161,8 +194,9 @@ impl Game {
                 .map_err(|_| GameError::PlayerCommunicationFail(pos))
         }
 
-        let PlayersData { p1_data, p2_data } = players;
+        let PlayersData { p1_data, p2_data } = &mut self.players;
 
+        // Todo: tokio joinset
         let (a, b) = join!(
             notify_start(p1_data.deref_mut(), PlayerPos::P1),
             notify_start(p2_data.deref_mut(), PlayerPos::P2)
@@ -173,75 +207,62 @@ impl Game {
         Ok(())
     }
 
-    async fn run_beginning_phase(
-        &self,
-        players: &mut Players,
-    ) -> Result<GameControlFlow, GameError> {
-        let mut handle = self.handle.lock().unwrap();
+    async fn run_beginning_phase(&mut self) -> Result<GameControlFlow, GameError> {
         // Skip beginning phase for the first two turns.
-        if handle.state.turn <= 2 {
+        if self.state.turn <= 2 {
             return Ok(Continue);
         }
 
         // Add vigor
-        let turn_player = handle.state.turn_player;
+        let turn_player = self.state.turn_player;
 
-        add_to_vigor(&mut handle, players, turn_player, 1)?;
+        self.add_to_vigor(turn_player, 1)?;
 
         // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
         Ok(Continue)
     }
 
-    async fn run_main_phase(&self, players: &mut Players) -> Result<GameControlFlow, GameError> {
-        self.handle_player_actions(players).await??;
+    async fn run_main_phase(&mut self) -> Result<GameControlFlow, GameError> {
+        self.handle_player_actions().await??;
 
         Ok(Continue)
     }
 
-    async fn run_end_phase(&self, players: &mut Players) -> Result<GameControlFlow, GameError> {
+    async fn run_end_phase(&mut self) -> Result<GameControlFlow, GameError> {
         // Todo: move enhancements and in-use cards to the used pile.
 
         Ok(Continue)
     }
 
-    async fn handle_player_actions(
-        &self,
-        players: &mut Players,
-    ) -> Result<GameControlFlow, GameError> {
-        let turn_player = self.handle.lock().unwrap().state.turn_player;
-
+    async fn handle_player_actions(&mut self) -> Result<GameControlFlow, GameError> {
         // main phase actions loop.
         loop {
-            let (doable_basic_actions, playable_cards, available_costs) = {
-                let handle = self.handle.lock().unwrap();
-                let doable_basic_actions = [
-                    BasicAction::MoveForward,
-                    BasicAction::MoveBackward,
-                    BasicAction::Focus,
-                    BasicAction::Recover,
-                ]
-                .into_iter()
-                .filter(|action| can_play_basic_action(&handle.state, turn_player, *action))
-                .collect();
+            let turn_player = self.state.turn_player;
 
-                let playable_cards = vec![]; // Todo:
-                let available_costs = (0..handle.state.player_states[turn_player].hand.len())
-                    .map(|i| BasicActionCost::Hand(HandSelector(i)))
-                    .chain([BasicActionCost::Vigor].into_iter())
-                    .filter(|cost| can_pay_basic_action_cost(&handle.state, turn_player, *cost))
-                    .collect();
-                (doable_basic_actions, playable_cards, available_costs)
-            };
+            let doable_basic_actions = [
+                BasicAction::MoveForward,
+                BasicAction::MoveBackward,
+                BasicAction::Focus,
+                BasicAction::Recover,
+            ]
+            .into_iter()
+            .filter(|action| can_play_basic_action(&self.state, turn_player, *action))
+            .collect();
+
+            let playable_cards = vec![]; // Todo:
+            let available_costs = (0..self.state.player_states[turn_player].hand.len())
+                .map(|i| BasicActionCost::Hand(HandSelector(i)))
+                .chain([BasicActionCost::Vigor].into_iter())
+                .filter(|cost| can_pay_basic_action_cost(&self.state, turn_player, *cost))
+                .collect();
 
             // Todo: some reusable retry function.
             let mut cnt_try = 0;
             let action = loop {
-                let viewable_state = {
-                    let handle = self.handle.lock().unwrap();
-                    get_viewable_state(ObservePosition::RelativeTo(turn_player), &handle.state)
-                };
+                let viewable_state =
+                    get_state_view(ObservePosition::RelativeTo(turn_player), &self.state);
 
-                let action = players[turn_player]
+                let action = self.players[turn_player]
                     .get_main_phase_action(
                         &viewable_state,
                         &playable_cards,
@@ -250,11 +271,8 @@ impl Game {
                     )
                     .await
                     .map_err(|_| GameError::PlayerCommunicationFail(turn_player))?;
-                // Todo: handle result.
 
-                let mut handle = self.handle.lock().unwrap();
-
-                if can_play_main_phase_action(&handle.state, turn_player, action) {
+                if can_play_main_phase_action(&self.state, turn_player, action) {
                     break action;
                 }
                 cnt_try += 1;
@@ -263,67 +281,119 @@ impl Game {
                 }
             };
 
-            let mut handle = self.handle.lock().unwrap();
-            assert!(can_play_main_phase_action(
-                &handle.state,
-                turn_player,
-                action
-            ));
+            debug_assert!(can_play_main_phase_action(&self.state, turn_player, action));
 
-            play_main_phase_action(&mut handle, players, turn_player, action)??;
+            self.play_main_phase_action(turn_player, action)??;
         }
     }
-}
-fn update_state_and_notify(
-    handle: &mut GameHandle,
-    players: &mut Players,
-    update: UpdateGameState,
-) -> Result<(), GameError> {
-    handle.state.apply_update(update)?;
 
-    notify_all(
-        players,
-        &mut handle.observers,
-        GameEvent::StateUpdated(update),
-    )?;
-    Ok(())
+    fn add_to_vigor(&mut self, player: PlayerPos, diff: i32) -> Result<(), GameError> {
+        const MAX_VIGOR: i32 = 2;
+
+        let vigor = self.state.player_states[player].vigor;
+        let real_diff = std::cmp::min(diff, MAX_VIGOR - vigor.0);
+
+        self.update_state_and_notify(UpdateGameState::AddToVigor {
+            player,
+            diff: real_diff,
+        })?;
+
+        Ok(())
+    }
+
+    fn play_main_phase_action(
+        &mut self,
+        player: PlayerPos,
+        action: MainPhaseAction,
+    ) -> Result<GameControlFlow, GameError> {
+        match action {
+            MainPhaseAction::EndMainPhase => Ok(BreakPhase(PhaseBreak::EndPhase)),
+            MainPhaseAction::PlayBasicAction { action, cost } => {
+                self.pay_basic_action_cost(player, cost)?;
+                self.play_basic_action(player, action)?;
+                Ok(Continue)
+            }
+            MainPhaseAction::PlayCard(_) => {
+                todo!();
+            }
+        }
+    }
+
+    fn pay_basic_action_cost(
+        &mut self,
+        player: PlayerPos,
+        cost: BasicActionCost,
+    ) -> Result<(), GameError> {
+        match cost {
+            BasicActionCost::Hand(selector) => {
+                self.discard_card_from_hand(player, selector)?;
+            }
+            BasicActionCost::Vigor => self.add_to_vigor(player, -1)?,
+        }
+
+        Ok(())
+    }
+    fn discard_card_from_hand(
+        &mut self,
+        player: PlayerPos,
+        hand_selector: HandSelector,
+    ) -> Result<(), GameError> {
+        let discard_pile_len = self.state.player_states[player].discard_pile.len();
+        self.transfer_cards(
+            CardSelector {
+                position: CardsPosition::Hand(player),
+                index: hand_selector.0,
+            },
+            CardSelector {
+                position: CardsPosition::Discards(player),
+                index: discard_pile_len,
+            },
+        )
+    }
+
+    fn transfer_cards(&mut self, from: CardSelector, to: CardSelector) -> Result<(), GameError> {
+        self.update_state_and_notify(UpdateGameState::TransferCard { from, to })
+    }
+
+    fn play_basic_action(
+        &mut self,
+        player: PlayerPos,
+        action: BasicAction,
+    ) -> Result<GameControlFlow, GameError> {
+        self.notify_all(GameEvent::PerformBasicAction { player, action })?;
+
+        let mut transfer_petals = |from, to| self.transfer_petals(from, to, 1);
+        match action {
+            BasicAction::MoveForward => {
+                transfer_petals(PetalsPosition::Distance, PetalsPosition::Aura(player))?;
+            }
+            BasicAction::MoveBackward => {
+                transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Distance)?;
+            }
+            BasicAction::Recover => {
+                transfer_petals(PetalsPosition::Dust, PetalsPosition::Aura(player))?;
+            }
+            BasicAction::Focus => {
+                transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Flare(player))?;
+            }
+        }
+
+        Ok(Continue)
+    }
+
+    fn transfer_petals(
+        &mut self,
+        from: PetalsPosition,
+        to: PetalsPosition,
+        amount: u32,
+    ) -> Result<(), GameError> {
+        self.update_state_and_notify(UpdateGameState::TransferPetals { from, to, amount })
+    }
 }
 
-fn broadcast_viewable_state(
-    handle: &mut GameHandle,
-    players: &mut Players,
-) -> Result<(), GameError> {
-    for p in PlayerPos::iter() {
-        players[p].initialize_state(&get_viewable_state(
-            ObservePosition::RelativeTo(p),
-            &handle.state,
-        ))?;
-    }
-    for ObserverWithPos { observer, position } in handle.observers.iter_mut() {
-        // ignore observer errors.
-        // Todo: remove from list when error occurs.
-        let _ = observer.initialize_state(&get_viewable_state(*position, &handle.state));
-    }
-    Ok(())
-}
-
-fn notify_all(
-    players: &mut Players,
-    observers: &mut Vec<ObserverWithPos>,
-    event: GameEvent,
-) -> Result<(), GameError> {
-    for p in PlayerPos::iter() {
-        players[p].notify_event(event_filter_information(
-            ObservePosition::RelativeTo(p),
-            event,
-        ))?;
-    }
-    for ObserverWithPos { observer, position } in observers.iter_mut() {
-        // ignore observer errors.
-        // Todo: remove from list when error occurs.
-        let _ = observer.notify_event(event_filter_information(*position, event));
-    }
-    Ok(())
+fn get_event_view(position: ObservePosition, event: GameEvent) -> GameEvent {
+    // Todo:
+    event
 }
 
 fn initialize_game_states() -> GameState {
@@ -399,37 +469,6 @@ fn can_play_basic_action(state: &GameState, player: PlayerPos, action: BasicActi
     }
 }
 
-fn play_basic_action(
-    handle: &mut GameHandle,
-    players: &mut Players,
-    player: PlayerPos,
-    action: BasicAction,
-) -> Result<GameControlFlow, GameError> {
-    notify_all(
-        players,
-        &mut handle.observers,
-        GameEvent::PerformBasicAction { player, action },
-    )?;
-
-    let mut transfer_petals = |from, to| transfer_petals(handle, players, from, to, 1);
-    match action {
-        BasicAction::MoveForward => {
-            transfer_petals(PetalsPosition::Distance, PetalsPosition::Aura(player))?;
-        }
-        BasicAction::MoveBackward => {
-            transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Distance)?;
-        }
-        BasicAction::Recover => {
-            transfer_petals(PetalsPosition::Dust, PetalsPosition::Aura(player))?;
-        }
-        BasicAction::Focus => {
-            transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Flare(player))?;
-        }
-    }
-
-    Ok(Continue)
-}
-
 fn can_pay_basic_action_cost(state: &GameState, player: PlayerPos, cost: BasicActionCost) -> bool {
     match cost {
         BasicActionCost::Hand(selector) => can_discard_card_from_hand(state, player, selector),
@@ -437,47 +476,8 @@ fn can_pay_basic_action_cost(state: &GameState, player: PlayerPos, cost: BasicAc
     }
 }
 
-fn pay_basic_action_cost(
-    handle: &mut GameHandle,
-    players: &mut Players,
-    player: PlayerPos,
-    cost: BasicActionCost,
-) -> Result<(), GameError> {
-    match cost {
-        BasicActionCost::Hand(selector) => {
-            discard_card_from_hand(handle, players, player, selector)?;
-        }
-        BasicActionCost::Vigor => add_to_vigor(handle, players, player, -1)?,
-    }
-
-    Ok(())
-}
-
 fn can_add_to_vigor(state: &GameState, player: PlayerPos, diff: i32) -> bool {
     state.player_states[player].vigor.0 + diff >= 0
-}
-
-fn add_to_vigor(
-    handle: &mut GameHandle,
-    players: &mut Players,
-    player: PlayerPos,
-    diff: i32,
-) -> Result<(), GameError> {
-    const MAX_VIGOR: i32 = 2;
-
-    let vigor = handle.state.player_states[player].vigor;
-    let real_diff = std::cmp::min(diff, MAX_VIGOR - vigor.0);
-
-    update_state_and_notify(
-        handle,
-        players,
-        UpdateGameState::AddToVigor {
-            player,
-            diff: real_diff,
-        },
-    )?;
-
-    Ok(())
 }
 
 fn can_play_main_phase_action(
@@ -495,26 +495,7 @@ fn can_play_main_phase_action(
     }
 }
 
-fn play_main_phase_action(
-    handle: &mut GameHandle,
-    players: &mut Players,
-    player: PlayerPos,
-    action: MainPhaseAction,
-) -> Result<GameControlFlow, GameError> {
-    match action {
-        MainPhaseAction::EndMainPhase => Ok(BreakPhase(PhaseBreak::EndPhase)),
-        MainPhaseAction::PlayBasicAction { action, cost } => {
-            pay_basic_action_cost(handle, players, player, cost)?;
-            play_basic_action(handle, players, player, action)?;
-            Ok(Continue)
-        }
-        MainPhaseAction::PlayCard(_) => {
-            todo!();
-        }
-    }
-}
-
-fn get_viewable_state(viewed_from: ObservePosition, state: &GameState) -> StateView {
+fn get_state_view(viewed_from: ObservePosition, state: &GameState) -> StateView {
     let player_states = &state.player_states;
 
     StateView {
@@ -540,25 +521,13 @@ fn can_transfer_petals(
         return false;
     }
     let to_petals = state.get_petals(to);
-    if let Some(max) = to_petals.max && to_petals.count + amount > max {
-        return false
+    if let Some(max) = to_petals.max
+        && to_petals.count + amount > max
+    {
+        return false;
     }
 
     true
-}
-
-fn transfer_petals(
-    handle: &mut GameHandle,
-    players: &mut Players,
-    from: PetalsPosition,
-    to: PetalsPosition,
-    amount: u32,
-) -> Result<(), GameError> {
-    update_state_and_notify(
-        handle,
-        players,
-        UpdateGameState::TransferPetals { from, to, amount },
-    )
 }
 
 fn can_transfer_cards(state: &GameState, from: CardSelector, to: CardSelector) -> bool {
@@ -571,15 +540,6 @@ fn can_transfer_cards(state: &GameState, from: CardSelector, to: CardSelector) -
     }
 
     true
-}
-
-fn transfer_cards(
-    handle: &mut GameHandle,
-    players: &mut Players,
-    from: CardSelector,
-    to: CardSelector,
-) -> Result<(), GameError> {
-    update_state_and_notify(handle, players, UpdateGameState::TransferCard { from, to })
 }
 
 fn can_discard_card_from_hand(
@@ -603,25 +563,4 @@ fn can_discard_card_from_hand(
         },
     );
     true
-}
-
-fn discard_card_from_hand(
-    handle: &mut GameHandle,
-    players: &mut Players,
-    player: PlayerPos,
-    hand_selector: HandSelector,
-) -> Result<(), GameError> {
-    let discard_pile_len = handle.state.player_states[player].discard_pile.len();
-    transfer_cards(
-        handle,
-        players,
-        CardSelector {
-            position: CardsPosition::Hand(player),
-            index: hand_selector.0,
-        },
-        CardSelector {
-            position: CardsPosition::Discards(player),
-            index: discard_pile_len,
-        },
-    )
 }
