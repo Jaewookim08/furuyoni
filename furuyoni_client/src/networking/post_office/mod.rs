@@ -39,10 +39,10 @@ pub fn spawn_post_office(
 
     let post_office_joinhandle = tokio::spawn(async {
         tokio::select!(
-            res = receive_posts(reader, game_to_player_request_tx, game_to_player_response_tx) =>
+            res = tokio::spawn(receive_posts(reader, game_to_player_request_tx, game_to_player_response_tx)) =>
                 println!("receive_posts has ended with result: {:?}", res),
-            () = handle_send_requests(client_message_rx, writer) =>
-                println!("handle_send_request has ended."),
+            res = tokio::spawn(handle_send_requests(client_message_rx, writer)) =>
+                println!("handle_send_request has ended with result: {:?}", res),
         );
     });
 

@@ -97,10 +97,10 @@ fn spawn_post_office(
 
     let post_office_joinhandle = tokio::spawn(async {
         tokio::select!(
-            res = post_office::receive_posts(reader, player_to_game_response_tx, player_to_game_request_tx, player_to_lobby_response_tx, player_to_lobby_request_tx) =>
+            res = tokio::spawn(post_office::receive_posts(reader, player_to_game_response_tx, player_to_game_request_tx, player_to_lobby_response_tx, player_to_lobby_request_tx)) =>
                 println ! ("receive_posts has ended with result: {:?}", res),
-            () = post_office::handle_send_requests(server_message_rx, writer) =>
-                println ! ("game_handle_send_request has ended."),
+            res = tokio::spawn(post_office::handle_send_requests(server_message_rx, writer)) =>
+                println ! ("game_handle_send_request has ended with result: {:?}.", res),
         );
     });
 
