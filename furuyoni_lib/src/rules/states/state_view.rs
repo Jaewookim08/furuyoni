@@ -53,6 +53,15 @@ impl<'a> From<&'a mut Cards> for CardsViewMutRef<'a> {
     }
 }
 
+impl<'a> CardsViewMutRef<'a> {
+    pub fn len(&self) -> usize {
+        match self {
+            CardsViewMutRef::Open { cards } => cards.len(),
+            CardsViewMutRef::Hidden { length } => **length,
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub enum CardsViewRef<'a> {
     Open { cards: &'a Cards },
@@ -75,7 +84,7 @@ impl<'a> From<&'a Cards> for CardsViewRef<'a> {
 }
 
 impl<'a> CardsViewMutRef<'a> {
-    fn insert_card(self, card: Card, index: usize) -> Result<(), InvalidGameViewUpdateError> {
+    fn insert_card(&mut self, index: usize, card: Card) -> Result<(), InvalidGameViewUpdateError> {
         match self {
             CardsViewMutRef::Open { cards: cards_to } => {
                 if index > cards_to.len() {
@@ -83,7 +92,7 @@ impl<'a> CardsViewMutRef<'a> {
                 }
                 cards_to.insert(index, card);
             }
-            CardsViewMutRef::Hidden { length } => *length += 1,
+            CardsViewMutRef::Hidden { length } => **length += 1,
         }
         Ok(())
     }
@@ -200,20 +209,24 @@ impl StateView {
                 self.phase = phase;
             }
             UpdateGameState::TransferCard { from, to } => {
-                let cards_from = match self.get_cards_view_mut(from.position) {
+                let from_cards = match self.get_cards_view_mut(from.cards_position()) {
                     CardsViewMutRef::Open { cards } => cards,
                     CardsViewMutRef::Hidden { .. } => {
                         return Err(InvalidGameViewUpdateError::VisibilityMismatch);
                     }
                 };
 
-                if from.index >= cards_from.len() {
+                let from_index = from.index(from_cards.len());
+
+                if from_index >= from_cards.len() {
                     return Err(InvalidGameViewUpdateError::CardSelectorOutOfBounds);
                 }
-                let taken = cards_from.remove(from.index);
+                let taken = from_cards.remove(from_index);
 
-                self.get_cards_view_mut(to.position)
-                    .insert_card(taken, to.index)?;
+                let mut to_cards = self.get_cards_view_mut(to.cards_position());
+                let to_index = to.index(to_cards.len());
+
+                to_cards.insert_card(to_index, taken)?;
             }
             UpdateGameState::TransferCardFromHidden { from, to, card } => {
                 let cards_from_len = match self.get_cards_view_mut(from) {
@@ -225,8 +238,8 @@ impl StateView {
 
                 *cards_from_len -= 1;
 
-                self.get_cards_view_mut(to.position)
-                    .insert_card(card.clone(), to.index)?;
+                let mut cards_to = self.get_cards_view_mut(to.cards_position());
+                cards_to.insert_card(to.index(cards_to.len()), card.clone())?;
             }
         }
 

@@ -139,18 +139,22 @@ impl GameState {
                 state.phase = phase;
             }
             UpdateGameState::TransferCard { from, to } => {
-                let cards_from = self.inner.get_cards_mut(from.position);
+                let cards_from = self.inner.get_cards_mut(from.cards_position());
 
-                if from.index >= cards_from.len() {
+                let index_from = from.index(cards_from.len());
+                if index_from >= cards_from.len() || index_from < 0 {
                     return Err(InvalidGameUpdateError::CardSelectorOutOfBounds);
                 }
-                let taken = cards_from.remove(from.index);
 
-                let cards_to = self.inner.get_cards_mut(to.position);
-                if to.index > cards_to.len() {
+                let taken = cards_from.remove(index_from);
+
+                let cards_to = self.inner.get_cards_mut(to.cards_position());
+                let index_to = to.index(cards_to.len());
+
+                if index_to > cards_to.len() || index_to < 0 {
                     return Err(InvalidGameUpdateError::CardSelectorOutOfBounds);
                 }
-                cards_to.insert(from.index, taken);
+                cards_to.insert(index_to, taken);
             }
             UpdateGameState::TransferCardFromHidden { .. } => {
                 return Err(InvalidGameUpdateError::UpdateOnlyForView)

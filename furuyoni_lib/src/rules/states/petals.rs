@@ -1,5 +1,6 @@
 use crate::rules::PlayerPos;
 use serde::{Deserialize, Serialize};
+use std::ops::Deref;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
 pub struct Petals {

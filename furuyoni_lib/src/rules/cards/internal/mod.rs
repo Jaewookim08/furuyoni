@@ -30,9 +30,34 @@ impl CardsPosition {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
-pub struct CardSelector {
-    pub position: CardsPosition,
-    pub index: usize,
+pub enum CardSelector {
+    PushLast(CardsPosition),
+    Last(CardsPosition),
+    First(CardsPosition),
+    Index {
+        position: CardsPosition,
+        index: usize,
+    },
+}
+
+impl CardSelector {
+    pub fn cards_position(self) -> CardsPosition {
+        match self {
+            CardSelector::PushLast(p)
+            | CardSelector::Last(p)
+            | CardSelector::First(p)
+            | CardSelector::Index { position: p, .. } => p,
+        }
+    }
+
+    pub fn index(self, cards_len: usize) -> usize {
+        match self {
+            CardSelector::Last(_) => cards_len - 1,
+            CardSelector::First(_) => 0,
+            CardSelector::Index { index, .. } => index,
+            CardSelector::PushLast(_) => cards_len,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]

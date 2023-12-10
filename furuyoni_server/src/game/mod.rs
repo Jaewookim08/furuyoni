@@ -16,6 +16,7 @@ use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};
 use crate::game::game_recorder::{run_recorder, GameRecorder};
 use crate::game::states::*;
 use crate::game_watcher::{GameObserver, NotifyFailedError};
+use furuyoni_lib::rules::attack::{AttackDamage, Damage};
 use furuyoni_lib::rules::cards::{Card, CardSelector, CardsPosition};
 use furuyoni_lib::rules::events::{GameEvent, UpdateGameState};
 use furuyoni_lib::rules::states::*;
@@ -218,7 +219,11 @@ impl Game {
 
         self.add_to_vigor(turn_player, 1)?;
 
-        // Todo: remove sakura tokens from enhancements, reshuffle deck, draw cards.
+        for _ in 0..2 {
+            self.try_draw_card(turn_player).await??;
+        }
+
+        // Todo: remove sakura tokens from enhancements, reshuffle deck, ...
         Ok(Continue)
     }
 
@@ -246,14 +251,14 @@ impl Game {
                 BasicAction::Recover,
             ]
             .into_iter()
-            .filter(|action| can_play_basic_action(&self.state, turn_player, *action))
+            .filter(|action| self.can_play_basic_action(turn_player, *action))
             .collect();
 
             let playable_cards = vec![]; // Todo:
             let available_costs = (0..self.state.player_states[turn_player].hand.len())
                 .map(|i| BasicActionCost::Hand(HandSelector(i)))
                 .chain([BasicActionCost::Vigor].into_iter())
-                .filter(|cost| can_pay_basic_action_cost(&self.state, turn_player, *cost))
+                .filter(|cost| self.can_pay_basic_action_cost(turn_player, *cost))
                 .collect();
 
             // Todo: some reusable retry function.
@@ -272,7 +277,7 @@ impl Game {
                     .await
                     .map_err(|_| GameError::PlayerCommunicationFail(turn_player))?;
 
-                if can_play_main_phase_action(&self.state, turn_player, action) {
+                if self.can_play_main_phase_action(turn_player, action) {
                     break action;
                 }
                 cnt_try += 1;
@@ -281,10 +286,57 @@ impl Game {
                 }
             };
 
-            debug_assert!(can_play_main_phase_action(&self.state, turn_player, action));
+            debug_assert!(self.can_play_main_phase_action(turn_player, action));
 
             self.play_main_phase_action(turn_player, action)??;
         }
+    }
+
+    async fn try_draw_card(&mut self, player: PlayerPos) -> Result<GameControlFlow, GameError> {
+        let from = CardSelector::Last(CardsPosition::Deck(player));
+        let to = CardSelector::PushLast(CardsPosition::Hand(player));
+
+        if self.can_transfer_card(from, to) {
+            self.transfer_card(from, to)?;
+        } else {
+            self.apply_attack_damage(
+                player,
+                AttackDamage {
+                    aura_damage: Some(1),
+                    life_damage: Some(1),
+                },
+            )
+            .await??;
+        }
+
+        Ok(Continue)
+    }
+
+    async fn apply_attack_damage(
+        &mut self,
+        to: PlayerPos,
+        damage: AttackDamage,
+    ) -> Result<GameControlFlow, GameError> {
+        // todo: ask user to select where to get the damage.
+
+        self.apply_damage_try_best(PetalsPosition::Life(to), damage.life_damage.unwrap())
+            .await??;
+        Ok(Continue)
+    }
+
+    async fn apply_damage_try_best(
+        &mut self,
+        petals_pos: PetalsPosition,
+        amount: u32,
+    ) -> Result<GameControlFlow, GameError> {
+        let amount = std::cmp::min(self.state.get_petals(petals_pos).count, amount);
+
+        self.transfer_petals(petals_pos, PetalsPosition::Dust, amount)?;
+        Ok(Continue)
+    }
+
+    fn can_afford_damage(&self, petals_pos: PetalsPosition, amount: u32) -> bool {
+        self.can_transfer_petals(petals_pos, PetalsPosition::Dust, amount)
     }
 
     fn add_to_vigor(&mut self, player: PlayerPos, diff: i32) -> Result<(), GameError> {
@@ -338,20 +390,16 @@ impl Game {
         player: PlayerPos,
         hand_selector: HandSelector,
     ) -> Result<(), GameError> {
-        let discard_pile_len = self.state.player_states[player].discard_pile.len();
-        self.transfer_cards(
-            CardSelector {
+        self.transfer_card(
+            CardSelector::Index {
                 position: CardsPosition::Hand(player),
                 index: hand_selector.0,
             },
-            CardSelector {
-                position: CardsPosition::Discards(player),
-                index: discard_pile_len,
-            },
+            CardSelector::PushLast(CardsPosition::Discards(player)),
         )
     }
 
-    fn transfer_cards(&mut self, from: CardSelector, to: CardSelector) -> Result<(), GameError> {
+    fn transfer_card(&mut self, from: CardSelector, to: CardSelector) -> Result<(), GameError> {
         self.update_state_and_notify(UpdateGameState::TransferCard { from, to })
     }
 
@@ -386,12 +434,105 @@ impl Game {
         from: PetalsPosition,
         to: PetalsPosition,
         amount: u32,
-    ) -> Result<(), GameError> {
-        self.update_state_and_notify(UpdateGameState::TransferPetals { from, to, amount })
+    ) -> Result<GameControlFlow, GameError> {
+        self.update_state_and_notify(UpdateGameState::TransferPetals { from, to, amount })?;
+
+        Ok(Continue)
+    }
+
+    fn get_master_interval(&self) -> i32 {
+        2
+    }
+
+    fn can_play_basic_action(&self, player: PlayerPos, action: BasicAction) -> bool {
+        let mut can_transfer_petals = |from, to| self.can_transfer_petals(from, to, 1);
+
+        match action {
+            BasicAction::MoveForward => {
+                can_transfer_petals(PetalsPosition::Distance, PetalsPosition::Aura(player))
+                    && self.state.distance.count as i32 > self.get_master_interval()
+            }
+            BasicAction::MoveBackward => {
+                can_transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Distance)
+            }
+            BasicAction::Recover => {
+                can_transfer_petals(PetalsPosition::Dust, PetalsPosition::Aura(player))
+            }
+            BasicAction::Focus => {
+                can_transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Flare(player))
+            }
+        }
+    }
+
+    fn can_pay_basic_action_cost(&self, player: PlayerPos, cost: BasicActionCost) -> bool {
+        match cost {
+            BasicActionCost::Hand(selector) => self.can_discard_card_from_hand(player, selector),
+            BasicActionCost::Vigor => self.can_add_to_vigor(player, -1),
+        }
+    }
+
+    fn can_add_to_vigor(&self, player: PlayerPos, diff: i32) -> bool {
+        self.state.player_states[player].vigor.0 + diff >= 0
+    }
+
+    fn can_play_main_phase_action(&self, player: PlayerPos, action: MainPhaseAction) -> bool {
+        match action {
+            MainPhaseAction::EndMainPhase => true,
+            MainPhaseAction::PlayBasicAction { action, cost } => {
+                self.can_pay_basic_action_cost(player, cost)
+                    && self.can_play_basic_action(player, action)
+            }
+            MainPhaseAction::PlayCard(_) => false,
+        }
+    }
+
+    fn can_transfer_petals(&self, from: PetalsPosition, to: PetalsPosition, amount: u32) -> bool {
+        if self.state.get_petals(from).count < amount {
+            return false;
+        }
+        let to_petals = self.state.get_petals(to);
+        if let Some(max) = to_petals.max
+            && to_petals.count + amount > max
+        {
+            return false;
+        }
+
+        true
+    }
+
+    fn can_transfer_card(&self, from: CardSelector, to: CardSelector) -> bool {
+        let from_cards = self.state.get_cards(from.cards_position());
+        let from_index = from.index(from_cards.len());
+        if from_cards.len() <= from_index || from_index < 0 {
+            return false;
+        }
+        let to_cards = self.state.get_cards(to.cards_position());
+        let to_index = to.index(to_cards.len());
+
+        if to_cards.len() < to_index || to_index < 0 {
+            return false;
+        }
+
+        true
+    }
+
+    fn can_discard_card_from_hand(&self, player: PlayerPos, hand_selector: HandSelector) -> bool {
+        // Todo: poision, etc..
+        // Todo: 내가 하는 것과 상대가 하는 것 구분해야 할 수도.
+
+        self.can_transfer_card(
+            CardSelector::Index {
+                position: CardsPosition::Hand(player),
+                index: hand_selector.0,
+            },
+            CardSelector::PushLast(CardsPosition::Discards(player)),
+        );
+        true
     }
 }
 
-fn get_event_view(position: ObservePosition, event: GameEvent) -> GameEvent {
+fn get_event_view(position: ObservePosition, event: GameEvent) -> GameEvent /* Todo: to Option<GameEvent> */
+{
     // Todo:
     event
 }
@@ -445,56 +586,6 @@ fn default_player_states() -> PlayerStates {
     PlayerStates::new(p1_state, p2_state)
 }
 
-fn get_master_interval(state: &GameState) -> i32 {
-    2
-}
-
-fn can_play_basic_action(state: &GameState, player: PlayerPos, action: BasicAction) -> bool {
-    let mut can_transfer_petals = |from, to| can_transfer_petals(state, from, to, 1);
-
-    match action {
-        BasicAction::MoveForward => {
-            can_transfer_petals(PetalsPosition::Distance, PetalsPosition::Aura(player))
-                && state.distance.count as i32 > get_master_interval(state)
-        }
-        BasicAction::MoveBackward => {
-            can_transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Distance)
-        }
-        BasicAction::Recover => {
-            can_transfer_petals(PetalsPosition::Dust, PetalsPosition::Aura(player))
-        }
-        BasicAction::Focus => {
-            can_transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Flare(player))
-        }
-    }
-}
-
-fn can_pay_basic_action_cost(state: &GameState, player: PlayerPos, cost: BasicActionCost) -> bool {
-    match cost {
-        BasicActionCost::Hand(selector) => can_discard_card_from_hand(state, player, selector),
-        BasicActionCost::Vigor => can_add_to_vigor(state, player, -1),
-    }
-}
-
-fn can_add_to_vigor(state: &GameState, player: PlayerPos, diff: i32) -> bool {
-    state.player_states[player].vigor.0 + diff >= 0
-}
-
-fn can_play_main_phase_action(
-    state: &GameState,
-    player: PlayerPos,
-    action: MainPhaseAction,
-) -> bool {
-    match action {
-        MainPhaseAction::EndMainPhase => true,
-        MainPhaseAction::PlayBasicAction { action, cost } => {
-            can_pay_basic_action_cost(state, player, cost)
-                && can_play_basic_action(state, player, action)
-        }
-        MainPhaseAction::PlayCard(_) => false,
-    }
-}
-
 fn get_state_view(viewed_from: ObservePosition, state: &GameState) -> StateView {
     let player_states = &state.player_states;
 
@@ -509,58 +600,4 @@ fn get_state_view(viewed_from: ObservePosition, state: &GameState) -> StateView 
             player_states[PlayerPos::P2].as_viewed_from(PlayerPos::P2, viewed_from),
         ),
     }
-}
-
-fn can_transfer_petals(
-    state: &GameState,
-    from: PetalsPosition,
-    to: PetalsPosition,
-    amount: u32,
-) -> bool {
-    if state.get_petals(from).count < amount {
-        return false;
-    }
-    let to_petals = state.get_petals(to);
-    if let Some(max) = to_petals.max
-        && to_petals.count + amount > max
-    {
-        return false;
-    }
-
-    true
-}
-
-fn can_transfer_cards(state: &GameState, from: CardSelector, to: CardSelector) -> bool {
-    if state.get_cards(from.position).len() <= from.index {
-        return false;
-    }
-    let to_cards = state.get_cards(to.position);
-    if to_cards.len() < to.index {
-        return false;
-    }
-
-    true
-}
-
-fn can_discard_card_from_hand(
-    state: &GameState,
-    player: PlayerPos,
-    hand_selector: HandSelector,
-) -> bool {
-    // Todo: poision, etc..
-    // Todo: 내가 하는 것과 상대가 하는 것 구분해야 할 수도.
-
-    let discard_pile_len = state.player_states[player].discard_pile.len();
-    can_transfer_cards(
-        state,
-        CardSelector {
-            position: CardsPosition::Hand(player),
-            index: hand_selector.0,
-        },
-        CardSelector {
-            position: CardsPosition::Discards(player),
-            index: discard_pile_len,
-        },
-    );
-    true
 }
