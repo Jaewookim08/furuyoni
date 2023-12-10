@@ -422,7 +422,7 @@ dependencies = [
 [[package]]
 name = "bevy-tokio-tasks"
 version = "0.12.0"
-source = "git+https://github.com/foxzool/bevy-tokio-tasks.git#b12e1d0867c05a0238eccdde361e01e3ac66d399"
+ source = "git+https://github.com/Jaewookim08/bevy-tokio-tasks.git#6ec07d9b0598aa9e1364956955a25dd6805dc4dd"
 dependencies = [
  "bevy_app",
  "bevy_ecs",

@@ -102,21 +102,19 @@ async fn pick_anything(
 ) -> Pickable {
     let (tx, rx) = oneshot::channel();
 
-    ctx.run_on_main_thread(move |ctx| {
+    ctx.dispatch_to_main_thread(move |ctx| {
         ctx.world
             .insert_resource(PickerCallBack { sender: Some(tx) });
         ctx.world.run_system_once(enable_pickers_with(predicate));
-    })
-    .await;
+    });
 
     let ret = rx.await.expect(
         "todo: Picker system failed. Maybe the current request have been cancelled by another one.",
     );
 
-    ctx.run_on_main_thread(move |ctx| {
+    ctx.dispatch_to_main_thread(move |ctx| {
         ctx.world.run_system_once(disable_picker_buttons);
-    })
-    .await;
+    });
 
     ret
 }

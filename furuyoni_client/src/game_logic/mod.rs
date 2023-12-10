@@ -41,10 +41,9 @@ pub(crate) async fn run_game(
     // wait for the initial state
     match responder.receive().await? {
         GameToPlayerRequest::InitializeGameState(state) => {
-            ctx.run_on_main_thread(move |ctx| {
+            ctx.dispatch_to_main_thread(move |ctx| {
                 ctx.world.insert_resource(BoardState { 0: state });
-            })
-            .await;
+            });
         }
         r => return Err(InvalidRequest(r)),
     }
@@ -54,10 +53,9 @@ pub(crate) async fn run_game(
     match responder.receive().await? {
         GameToPlayerRequest::RequestGameStart { pos } => {
             me = pos;
-            ctx.run_on_main_thread(move |ctx| {
+            ctx.dispatch_to_main_thread(move |ctx| {
                 ctx.world.insert_resource(SelfPlayerPos { 0: me });
-            })
-            .await;
+            });
 
             responder.send(PlayerToGameResponse::AcknowledgeGameStart)?;
         }
