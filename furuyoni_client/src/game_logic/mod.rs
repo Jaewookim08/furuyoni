@@ -10,7 +10,7 @@ use furuyoni_lib::net::MessageRecvError;
 use furuyoni_lib::rules::events::GameEvent;
 use furuyoni_lib::rules::player_actions::{BasicActionCost, MainPhaseAction};
 use furuyoni_lib::rules::states::*;
-use furuyoni_lib::rules::PlayerPos;
+use furuyoni_lib::rules::{GameResult, PlayerPos};
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -50,10 +50,12 @@ pub(crate) async fn run_game(
     }
 
     // wait for the game start message
+    let me;
     match responder.receive().await? {
         GameToPlayerRequest::RequestGameStart { pos } => {
+            me = pos;
             ctx.run_on_main_thread(move |ctx| {
-                ctx.world.insert_resource(SelfPlayerPos { 0: pos });
+                ctx.world.insert_resource(SelfPlayerPos { 0: me });
             })
             .await;
 
@@ -76,7 +78,23 @@ pub(crate) async fn run_game(
                         })
                         .await?;
                     }
-                    GameEvent::PerformBasicAction { .. } => {}
+                    GameEvent::PerformBasicAction { .. } => { /* Todo */ }
+                    GameEvent::GameEnd { result } => {
+                        info!("Game ended.");
+                        match result {
+                            GameResult::Draw => {
+                                info!("Draw.")
+                            }
+                            GameResult::Winner(p) => {
+                                if me == p {
+                                    info!("You won!")
+                                } else {
+                                    info!("You lost...")
+                                }
+                            }
+                        }
+                        break;
+                    }
                 }
             }
             GameToPlayerRequest::RequestMainPhaseAction(req) => {
@@ -130,4 +148,6 @@ pub(crate) async fn run_game(
             r => return Err(InvalidRequest(r)),
         }
     }
+
+    Ok(())
 }

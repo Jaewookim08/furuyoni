@@ -48,7 +48,7 @@ pub(crate) fn spawn_logic_thread(runtime: ResMut<TokioTasksRuntime>) {
         match result {
             Ok(_) => {}
             Err(e) => {
-                eprintln!("{e}");
+                error!("{e}");
                 ctx.run_on_main_thread(move |ctx| {
                     ctx.world.send_event(AppExit);
                 })

@@ -13,13 +13,13 @@ pub mod players;
 use crate::furuyoni_lib::net::message_sender::IntoMessageMap;
 use furuyoni_lib::net::frames::*;
 use furuyoni_lib::net::message_channel::MessageChannel;
-use furuyoni_lib::rules::PlayerPos;
+use furuyoni_lib::rules::{GameResult, PlayerPos};
 use players::{IdlePlayer, RemotePlayer};
 use std::sync::Arc;
 
 use networking::{post_office, ServerConnectionReader, ServerConnectionWriter};
 
-use crate::game::{create_game, GameResult, GameSetup};
+use crate::game::{create_game, GameSetup};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;

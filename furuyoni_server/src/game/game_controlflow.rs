@@ -1,4 +1,4 @@
-use crate::game::{GameError, GameResult};
+use furuyoni_lib::rules::GameResult;
 use std::ops::{ControlFlow, FromResidual, Try};
 
 pub enum GameControlFlow {

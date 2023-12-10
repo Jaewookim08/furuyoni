@@ -9,7 +9,7 @@ use derive_more::Neg;
 use furuyoni_lib::rules::player_actions::{
     BasicAction, BasicActionCost, HandSelector, MainPhaseAction, PlayableCardSelector,
 };
-use furuyoni_lib::rules::{ObservePosition, PlayerPos};
+use furuyoni_lib::rules::{GameResult, ObservePosition, PlayerPos};
 
 use crate::game::game_controlflow::GameControlFlow::{BreakPhase, Continue};
 use crate::game::game_controlflow::{GameControlFlow, PhaseBreak};
@@ -43,11 +43,6 @@ pub(crate) enum GameError {
     NotifyFailed(#[from] NotifyFailedError),
     #[error("{0}")]
     EventFilterError(#[from] EventFilterError),
-}
-
-pub enum GameResult {
-    Draw,
-    Winner(PlayerPos),
 }
 
 type Players = PlayersData<Box<dyn Player + Send + Sync>>;
@@ -142,7 +137,7 @@ impl Game {
         }
 
         // phase loop
-        loop {
+        let result = loop {
             let phase_result = match self.state.phase {
                 Phase::Beginning => self.run_beginning_phase().await?,
                 Phase::Main => self.run_main_phase().await?,
@@ -155,11 +150,15 @@ impl Game {
                     PhaseBreak::EndPhase => next_phase(&mut self)?,
                     PhaseBreak::EndTurn => next_turn(&mut self)?,
                     PhaseBreak::EndGame(game_result) => {
-                        return Ok(game_result);
+                        break game_result;
                     }
                 },
             }
-        }
+        };
+
+        self.notify_all(GameEvent::GameEnd { result })?;
+
+        Ok(result)
     }
 
     fn update_state_and_notify(&mut self, update: UpdateGameState) -> Result<(), GameError> {
@@ -599,11 +598,12 @@ fn filter_event(
                     }
                 }
             }
+
             UpdateGameState::TransferCardFromHidden { .. } => {
                 panic!();
             }
         }),
-        e @ GameEvent::PerformBasicAction { .. } => e,
+        e => e,
     };
 
     Ok(e)

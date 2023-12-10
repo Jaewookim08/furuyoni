@@ -36,3 +36,9 @@ pub enum ObservePosition {
     /// Can see only open information.
     ByStander,
 }
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+pub enum GameResult {
+    Draw,
+    Winner(PlayerPos),
+}

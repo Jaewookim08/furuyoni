@@ -2,7 +2,7 @@ use crate::rules::cards::{Card, CardSelector, CardsPosition};
 use crate::rules::player_actions::BasicAction;
 use crate::rules::states::PetalsPosition;
 use crate::rules::states::Phase;
-use crate::rules::PlayerPos;
+use crate::rules::{GameResult, PlayerPos};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -38,6 +38,9 @@ pub enum GameEvent {
     PerformBasicAction {
         player: PlayerPos,
         action: BasicAction,
+    },
+    GameEnd {
+        result: GameResult,
     }, // Todo: card play events, etc...
        // Todo: 메인페이즈 BasicAction(cost 지불 + performBasicAction)을 따로 넣을까. 굳이? 나중에 필요하면.
 }
