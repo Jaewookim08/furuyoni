@@ -343,7 +343,7 @@ impl Game {
             _ => panic!(),
         };
 
-        self.transfer_petals(petals_pos, move_to, amount)?;
+        self.transfer_petals(petals_pos, move_to, amount)??;
         Ok(Continue)
     }
 
@@ -421,16 +421,16 @@ impl Game {
         let mut transfer_petals = |from, to| self.transfer_petals(from, to, 1);
         match action {
             BasicAction::MoveForward => {
-                transfer_petals(PetalsPosition::Distance, PetalsPosition::Aura(player))?;
+                transfer_petals(PetalsPosition::Distance, PetalsPosition::Aura(player))??;
             }
             BasicAction::MoveBackward => {
-                transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Distance)?;
+                transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Distance)??;
             }
             BasicAction::Recover => {
-                transfer_petals(PetalsPosition::Dust, PetalsPosition::Aura(player))?;
+                transfer_petals(PetalsPosition::Dust, PetalsPosition::Aura(player))??;
             }
             BasicAction::Focus => {
-                transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Flare(player))?;
+                transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Flare(player))??;
             }
         }
 
@@ -444,8 +444,23 @@ impl Game {
         amount: u32,
     ) -> Result<GameControlFlow, GameError> {
         self.update_state_and_notify(UpdateGameState::TransferPetals { from, to, amount })?;
-
+        self.check_game_end()??;
         Ok(Continue)
+    }
+
+    fn check_game_end(&mut self) -> Result<GameControlFlow, GameError> {
+        let state = &self.state;
+
+        let has_lost = |p: PlayerPos| -> bool { state.player_states[p].life.count == 0 };
+
+        let res = match (has_lost(PlayerPos::P1), has_lost(PlayerPos::P2)) {
+            (true, true) => BreakPhase(PhaseBreak::EndGame(GameResult::Draw)),
+            (true, false) => BreakPhase(PhaseBreak::EndGame(GameResult::Winner(PlayerPos::P2))),
+            (false, true) => BreakPhase(PhaseBreak::EndGame(GameResult::Winner(PlayerPos::P1))),
+            (false, false) => Continue,
+        };
+
+        Ok(res)
     }
 
     fn master_interval(&self) -> i32 {
