@@ -1,6 +1,7 @@
 use crate::game_logic::GameLogicError::InvalidRequest;
-use crate::systems::picker;
+use crate::systems::board_system::BoardError;
 use crate::systems::picker::{PickBasicActionResult, PickMainPhaseActionResult};
+use crate::systems::{board_system, picker};
 use bevy::prelude::*;
 use bevy_tokio_tasks::*;
 use furuyoni_lib::net::frames::{GameToPlayerRequest, PlayerToGameResponse};
@@ -16,12 +17,6 @@ use thiserror::Error;
 
 type PlayerToGameResponder = MessageChannel<PlayerToGameResponse, GameToPlayerRequest>;
 
-#[derive(Resource)]
-pub(crate) struct BoardState(pub StateView);
-
-#[derive(Resource)]
-pub(crate) struct SelfPlayerPos(pub PlayerPos);
-
 #[derive(Debug, Error)]
 pub(crate) enum GameLogicError {
     #[error("Failed to receive a request from the server: {0}")]
@@ -30,69 +25,40 @@ pub(crate) enum GameLogicError {
     ResponseSendFailed(#[from] MessageSendError),
     #[error("Received an invalid request from the server: {0:?}")]
     InvalidRequest(GameToPlayerRequest),
-    #[error("Tried to do an invalid update to the game state: {0}")]
-    InvalidUpdate(#[from] InvalidGameViewUpdateError),
+    #[error("Board error :{0}")]
+    BoardError(#[from] BoardError),
 }
 
 pub(crate) async fn run_game(
     mut responder: PlayerToGameResponder,
-    mut ctx: TaskContext,
+    ctx: TaskContext,
 ) -> Result<(), GameLogicError> {
     // wait for the initial state
-    match responder.receive().await? {
-        GameToPlayerRequest::InitializeGameState(state) => {
-            ctx.dispatch_to_main_thread(move |ctx| {
-                ctx.world.insert_resource(BoardState { 0: state });
-            });
-        }
+
+    let state = match responder.receive().await? {
+        GameToPlayerRequest::InitializeGameState(state) => state,
         r => return Err(InvalidRequest(r)),
-    }
+    };
 
     // wait for the game start message
     let me;
     match responder.receive().await? {
         GameToPlayerRequest::RequestGameStart { pos } => {
             me = pos;
-            ctx.dispatch_to_main_thread(move |ctx| {
-                ctx.world.insert_resource(SelfPlayerPos { 0: me });
-            });
-
-            responder.send(PlayerToGameResponse::AcknowledgeGameStart)?;
         }
         r => return Err(InvalidRequest(r)),
     };
 
+    board_system::initialize_board(&ctx, state, me);
+
+    responder.send(PlayerToGameResponse::AcknowledgeGameStart)?;
+
     // main logic loop.
-    loop {
+    let result = loop {
         match responder.receive().await? {
             GameToPlayerRequest::NotifyEvent(event) => {
-                // Todo: move to board.
-                match event {
-                    GameEvent::StateUpdated(update) => {
-                        ctx.run_on_main_thread(move |ctx| -> Result<(), GameLogicError> {
-                            let mut state = ctx.world.get_resource_mut::<BoardState>().unwrap();
-                            state.0.apply_update(update)?;
-                            Ok(())
-                        })
-                        .await?;
-                    }
-                    GameEvent::PerformBasicAction { .. } => { /* Todo */ }
-                    GameEvent::GameEnd { result } => {
-                        info!("Game ended.");
-                        match result {
-                            GameResult::Draw => {
-                                info!("Draw.")
-                            }
-                            GameResult::Winner(p) => {
-                                if me == p {
-                                    info!("You won!")
-                                } else {
-                                    info!("You lost...")
-                                }
-                            }
-                        }
-                        break;
-                    }
+                if let Some(result) = board_system::apply_event(&ctx, event).await? {
+                    break result;
                 }
             }
             GameToPlayerRequest::RequestMainPhaseAction(req) => {
@@ -105,8 +71,7 @@ pub(crate) async fn run_game(
                     match picked_main_action {
                         PickMainPhaseActionResult::PayBasicActionCost(cost) => {
                             let picked_basic_action =
-                                picker::pick_basic_action(ctx.clone(), allowed_actions.clone())
-                                    .await;
+                                picker::pick_basic_action(&ctx, allowed_actions.clone()).await;
 
                             match picked_basic_action {
                                 PickBasicActionResult::BasicAction(basic_action) => {
@@ -129,21 +94,23 @@ pub(crate) async fn run_game(
                 responder.send(PlayerToGameResponse::MainPhaseAction(action))?;
             }
             GameToPlayerRequest::CheckGameState(state) => {
-                ctx.run_on_main_thread(move |ctx| {
-                    let resource = ctx
-                        .world
-                        .get_resource::<BoardState>()
-                        .expect("Resource BoardState is missing.");
-                    if resource.0 != state {
-                        eprintln!("Error: state mismatch.");
-                        eprintln!("server state: {:?}", state);
-                        eprintln!("client state: {:?}", resource.0);
-                        todo!("handle state mismatch: resynchronize...")
-                    }
-                })
-                .await;
+                board_system::check_game_state(&ctx, state).await
             }
             r => return Err(InvalidRequest(r)),
+        }
+    };
+
+    info!("Game ended.");
+    match result {
+        GameResult::Draw => {
+            info!("Draw.")
+        }
+        GameResult::Winner(p) => {
+            if me == p {
+                info!("You won!")
+            } else {
+                info!("You lost...")
+            }
         }
     }
 

@@ -14,12 +14,12 @@ pub enum PickMainPhaseActionResult {
 }
 
 pub async fn pick_main_phase_action(
-    ctx: TaskContext,
+    mut ctx: TaskContext,
     allowed_costs: Arc<Vec<BasicActionCost>>,
 ) -> PickMainPhaseActionResult {
     loop {
         let allowed_costs = allowed_costs.clone();
-        let picked = pick_anything(ctx.clone(), move |p| match p {
+        let picked = pick_anything(&mut ctx, move |p| match p {
             Pickable::EndMainPhase => true,
             Pickable::Vigor => allowed_costs.contains(&BasicActionCost::Vigor),
             _ => false,
@@ -42,12 +42,12 @@ pub enum PickBasicActionResult {
 }
 
 pub async fn pick_basic_action(
-    ctx: TaskContext,
+    ctx: &TaskContext,
     allowed_basic_actions: Arc<Vec<BasicAction>>,
 ) -> PickBasicActionResult {
     loop {
         let allowed_basic_actions = allowed_basic_actions.clone();
-        let picked = pick_anything(ctx.clone(), move |p| match p {
+        let picked = pick_anything(&ctx, move |p| match p {
             Pickable::Cancel => true,
             Pickable::BasicAction(b) => allowed_basic_actions.contains(&b),
             _ => false,
@@ -97,7 +97,7 @@ pub enum Pickable {
 }
 
 async fn pick_anything(
-    mut ctx: TaskContext,
+    ctx: &TaskContext,
     predicate: impl Fn(Pickable) -> bool + Send + Sync + 'static,
 ) -> Pickable {
     let (tx, rx) = oneshot::channel();

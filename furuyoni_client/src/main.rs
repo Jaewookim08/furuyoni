@@ -66,7 +66,7 @@ pub(crate) async fn run_logic_thread(ctx: TaskContext) -> Result<(), Error> {
     let (player_to_game_requester, player_to_game_responder, post_office_task) =
         spawn_post_office(socket);
 
-    game_logic::run_game(player_to_game_responder, ctx.clone()).await?;
+    game_logic::run_game(player_to_game_responder, ctx).await?;
 
     // unreachable.
     // Todo: run_game이 에러난 경우에도 실행되게...
