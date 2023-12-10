@@ -41,6 +41,8 @@ pub(crate) enum GameError {
     InvalidGameUpdate(#[from] InvalidGameUpdateError),
     #[error("{0}")]
     NotifyFailed(#[from] NotifyFailedError),
+    #[error("{0}")]
+    EventFilterError(#[from] EventFilterError),
 }
 
 pub enum GameResult {
@@ -99,7 +101,8 @@ impl GameSetup {
 
         let result = game.run().await;
 
-        let () = recorder_task.await.unwrap();
+        let recorder_result = recorder_task.await.unwrap();
+        // Todo:
 
         result
     }
@@ -160,15 +163,19 @@ impl Game {
     }
 
     fn update_state_and_notify(&mut self, update: UpdateGameState) -> Result<(), GameError> {
-        self.state.apply_update(update)?;
-
         self.notify_all(GameEvent::StateUpdated(update))?;
+        // The order between notifying and applying should be preserved.
+        self.state.apply_update(update)?;
         Ok(())
     }
 
     fn notify_all(&mut self, event: GameEvent) -> Result<(), GameError> {
         for (pos, player) in self.players.iter_mut() {
-            player.notify_event(filter_event(ObservePosition::RelativeTo(pos), event))?;
+            player.notify_event(filter_event(
+                &self.state,
+                ObservePosition::RelativeTo(pos),
+                event,
+            )?)?;
         }
         if let Some(tx) = &self.event_tx {
             match tx.try_send(event) {
@@ -502,13 +509,13 @@ impl Game {
     fn can_transfer_card(&self, from: CardSelector, to: CardSelector) -> bool {
         let from_cards = self.state.cards(from.cards_position());
         let from_index = from.index(from_cards.len());
-        if from_cards.len() <= from_index || from_index < 0 {
+        if from_cards.len() <= from_index {
             return false;
         }
         let to_cards = self.state.cards(to.cards_position());
         let to_index = to.index(to_cards.len());
 
-        if to_cards.len() < to_index || to_index < 0 {
+        if to_cards.len() < to_index {
             return false;
         }
 
@@ -530,10 +537,59 @@ impl Game {
     }
 }
 
-fn filter_event(position: ObservePosition, event: GameEvent) -> GameEvent /* Todo: to Option<GameEvent> */
+#[derive(Debug, Error)]
+#[error("Failed to filter an event: {0:?}")]
+struct EventFilterError(GameEvent);
+fn filter_event(
+    state: &GameState,
+    position: ObservePosition,
+    event: GameEvent,
+) -> Result<GameEvent, EventFilterError> /* Todo: to Result<Option<GameEvent>, ?> */
 {
-    // Todo:
-    event
+    let (can_view_p1, can_view_p2, can_view_master) = {
+        match position {
+            ObservePosition::RelativeTo(p) => (p == PlayerPos::P1, p == PlayerPos::P2, false),
+            ObservePosition::MasterView => (true, true, true),
+            ObservePosition::ByStander => (false, false, false),
+        }
+    };
+    let can_view_p = PlayersData::new(can_view_p1, can_view_p2);
+
+    let e = match event {
+        e @ GameEvent::StateUpdated(update) => GameEvent::StateUpdated(match update {
+            u @ UpdateGameState::SetTurn { .. }
+            | u @ UpdateGameState::SetPhase(_)
+            | u @ UpdateGameState::TransferPetals { .. }
+            | u @ UpdateGameState::AddToVigor { .. } => u,
+            u @ UpdateGameState::TransferCard { from, to } => {
+                let is_from_open = match from.cards_position() {
+                    CardsPosition::Deck(_) => can_view_master,
+
+                    CardsPosition::Discards(p) | CardsPosition::Hand(p) => can_view_p[p],
+
+                    CardsPosition::Playing(_)
+                    | CardsPosition::Enhancements(_)
+                    | CardsPosition::Played(_) => true,
+                };
+
+                if is_from_open {
+                    u
+                } else {
+                    UpdateGameState::TransferCardFromHidden {
+                        from: from.cards_position(),
+                        to,
+                        card: state.select_card(from).ok_or(EventFilterError(e))?,
+                    }
+                }
+            }
+            UpdateGameState::TransferCardFromHidden { .. } => {
+                panic!();
+            }
+        }),
+        e @ GameEvent::PerformBasicAction { .. } => e,
+    };
+
+    Ok(e)
 }
 
 fn initialize_game_states() -> GameState {

@@ -1,5 +1,5 @@
 use crate::game::states::GameState;
-use crate::game::{filter_event, filter_state};
+use crate::game::{filter_event, filter_state, GameError};
 use crate::game_watcher::{GameObserver, NotifyFailedError};
 use furuyoni_lib::rules::events::GameEvent;
 use furuyoni_lib::rules::ObservePosition;
@@ -18,6 +18,7 @@ pub(crate) struct RecordedGame {
 }
 
 struct RecorderInner {
+    current_state: GameState,
     recorded_events: Vec<GameEvent>,
     observers: Vec<ObserverWithPos>,
 }
@@ -29,9 +30,11 @@ struct ObserverWithPos {
 
 impl GameRecorder {
     pub(super) fn new(initial_game_state: GameState) -> Self {
+        let current_state = initial_game_state.clone();
         Self {
             initial_game_state,
             inner: Mutex::new(RecorderInner {
+                current_state,
                 recorded_events: vec![],
                 observers: vec![],
             }),
@@ -44,14 +47,7 @@ impl GameRecorder {
     ) -> Result<(), NotifyFailedError> {
         let mut inner = self.inner.lock().unwrap();
 
-        let mut state = filter_state(position, &self.initial_game_state);
-
-        for e in &inner.recorded_events {
-            match e {
-                GameEvent::StateUpdated(update) => state.apply_update(*update).expect("todo: "),
-                _ => {}
-            }
-        }
+        let state = filter_state(position, &inner.current_state);
 
         observer.initialize_state(&state)?;
 
@@ -70,15 +66,29 @@ impl GameRecorder {
     }
 }
 
-pub(super) async fn run_recorder(mut rx: mpsc::Receiver<GameEvent>, recorder: Arc<GameRecorder>) {
+pub(super) async fn run_recorder(
+    mut rx: mpsc::Receiver<GameEvent>,
+    recorder: Arc<GameRecorder>,
+) -> Result<(), GameError> {
     while let Some(event) = rx.recv().await {
-        let mut inner = recorder.inner.lock().unwrap();
-        inner.recorded_events.push(event);
+        let RecorderInner {
+            current_state,
+            recorded_events,
+            observers,
+        } = &mut *recorder.inner.lock().unwrap();
 
-        for ObserverWithPos { position, observer } in &mut inner.observers {
+        recorded_events.push(event);
+
+        for ObserverWithPos { position, observer } in observers {
             // ignore notify errors.
             // Todo: remove observer if error occurs?
-            let _ = observer.notify_event(filter_event(*position, event));
+            let _ = observer.notify_event(filter_event(&current_state, *position, event)?);
+        }
+
+        match event {
+            GameEvent::StateUpdated(update) => current_state.apply_update(update)?,
+            _ => {}
         }
     }
+    Ok(())
 }

@@ -52,7 +52,7 @@ impl CardSelector {
 
     pub fn index(self, cards_len: usize) -> usize {
         match self {
-            CardSelector::Last(_) => cards_len - 1,
+            CardSelector::Last(_) => cards_len.saturating_sub(1),
             CardSelector::First(_) => 0,
             CardSelector::Index { index, .. } => index,
             CardSelector::PushLast(_) => cards_len,

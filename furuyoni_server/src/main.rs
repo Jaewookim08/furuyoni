@@ -61,7 +61,11 @@ async fn spawn_game(socket: TcpStream) {
 
     let (game, recorder) = create_game(Box::new(p1), Box::new(p2));
 
-    let game_res = game.run().await.expect("todo: handle game run errors");
+    let game_res = game
+        .run()
+        .await
+        .unwrap_or_else(|e| panic!("todo: handle game run errors: {}", e));
+
     let recorded = Arc::into_inner(recorder).unwrap().into_recorded_game();
 
     let winner_str = match game_res {

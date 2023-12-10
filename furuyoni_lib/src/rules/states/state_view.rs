@@ -217,7 +217,6 @@ impl StateView {
                 };
 
                 let from_index = from.index(from_cards.len());
-
                 if from_index >= from_cards.len() {
                     return Err(InvalidGameViewUpdateError::CardSelectorOutOfBounds);
                 }
