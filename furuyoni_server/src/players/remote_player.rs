@@ -35,7 +35,7 @@ impl RemotePlayer {
 }
 #[async_trait]
 impl Player for RemotePlayer {
-    async fn get_main_phase_action(
+    async fn main_phase_action(
         &mut self,
         state: &StateView,
         playable_cards: &Vec<PlayableCardSelector>,

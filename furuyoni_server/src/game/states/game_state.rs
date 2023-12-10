@@ -38,7 +38,7 @@ pub(crate) enum InvalidGameUpdateError {
 }
 
 impl GameStateInner {
-    fn get_petals_mut(&mut self, petal_position: PetalsPosition) -> &'_ mut Petals {
+    fn petals_mut(&mut self, petal_position: PetalsPosition) -> &'_ mut Petals {
         match petal_position {
             PetalsPosition::Distance => &mut self.distance,
             PetalsPosition::Dust => &mut self.dust,
@@ -48,7 +48,7 @@ impl GameStateInner {
         }
     }
 
-    pub fn get_petals(&self, petal_position: PetalsPosition) -> &Petals {
+    pub fn petals(&self, petal_position: PetalsPosition) -> &Petals {
         match petal_position {
             PetalsPosition::Distance => &self.distance,
             PetalsPosition::Dust => &self.dust,
@@ -58,7 +58,7 @@ impl GameStateInner {
         }
     }
 
-    fn get_cards_mut(&mut self, cards_position: CardsPosition) -> &mut Cards {
+    fn cards_mut(&mut self, cards_position: CardsPosition) -> &mut Cards {
         match cards_position {
             CardsPosition::Hand(p) => &mut self.player_states[p].hand,
             CardsPosition::Playing(p) => &mut self.player_states[p].hand,
@@ -69,7 +69,7 @@ impl GameStateInner {
         }
     }
 
-    pub fn get_cards(&self, cards_position: CardsPosition) -> &Cards {
+    pub fn cards(&self, cards_position: CardsPosition) -> &Cards {
         match cards_position {
             CardsPosition::Hand(p) => &self.player_states[p].hand,
             CardsPosition::Playing(p) => &self.player_states[p].hand,
@@ -107,13 +107,13 @@ impl GameState {
 
         match update {
             UpdateGameState::TransferPetals { from, to, amount } => {
-                let from_petals = state.get_petals_mut(from);
+                let from_petals = state.petals_mut(from);
                 let from_new = from_petals
                     .count
                     .checked_sub(amount)
                     .ok_or(InvalidGameUpdateError::InvalidPetalTransfer)?;
 
-                let to_petals = state.get_petals_mut(to);
+                let to_petals = state.petals_mut(to);
                 let to_new = to_petals.count + amount;
                 if let Some(max) = to_petals.max
                     && to_new > max
@@ -121,8 +121,8 @@ impl GameState {
                     return Err(InvalidGameUpdateError::InvalidPetalTransfer);
                 }
 
-                state.get_petals_mut(from).count = from_new;
-                state.get_petals_mut(to).count = to_new;
+                state.petals_mut(from).count = from_new;
+                state.petals_mut(to).count = to_new;
             }
             UpdateGameState::AddToVigor { player, diff } => {
                 let vigor = &mut state.player_states[player].vigor;
@@ -139,7 +139,7 @@ impl GameState {
                 state.phase = phase;
             }
             UpdateGameState::TransferCard { from, to } => {
-                let cards_from = self.inner.get_cards_mut(from.cards_position());
+                let cards_from = self.inner.cards_mut(from.cards_position());
 
                 let index_from = from.index(cards_from.len());
                 if index_from >= cards_from.len() || index_from < 0 {
@@ -148,7 +148,7 @@ impl GameState {
 
                 let taken = cards_from.remove(index_from);
 
-                let cards_to = self.inner.get_cards_mut(to.cards_position());
+                let cards_to = self.inner.cards_mut(to.cards_position());
                 let index_to = to.index(cards_to.len());
 
                 if index_to > cards_to.len() || index_to < 0 {

@@ -9,7 +9,7 @@ pub(crate) struct IdlePlayer {}
 
 #[async_trait]
 impl super::Player for IdlePlayer {
-    async fn get_main_phase_action(
+    async fn main_phase_action(
         &mut self,
         _state: &StateView,
         _playable_cards: &Vec<PlayableCardSelector>,

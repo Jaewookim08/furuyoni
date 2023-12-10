@@ -9,7 +9,7 @@ pub(crate) struct CliPlayer {}
 
 #[async_trait]
 impl super::Player for CliPlayer {
-    async fn get_main_phase_action(
+    async fn main_phase_action(
         &mut self,
         state: &StateView,
         _playable_cards: &Vec<PlayableCardSelector>,
@@ -20,7 +20,7 @@ impl super::Player for CliPlayer {
 
         println!("actions: {performable_basic_actions:?}");
 
-        let index = Self::get_index_lower_than(performable_basic_actions.len() + 1).unwrap();
+        let index = Self::input_index_lower_than(performable_basic_actions.len() + 1).unwrap();
 
         if index == performable_basic_actions.len() {
             Ok(MainPhaseAction::EndMainPhase)
@@ -59,7 +59,7 @@ impl CliPlayer {
         Ok(val)
     }
 
-    fn get_index_lower_than(upper_bound: usize) -> Result<usize, std::io::Error> {
+    fn input_index_lower_than(upper_bound: usize) -> Result<usize, std::io::Error> {
         let val = loop {
             let a = Self::get_input::<usize>()?;
             if a < upper_bound {

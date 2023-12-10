@@ -9,7 +9,7 @@ use furuyoni_lib::rules::PlayerPos;
 
 #[async_trait]
 pub(crate) trait Player: GameObserver {
-    async fn get_main_phase_action(
+    async fn main_phase_action(
         &mut self,
         state: &StateView,
         playable_cards: &Vec<PlayableCardSelector>,

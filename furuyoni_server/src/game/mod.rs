@@ -109,8 +109,7 @@ impl Game {
     pub async fn run(mut self) -> Result<GameResult, GameError> {
         // broadcast state.
         for (p, player) in self.players.iter_mut() {
-            player
-                .initialize_state(&get_state_view(ObservePosition::RelativeTo(p), &self.state))?;
+            player.initialize_state(&filter_state(ObservePosition::RelativeTo(p), &self.state))?;
         }
 
         self.notify_game_start().await?;
@@ -169,7 +168,7 @@ impl Game {
 
     fn notify_all(&mut self, event: GameEvent) -> Result<(), GameError> {
         for (pos, player) in self.players.iter_mut() {
-            player.notify_event(get_event_view(ObservePosition::RelativeTo(pos), event))?;
+            player.notify_event(filter_event(ObservePosition::RelativeTo(pos), event))?;
         }
         if let Some(tx) = &self.event_tx {
             match tx.try_send(event) {
@@ -265,10 +264,10 @@ impl Game {
             let mut cnt_try = 0;
             let action = loop {
                 let viewable_state =
-                    get_state_view(ObservePosition::RelativeTo(turn_player), &self.state);
+                    filter_state(ObservePosition::RelativeTo(turn_player), &self.state);
 
                 let action = self.players[turn_player]
-                    .get_main_phase_action(
+                    .main_phase_action(
                         &viewable_state,
                         &playable_cards,
                         &doable_basic_actions,
@@ -329,7 +328,7 @@ impl Game {
         petals_pos: PetalsPosition,
         amount: u32,
     ) -> Result<GameControlFlow, GameError> {
-        let amount = std::cmp::min(self.state.get_petals(petals_pos).count, amount);
+        let amount = std::cmp::min(self.state.petals(petals_pos).count, amount);
 
         self.transfer_petals(petals_pos, PetalsPosition::Dust, amount)?;
         Ok(Continue)
@@ -440,7 +439,7 @@ impl Game {
         Ok(Continue)
     }
 
-    fn get_master_interval(&self) -> i32 {
+    fn master_interval(&self) -> i32 {
         2
     }
 
@@ -450,7 +449,7 @@ impl Game {
         match action {
             BasicAction::MoveForward => {
                 can_transfer_petals(PetalsPosition::Distance, PetalsPosition::Aura(player))
-                    && self.state.distance.count as i32 > self.get_master_interval()
+                    && self.state.distance.count as i32 > self.master_interval()
             }
             BasicAction::MoveBackward => {
                 can_transfer_petals(PetalsPosition::Aura(player), PetalsPosition::Distance)
@@ -487,10 +486,10 @@ impl Game {
     }
 
     fn can_transfer_petals(&self, from: PetalsPosition, to: PetalsPosition, amount: u32) -> bool {
-        if self.state.get_petals(from).count < amount {
+        if self.state.petals(from).count < amount {
             return false;
         }
-        let to_petals = self.state.get_petals(to);
+        let to_petals = self.state.petals(to);
         if let Some(max) = to_petals.max
             && to_petals.count + amount > max
         {
@@ -501,12 +500,12 @@ impl Game {
     }
 
     fn can_transfer_card(&self, from: CardSelector, to: CardSelector) -> bool {
-        let from_cards = self.state.get_cards(from.cards_position());
+        let from_cards = self.state.cards(from.cards_position());
         let from_index = from.index(from_cards.len());
         if from_cards.len() <= from_index || from_index < 0 {
             return false;
         }
-        let to_cards = self.state.get_cards(to.cards_position());
+        let to_cards = self.state.cards(to.cards_position());
         let to_index = to.index(to_cards.len());
 
         if to_cards.len() < to_index || to_index < 0 {
@@ -531,7 +530,7 @@ impl Game {
     }
 }
 
-fn get_event_view(position: ObservePosition, event: GameEvent) -> GameEvent /* Todo: to Option<GameEvent> */
+fn filter_event(position: ObservePosition, event: GameEvent) -> GameEvent /* Todo: to Option<GameEvent> */
 {
     // Todo:
     event
@@ -586,7 +585,7 @@ fn default_player_states() -> PlayerStates {
     PlayerStates::new(p1_state, p2_state)
 }
 
-fn get_state_view(viewed_from: ObservePosition, state: &GameState) -> StateView {
+fn filter_state(viewed_from: ObservePosition, state: &GameState) -> StateView {
     let player_states = &state.player_states;
 
     StateView {

@@ -129,11 +129,10 @@ fn get_string(me: PlayerPos, state: &StateView, picker: &StateStringPicker) -> S
         StateStringPicker::Turn => state.turn.to_string(),
         StateStringPicker::Vigor(rp) => get_player(rp).vigor.to_string(),
         StateStringPicker::PetalsCount(pos) => {
-            state.get_petals(pos.into_absolute(me)).count.to_string()
+            state.petals(pos.into_absolute(me)).count.to_string()
         }
-        StateStringPicker::CardsCount(pos) => state
-            .get_cards_view(pos.into_absolute(me))
-            .len()
-            .to_string(),
+        StateStringPicker::CardsCount(pos) => {
+            state.cards_view(pos.into_absolute(me)).len().to_string()
+        }
     }
 }

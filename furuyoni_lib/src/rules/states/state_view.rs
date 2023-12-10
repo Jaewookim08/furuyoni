@@ -26,7 +26,7 @@ impl CardsView {
         }
     }
 
-    fn get_mut_ref(&mut self) -> CardsViewMutRef {
+    fn get_ref_mut(&mut self) -> CardsViewMutRef {
         match self {
             CardsView::Open { cards } => CardsViewMutRef::Open { cards },
             CardsView::Hidden { length } => CardsViewMutRef::Hidden { length },
@@ -140,7 +140,7 @@ pub enum InvalidGameViewUpdateError {
 }
 
 impl StateView {
-    pub fn get_petals(&self, petal_position: PetalsPosition) -> &Petals {
+    pub fn petals(&self, petal_position: PetalsPosition) -> &Petals {
         match petal_position {
             PetalsPosition::Distance => &self.distance,
             PetalsPosition::Dust => &self.dust,
@@ -150,7 +150,7 @@ impl StateView {
         }
     }
 
-    fn get_petals_mut(&mut self, petal_position: PetalsPosition) -> &'_ mut Petals {
+    fn petals_mut(&mut self, petal_position: PetalsPosition) -> &'_ mut Petals {
         match petal_position {
             PetalsPosition::Distance => &mut self.distance,
             PetalsPosition::Dust => &mut self.dust,
@@ -160,7 +160,7 @@ impl StateView {
         }
     }
 
-    pub fn get_cards_view(&self, cards_position: CardsPosition) -> CardsViewRef {
+    pub fn cards_view(&self, cards_position: CardsPosition) -> CardsViewRef {
         match cards_position {
             CardsPosition::Hand(p) => self.player_states[p].hand.get_ref(),
             CardsPosition::Playing(p) => (&self.player_states[p].playing).into(),
@@ -171,14 +171,14 @@ impl StateView {
         }
     }
 
-    fn get_cards_view_mut(&mut self, cards_position: CardsPosition) -> CardsViewMutRef {
+    fn cards_view_mut(&mut self, cards_position: CardsPosition) -> CardsViewMutRef {
         match cards_position {
-            CardsPosition::Hand(p) => self.player_states[p].hand.get_mut_ref(),
+            CardsPosition::Hand(p) => self.player_states[p].hand.get_ref_mut(),
             CardsPosition::Playing(p) => (&mut self.player_states[p].playing).into(),
-            CardsPosition::Deck(p) => self.player_states[p].deck.get_mut_ref(),
+            CardsPosition::Deck(p) => self.player_states[p].deck.get_ref_mut(),
             CardsPosition::Enhancements(p) => (&mut self.player_states[p].enhancements).into(),
             CardsPosition::Played(p) => (&mut self.player_states[p].played_pile).into(),
-            CardsPosition::Discards(p) => self.player_states[p].discard_pile.get_mut_ref(),
+            CardsPosition::Discards(p) => self.player_states[p].discard_pile.get_ref_mut(),
         }
     }
 
@@ -189,13 +189,13 @@ impl StateView {
     ) -> Result<(), InvalidGameViewUpdateError> {
         match update {
             UpdateGameState::TransferPetals { from, to, amount } => {
-                let from_petals = self.get_petals_mut(from);
+                let from_petals = self.petals_mut(from);
                 from_petals.count = from_petals
                     .count
                     .checked_sub(amount)
                     .ok_or(InvalidGameViewUpdateError::InvalidPetalTransfer)?;
 
-                let to_petals = self.get_petals_mut(to);
+                let to_petals = self.petals_mut(to);
                 to_petals.count += amount;
             }
             UpdateGameState::AddToVigor { player, diff } => {
@@ -209,7 +209,7 @@ impl StateView {
                 self.phase = phase;
             }
             UpdateGameState::TransferCard { from, to } => {
-                let from_cards = match self.get_cards_view_mut(from.cards_position()) {
+                let from_cards = match self.cards_view_mut(from.cards_position()) {
                     CardsViewMutRef::Open { cards } => cards,
                     CardsViewMutRef::Hidden { .. } => {
                         return Err(InvalidGameViewUpdateError::VisibilityMismatch);
@@ -223,13 +223,13 @@ impl StateView {
                 }
                 let taken = from_cards.remove(from_index);
 
-                let mut to_cards = self.get_cards_view_mut(to.cards_position());
+                let mut to_cards = self.cards_view_mut(to.cards_position());
                 let to_index = to.index(to_cards.len());
 
                 to_cards.insert_card(to_index, taken)?;
             }
             UpdateGameState::TransferCardFromHidden { from, to, card } => {
-                let cards_from_len = match self.get_cards_view_mut(from) {
+                let cards_from_len = match self.cards_view_mut(from) {
                     CardsViewMutRef::Open { .. } => {
                         return Err(InvalidGameViewUpdateError::VisibilityMismatch);
                     }
@@ -238,7 +238,7 @@ impl StateView {
 
                 *cards_from_len -= 1;
 
-                let mut cards_to = self.get_cards_view_mut(to.cards_position());
+                let mut cards_to = self.cards_view_mut(to.cards_position());
                 cards_to.insert_card(to.index(cards_to.len()), card.clone())?;
             }
         }

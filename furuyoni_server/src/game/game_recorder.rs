@@ -1,5 +1,5 @@
 use crate::game::states::GameState;
-use crate::game::{get_event_view, get_state_view};
+use crate::game::{filter_event, filter_state};
 use crate::game_watcher::{GameObserver, NotifyFailedError};
 use furuyoni_lib::rules::events::GameEvent;
 use furuyoni_lib::rules::ObservePosition;
@@ -44,7 +44,7 @@ impl GameRecorder {
     ) -> Result<(), NotifyFailedError> {
         let mut inner = self.inner.lock().unwrap();
 
-        let mut state = get_state_view(position, &self.initial_game_state);
+        let mut state = filter_state(position, &self.initial_game_state);
 
         for e in &inner.recorded_events {
             match e {
@@ -78,7 +78,7 @@ pub(super) async fn run_recorder(mut rx: mpsc::Receiver<GameEvent>, recorder: Ar
         for ObserverWithPos { position, observer } in &mut inner.observers {
             // ignore notify errors.
             // Todo: remove observer if error occurs?
-            let _ = observer.notify_event(get_event_view(*position, event));
+            let _ = observer.notify_event(filter_event(*position, event));
         }
     }
 }

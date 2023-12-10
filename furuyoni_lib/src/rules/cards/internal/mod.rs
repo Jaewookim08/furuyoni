@@ -17,7 +17,7 @@ pub enum CardsPosition {
 }
 
 impl CardsPosition {
-    pub fn get_player_pos(&self) -> PlayerPos {
+    pub fn player_pos(&self) -> PlayerPos {
         match self {
             CardsPosition::Hand(p)
             | CardsPosition::Playing(p)
