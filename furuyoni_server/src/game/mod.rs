@@ -337,12 +337,14 @@ impl Game {
     ) -> Result<GameControlFlow, GameError> {
         let amount = std::cmp::min(self.state.petals(petals_pos).count, amount);
 
-        self.transfer_petals(petals_pos, PetalsPosition::Dust, amount)?;
-        Ok(Continue)
-    }
+        let move_to = match petals_pos {
+            PetalsPosition::Aura(_) | PetalsPosition::Flare(_) => PetalsPosition::Dust,
+            PetalsPosition::Life(p) => PetalsPosition::Flare(p),
+            _ => panic!(),
+        };
 
-    fn can_afford_damage(&self, petals_pos: PetalsPosition, amount: u32) -> bool {
-        self.can_transfer_petals(petals_pos, PetalsPosition::Dust, amount)
+        self.transfer_petals(petals_pos, move_to, amount)?;
+        Ok(Continue)
     }
 
     fn add_to_vigor(&mut self, player: PlayerPos, diff: i32) -> Result<(), GameError> {
