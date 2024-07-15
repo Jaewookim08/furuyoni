@@ -1,19 +1,18 @@
+use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
 use bevy_tokio_tasks::TaskContext;
-use furuyoni_lib::rules::cards::{ Card, CardsPosition };
-use furuyoni_lib::rules::events::GameEvent;
+use furuyoni_lib::rules::cards::{ Card, CardSelector, CardsPosition };
+use furuyoni_lib::rules::events::{ GameEvent, UpdateGameState };
 use furuyoni_lib::rules::states::{ InvalidGameViewUpdateError, PetalsPosition, StateView };
-use furuyoni_lib::rules::{ GameResult, PlayerPos };
+use furuyoni_lib::rules::PlayerPos;
 use thiserror::Error;
 
 pub(crate) struct BoardPlugin;
 
-pub(crate) fn initialize_board(ctx: &TaskContext, state: StateView, me: PlayerPos) {
-    ctx.dispatch_to_main_thread(move |ctx| {
-        ctx.world.insert_resource(BoardState { 0: state });
-        ctx.world.insert_resource(SelfPlayerPos { 0: me });
-    });
+pub(crate) fn initialize_board(world: &mut World, state: StateView, me: PlayerPos) {
+    world.insert_resource(BoardState { 0: state });
+    world.insert_resource(SelfPlayerPos { 0: me });
 }
 
 #[derive(Debug, Error)]
@@ -23,11 +22,8 @@ pub(crate) enum BoardError {
     ),
 }
 
-/// display the event in the board and return if the game has ended. 
-pub(crate) async fn apply_event(
-    ctx: &TaskContext,
-    event: GameEvent
-) -> Result<(), BoardError> {
+/// display the event in the board and return if the game has ended.
+pub(crate) async fn apply_event(ctx: &TaskContext, event: GameEvent) -> Result<(), BoardError> {
     match event {
         GameEvent::StateUpdated(update) => {
             ctx.run_on_main_thread(
@@ -37,6 +33,31 @@ pub(crate) async fn apply_event(
                     Ok(())
                 }
             ).await?;
+
+            match update {
+                UpdateGameState::TransferCardFromHidden { from, to, card } => {
+                    let initial_position = match from {
+                        CardsPosition::Deck(_) =>
+                            Vec3::new(460.0, 0.0, 0.0) /* TODO: get position by querying "Deck" */,
+                        | CardsPosition::Hand(_)
+                        | CardsPosition::Playing(_)
+                        | CardsPosition::Discards(_)
+                        | CardsPosition::Enhancements(_)
+                        | CardsPosition::Played(_) => todo!(),
+                    };
+
+                    // let slot = match to {
+                    //     CardSelector::PushLast(_) => todo!(),
+                    //     CardSelector::Last(_) => todo!(),
+                    //     CardSelector::First(_) => todo!(),
+                    //     CardSelector::Index { position, index } => todo!(),
+                    // };
+                    ctx.run_on_main_thread(move |ctx| {
+                        create_card_object(ctx.world, card, initial_position)
+                    }).await;
+                }
+                _ => /* TODO */ (),
+            }
         }
         GameEvent::PerformBasicAction { .. } => {/* Todo */}
         GameEvent::GameEnd { result: _ } => {
@@ -66,9 +87,7 @@ pub(crate) struct CardObject {
 }
 
 #[derive(Debug, Component)]
-pub(crate) struct Hand {
-    card: Card,
-}
+pub(crate) struct Hand;
 
 #[derive(Resource)]
 struct BoardState(pub StateView);
@@ -207,4 +226,19 @@ fn get_string(me: PlayerPos, state: &StateView, picker: &StateStringPicker) -> S
             state.cards_view(pos.into_absolute(me)).len().to_string()
         }
     }
+}
+
+fn create_card_object(world: &mut World, card: Card, initial_position: Vec3) {
+    world.run_system_once(move |mut commands: Commands, asset_server: Res<AssetServer>| {
+        commands
+            .spawn((
+                SpriteBundle {
+                    texture: asset_server.load("sprites/cardback_normal.png"),
+                    transform: Transform::from_translation(initial_position),
+                    ..default()
+                },
+                CardObject { card },
+            ));
+            // .set_parent_in_place(slot);
+    });
 }
