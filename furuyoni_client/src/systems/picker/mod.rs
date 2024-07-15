@@ -1,7 +1,7 @@
 use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::*;
 use bevy_tokio_tasks::TaskContext;
-use furuyoni_lib::rules::player_actions::{BasicAction, BasicActionCost, MainPhaseAction};
+use furuyoni_lib::rules::player_actions::{BasicAction, BasicActionCost};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::oneshot;
@@ -75,7 +75,7 @@ impl Plugin for PickerPlugin {
             .register_type::<PickerButton>()
             .add_systems(
                 Update,
-                (poll_pickers.run_if(resource_exists::<PickerCallBack>()),),
+                (poll_pickers.run_if(resource_exists::<PickerCallBack>),),
             );
     }
 }

@@ -10,11 +10,11 @@ use crate::systems::board_system::{
 };
 use crate::systems::picker::{Pickable, PickerButton, PickerPlugin};
 use bevy::app::AppExit;
+use bevy::color::palettes::css::GREEN;
 use bevy::prelude::*;
 use bevy::text::TextStyle;
 use bevy::ui::PositionType;
 use bevy::DefaultPlugins;
-use bevy_editor_pls::prelude::*;
 use bevy_tokio_tasks::{TaskContext, TokioTasksPlugin, TokioTasksRuntime};
 use furuyoni_lib::net::frames::*;
 use furuyoni_lib::net::message_sender::IntoMessageMap;
@@ -36,7 +36,6 @@ fn main() {
         .add_plugins(PickerPlugin)
         .add_plugins(BoardPlugin)
         .add_plugins(TokioTasksPlugin::default())
-        .add_plugins(EditorPlugin::default())
         .add_systems(Startup, (setup, spawn_logic_thread))
         // .add_systems(Startup, load_scene)
         .run();
@@ -50,7 +49,7 @@ pub(crate) fn spawn_logic_thread(runtime: ResMut<TokioTasksRuntime>) {
             Err(e) => {
                 error!("{e}");
                 ctx.run_on_main_thread(move |ctx| {
-                    ctx.world.send_event(AppExit);
+                    ctx.world.send_event(AppExit::Success);
                 })
                 .await;
             }
@@ -103,11 +102,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     TextStyle {
                         font: font.clone(),
                         font_size: 50.0,
-                        color: Color::GREEN,
+                        color: GREEN.into(),
                     },
                 ),
             ])
-            .with_text_alignment(TextAlignment::Left)
+            .with_text_justify(JustifyText::Left)
             .with_style(Style {
                 position_type: PositionType::Absolute,
                 top: Val::Percent(t),

@@ -83,8 +83,8 @@ impl Plugin for BoardPlugin {
             .add_systems(
                 Update,
                 display_board
-                    .run_if(resource_exists::<BoardState>())
-                    .run_if(resource_exists::<SelfPlayerPos>()),
+                    .run_if(resource_exists::<BoardState>)
+                    .run_if(resource_exists::<SelfPlayerPos>),
             );
     }
 }
