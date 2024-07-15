@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
 use bevy_tokio_tasks::TaskContext;
-use furuyoni_lib::rules::cards::{Card, CardsPosition};
+use furuyoni_lib::rules::cards::{ Card, CardsPosition };
 use furuyoni_lib::rules::events::GameEvent;
-use furuyoni_lib::rules::states::{InvalidGameViewUpdateError, PetalsPosition, StateView};
-use furuyoni_lib::rules::{GameResult, PlayerPos};
+use furuyoni_lib::rules::states::{ InvalidGameViewUpdateError, PetalsPosition, StateView };
+use furuyoni_lib::rules::{ GameResult, PlayerPos };
 use thiserror::Error;
 
 pub(crate) struct BoardPlugin;
@@ -18,35 +18,37 @@ pub(crate) fn initialize_board(ctx: &TaskContext, state: StateView, me: PlayerPo
 
 #[derive(Debug, Error)]
 pub(crate) enum BoardError {
-    #[error("Tried to do an invalid update to the game state: {0}")]
-    InvalidUpdate(#[from] InvalidGameViewUpdateError),
+    #[error("Tried to do an invalid update to the game state: {0}")] InvalidUpdate(
+        #[from] InvalidGameViewUpdateError,
+    ),
 }
 
+/// display the event in the board and return if the game has ended. 
 pub(crate) async fn apply_event(
     ctx: &TaskContext,
-    event: GameEvent,
-) -> Result<Option<GameResult>, BoardError> {
+    event: GameEvent
+) -> Result<(), BoardError> {
     match event {
         GameEvent::StateUpdated(update) => {
-            ctx.run_on_main_thread(move |ctx| -> Result<(), BoardError> {
-                let mut state = ctx.world.get_resource_mut::<BoardState>().unwrap();
-                state.0.apply_update(update)?;
-                Ok(())
-            })
-            .await?;
+            ctx.run_on_main_thread(
+                move |ctx| -> Result<(), BoardError> {
+                    let mut state = ctx.world.get_resource_mut::<BoardState>().unwrap();
+                    state.0.apply_update(update)?;
+                    Ok(())
+                }
+            ).await?;
         }
-        GameEvent::PerformBasicAction { .. } => { /* Todo */ }
-        GameEvent::GameEnd { result } => {
-            return Ok(Some(result));
+        GameEvent::PerformBasicAction { .. } => {/* Todo */}
+        GameEvent::GameEnd { result: _ } => {
+            // TODO:
         }
     }
-    Ok(None)
+    Ok(())
 }
 
 pub(crate) async fn check_game_state(ctx: &TaskContext, state: StateView) {
     ctx.run_on_main_thread(move |ctx| {
-        let resource = ctx
-            .world
+        let resource = ctx.world
             .get_resource::<BoardState>()
             .expect("Resource BoardState is missing.");
         if resource.0 != state {
@@ -55,8 +57,7 @@ pub(crate) async fn check_game_state(ctx: &TaskContext, state: StateView) {
             eprintln!("client state: {:?}", resource.0);
             todo!("handle state mismatch: resynchronize...")
         }
-    })
-    .await;
+    }).await;
 }
 
 #[derive(Debug, Component)]
@@ -84,7 +85,7 @@ impl Plugin for BoardPlugin {
                 Update,
                 display_board
                     .run_if(resource_exists::<BoardState>)
-                    .run_if(resource_exists::<SelfPlayerPos>),
+                    .run_if(resource_exists::<SelfPlayerPos>)
             );
     }
 }
@@ -92,12 +93,15 @@ impl Plugin for BoardPlugin {
 fn display_board(
     state: Res<BoardState>,
     self_pos: Res<SelfPlayerPos>,
-    mut query: Query<(&mut Text, &StateLabel)>,
+    mut query: Query<(&mut Text, &StateLabel)>
 ) {
     if state.is_changed() {
         for (mut text, state_label) in &mut query {
-            text.sections[state_label.text_section_index].value =
-                get_string(self_pos.0, &state.0, &state_label.picker);
+            text.sections[state_label.text_section_index].value = get_string(
+                self_pos.0,
+                &state.0,
+                &state_label.picker
+            );
         }
     }
 }

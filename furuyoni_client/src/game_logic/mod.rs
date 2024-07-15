@@ -57,7 +57,9 @@ pub(crate) async fn run_game(
     let result = loop {
         match responder.receive().await? {
             GameToPlayerRequest::NotifyEvent(event) => {
-                if let Some(result) = board_system::apply_event(&ctx, event).await? {
+                board_system::apply_event(&ctx, event).await?;
+                
+                if let GameEvent::GameEnd { result } = event {
                     break result;
                 }
             }
