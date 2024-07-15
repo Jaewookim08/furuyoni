@@ -1,8 +1,8 @@
 use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::*;
 use bevy_tokio_tasks::TaskContext;
-use furuyoni_lib::rules::player_actions::{BasicAction, BasicActionCost};
-use serde::{Deserialize, Serialize};
+use furuyoni_lib::rules::player_actions::{ BasicAction, BasicActionCost };
+use serde::{ Deserialize, Serialize };
 use std::sync::Arc;
 use tokio::sync::oneshot;
 
@@ -15,23 +15,26 @@ pub enum PickMainPhaseActionResult {
 
 pub async fn pick_main_phase_action(
     mut ctx: TaskContext,
-    allowed_costs: Arc<Vec<BasicActionCost>>,
+    allowed_costs: Arc<Vec<BasicActionCost>>
 ) -> PickMainPhaseActionResult {
     loop {
         let allowed_costs = allowed_costs.clone();
-        let picked = pick_anything(&mut ctx, move |p| match p {
-            Pickable::EndMainPhase => true,
-            Pickable::Vigor => allowed_costs.contains(&BasicActionCost::Vigor),
-            _ => false,
-        })
-        .await;
+        let picked = pick_anything(&mut ctx, move |p| {
+            match p {
+                Pickable::EndMainPhase => true,
+                Pickable::Vigor => allowed_costs.contains(&BasicActionCost::Vigor),
+                _ => false,
+            }
+        }).await;
 
         match picked {
-            Pickable::EndMainPhase => return PickMainPhaseActionResult::EndMainPhase,
-            Pickable::Vigor => {
-                return PickMainPhaseActionResult::PayBasicActionCost(BasicActionCost::Vigor)
+            Pickable::EndMainPhase => {
+                return PickMainPhaseActionResult::EndMainPhase;
             }
-            _ => { /*retry */ }
+            Pickable::Vigor => {
+                return PickMainPhaseActionResult::PayBasicActionCost(BasicActionCost::Vigor);
+            }
+            _ => {/*retry */}
         }
     }
 }
@@ -43,21 +46,26 @@ pub enum PickBasicActionResult {
 
 pub async fn pick_basic_action(
     ctx: &TaskContext,
-    allowed_basic_actions: Arc<Vec<BasicAction>>,
+    allowed_basic_actions: Arc<Vec<BasicAction>>
 ) -> PickBasicActionResult {
     loop {
         let allowed_basic_actions = allowed_basic_actions.clone();
-        let picked = pick_anything(&ctx, move |p| match p {
-            Pickable::Cancel => true,
-            Pickable::BasicAction(b) => allowed_basic_actions.contains(&b),
-            _ => false,
-        })
-        .await;
+        let picked = pick_anything(&ctx, move |p| {
+            match p {
+                Pickable::Cancel => true,
+                Pickable::BasicAction(b) => allowed_basic_actions.contains(&b),
+                _ => false,
+            }
+        }).await;
 
         match picked {
-            Pickable::Cancel => return PickBasicActionResult::Cancel,
-            Pickable::BasicAction(action) => return PickBasicActionResult::BasicAction(action),
-            _ => { /*retry */ }
+            Pickable::Cancel => {
+                return PickBasicActionResult::Cancel;
+            }
+            Pickable::BasicAction(action) => {
+                return PickBasicActionResult::BasicAction(action);
+            }
+            _ => {/*retry */}
         }
     }
 }
@@ -73,10 +81,7 @@ impl Plugin for PickerPlugin {
             // .add_state::<PickingState>()
             .register_type::<Pickable>()
             .register_type::<PickerButton>()
-            .add_systems(
-                Update,
-                (poll_pickers.run_if(resource_exists::<PickerCallBack>),),
-            );
+            .add_systems(Update, (poll_pickers.run_if(resource_exists::<PickerCallBack>),));
     }
 }
 
@@ -98,18 +103,17 @@ pub enum Pickable {
 
 async fn pick_anything(
     ctx: &TaskContext,
-    predicate: impl Fn(Pickable) -> bool + Send + Sync + 'static,
+    predicate: impl (Fn(Pickable) -> bool) + Send + Sync + 'static
 ) -> Pickable {
     let (tx, rx) = oneshot::channel();
 
     ctx.dispatch_to_main_thread(move |ctx| {
-        ctx.world
-            .insert_resource(PickerCallBack { sender: Some(tx) });
+        ctx.world.insert_resource(PickerCallBack { sender: Some(tx) });
         ctx.world.run_system_once(enable_pickers_with(predicate));
     });
 
     let ret = rx.await.expect(
-        "todo: Picker system failed. Maybe the current request have been cancelled by another one.",
+        "todo: Picker system failed. Maybe the current request have been cancelled by another one."
     );
 
     ctx.dispatch_to_main_thread(move |ctx| {
@@ -120,7 +124,7 @@ async fn pick_anything(
 }
 
 fn enable_pickers_with(
-    predicate: impl Fn(Pickable) -> bool + Send + Sync,
+    predicate: impl (Fn(Pickable) -> bool) + Send + Sync
 ) -> impl Fn(Query<(&PickerButton, &mut Visibility)>) + Send + Sync {
     move |mut query: Query<(&PickerButton, &mut Visibility)>| {
         for (picker_button, mut visibility) in query.iter_mut() {
@@ -135,7 +139,7 @@ fn enable_pickers_with(
 
 fn poll_pickers(
     mut callback: ResMut<PickerCallBack>,
-    basic_action_buttons: Query<(&Interaction, &PickerButton), Changed<Interaction>>,
+    basic_action_buttons: Query<(&Interaction, &PickerButton), Changed<Interaction>>
 ) {
     if callback.sender.is_none() {
         return;
