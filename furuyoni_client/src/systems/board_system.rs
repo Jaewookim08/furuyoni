@@ -2,7 +2,7 @@ use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::*;
 use bevy::reflect::Reflect;
 use bevy_tokio_tasks::TaskContext;
-use furuyoni_lib::rules::cards::{ Card, CardSelector, CardsPosition };
+use furuyoni_lib::rules::cards::{ Card, CardsPosition };
 use furuyoni_lib::rules::events::{ GameEvent, UpdateGameState };
 use furuyoni_lib::rules::states::{ InvalidGameViewUpdateError, PetalsPosition, StateView };
 use furuyoni_lib::rules::PlayerPos;
@@ -23,7 +23,11 @@ pub(crate) enum BoardError {
 }
 
 /// display the event in the board and return if the game has ended.
-pub(crate) async fn apply_event(ctx: &TaskContext, event: GameEvent) -> Result<(), BoardError> {
+pub(crate) async fn apply_event(
+    ctx: &TaskContext,
+    event: GameEvent,
+    me: PlayerPos
+) -> Result<(), BoardError> {
     match event {
         GameEvent::StateUpdated(update) => {
             ctx.run_on_main_thread(
@@ -36,24 +40,28 @@ pub(crate) async fn apply_event(ctx: &TaskContext, event: GameEvent) -> Result<(
 
             match update {
                 UpdateGameState::TransferCardFromHidden { from, to, card } => {
-                    let initial_position = match from {
-                        CardsPosition::Deck(_) =>
-                            Vec3::new(460.0, 0.0, 0.0) /* TODO: get position by querying "Deck" */,
-                        | CardsPosition::Hand(_)
-                        | CardsPosition::Playing(_)
-                        | CardsPosition::Discards(_)
-                        | CardsPosition::Enhancements(_)
-                        | CardsPosition::Played(_) => todo!(),
-                    };
-
-                    // let slot = match to {
-                    //     CardSelector::PushLast(_) => todo!(),
-                    //     CardSelector::Last(_) => todo!(),
-                    //     CardSelector::First(_) => todo!(),
-                    //     CardSelector::Index { position, index } => todo!(),
-                    // };
                     ctx.run_on_main_thread(move |ctx| {
-                        create_card_object(ctx.world, card, initial_position)
+                        let world = ctx.world;
+                        let card_id = get_card_entity(from, world, me, card);
+                        let slot_id = get_slot_entity(to, world, me);
+                        world.run_system_once(
+                            move |
+                                mut commands: Commands,
+                                mut transform_params: ParamSet<
+                                    (TransformHelper, Query<&mut Transform>)
+                                >
+                            | {
+                                // Put the card as a child of the slot while retaining the card's global position.
+                                // Note that set_parent_in_place doesn't work because the 'GlobalPosition's are not yet evaluated.
+                                let card_global = transform_params.p0().compute_global_transform(card_id).unwrap();
+                                let slot_global = transform_params.p0().compute_global_transform(slot_id).unwrap();
+                                let mut transforms = transform_params.p1();
+                                let mut card_local = transforms.get_mut(card_id).unwrap();
+                                *card_local = card_global.reparented_to(&slot_global);
+                                
+                                commands.entity(card_id).set_parent(slot_id);
+                            }
+                        );
                     }).await;
                 }
                 _ => /* TODO */ (),
@@ -65,6 +73,65 @@ pub(crate) async fn apply_event(ctx: &TaskContext, event: GameEvent) -> Result<(
         }
     }
     Ok(())
+}
+
+fn get_slot_entity(
+    to: furuyoni_lib::rules::cards::CardSelector,
+    world: &mut World,
+    me: PlayerPos
+) -> Entity {
+    match to.position {
+        CardsPosition::Hand(p) => {
+            world.run_system_once(
+                move |mut commands: Commands, hand_objects: Query<(Entity, &HandObject)>| {
+                    let (hand_id, _) = hand_objects
+                        .iter()
+                        .find(|&(_, h)| { h.relative_pos.into_absolute(me) == p })
+                        .unwrap();
+                    commands.spawn(TransformBundle::default()).set_parent(hand_id).id()
+                }
+            )
+        }
+        CardsPosition::Deck(_) => todo!(),
+        CardsPosition::Playing(_) => todo!(),
+        CardsPosition::Enhancements(_) => todo!(),
+        CardsPosition::Played(_) => todo!(),
+        CardsPosition::Discards(_) => todo!(),
+    }
+}
+
+fn get_card_entity(from: CardsPosition, world: &mut World, me: PlayerPos, card: Card) -> Entity {
+    match from {
+        CardsPosition::Deck(p) =>
+            world.run_system_once(
+                move |
+                    mut commands: Commands,
+                    asset_server: Res<AssetServer>,
+                    deck_objects: Query<(Entity, &DeckObject)>
+                | {
+                    let (deck_id, _) = deck_objects
+                        .iter()
+                        .find(|&(_, d)| { d.relative_pos.into_absolute(me) == p })
+                        .unwrap();
+
+                    let card_id = commands
+                        .spawn((
+                            SpriteBundle {
+                                texture: asset_server.load("sprites/cardback_normal.png"),
+                                ..default()
+                            },
+                            CardObject { card },
+                        ))
+                        .set_parent(deck_id)
+                        .id();
+                    card_id
+                }
+            ),
+        CardsPosition::Hand(_) => todo!(),
+        CardsPosition::Discards(_) => todo!(),
+        CardsPosition::Playing(_) | CardsPosition::Enhancements(_) | CardsPosition::Played(_) =>
+            panic!("Impossible event."),
+    }
 }
 
 pub(crate) async fn check_game_state(ctx: &TaskContext, state: StateView) {
@@ -86,8 +153,33 @@ pub(crate) struct CardObject {
     card: Card,
 }
 
+impl CardObject {
+    pub(crate) fn new(card: Card) -> Self {
+        Self { card }
+    }
+}
+
 #[derive(Debug, Component)]
-pub(crate) struct Hand;
+pub(crate) struct HandObject {
+    relative_pos: PlayerRelativePos,
+}
+
+impl HandObject {
+    pub(crate) fn new(relative_pos: PlayerRelativePos) -> Self {
+        Self { relative_pos }
+    }
+}
+
+#[derive(Debug, Component)]
+pub(crate) struct DeckObject {
+    relative_pos: PlayerRelativePos,
+}
+
+impl DeckObject {
+    pub(crate) fn new(relative_pos: PlayerRelativePos) -> Self {
+        Self { relative_pos }
+    }
+}
 
 #[derive(Resource)]
 struct BoardState(pub StateView);
@@ -226,19 +318,4 @@ fn get_string(me: PlayerPos, state: &StateView, picker: &StateStringPicker) -> S
             state.cards_view(pos.into_absolute(me)).len().to_string()
         }
     }
-}
-
-fn create_card_object(world: &mut World, card: Card, initial_position: Vec3) {
-    world.run_system_once(move |mut commands: Commands, asset_server: Res<AssetServer>| {
-        commands
-            .spawn((
-                SpriteBundle {
-                    texture: asset_server.load("sprites/cardback_normal.png"),
-                    transform: Transform::from_translation(initial_position),
-                    ..default()
-                },
-                CardObject { card },
-            ));
-            // .set_parent_in_place(slot);
-    });
 }

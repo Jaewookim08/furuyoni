@@ -209,21 +209,21 @@ impl StateView {
                 self.phase = phase;
             }
             UpdateGameState::TransferCard { from, to } => {
-                let from_cards = match self.cards_view_mut(from.cards_position()) {
+                let from_cards = match self.cards_view_mut(from.position) {
                     CardsViewMutRef::Open { cards } => cards,
                     CardsViewMutRef::Hidden { .. } => {
                         return Err(InvalidGameViewUpdateError::VisibilityMismatch);
                     }
                 };
 
-                let from_index = from.index(from_cards.len());
+                let from_index = from.case.index(from_cards.len());
                 if from_index >= from_cards.len() {
                     return Err(InvalidGameViewUpdateError::CardSelectorOutOfBounds);
                 }
                 let taken = from_cards.remove(from_index);
 
-                let mut to_cards = self.cards_view_mut(to.cards_position());
-                let to_index = to.index(to_cards.len());
+                let mut to_cards = self.cards_view_mut(to.position);
+                let to_index = to.case.index(to_cards.len());
 
                 to_cards.insert_card(to_index, taken)?;
             }
@@ -237,8 +237,8 @@ impl StateView {
 
                 *cards_from_len -= 1;
 
-                let mut cards_to = self.cards_view_mut(to.cards_position());
-                cards_to.insert_card(to.index(cards_to.len()), card.clone())?;
+                let mut cards_to = self.cards_view_mut(to.position);
+                cards_to.insert_card(to.case.index(cards_to.len()), card.clone())?;
             }
         }
 

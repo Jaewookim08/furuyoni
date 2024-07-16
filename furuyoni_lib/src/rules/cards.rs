@@ -1,6 +1,6 @@
 use crate::rules::attack::Attack;
 use crate::rules::PlayerPos;
-use serde::{Deserialize, Serialize};
+use serde::{ Deserialize, Serialize };
 
 mod yurina;
 
@@ -19,7 +19,7 @@ pub enum CardsPosition {
 impl CardsPosition {
     pub fn player_pos(&self) -> PlayerPos {
         match self {
-            CardsPosition::Hand(p)
+            | CardsPosition::Hand(p)
             | CardsPosition::Playing(p)
             | CardsPosition::Deck(p)
             | CardsPosition::Enhancements(p)
@@ -30,32 +30,28 @@ impl CardsPosition {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
-pub enum CardSelector {
-    PushLast(CardsPosition),
-    Last(CardsPosition),
-    First(CardsPosition),
+pub struct CardSelector {
+    pub position: CardsPosition,
+    pub case: CardSelectorCase,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+pub enum CardSelectorCase {
+    PushLast,
+    Last,
+    First,
     Index {
-        position: CardsPosition,
         index: usize,
     },
 }
 
-impl CardSelector {
-    pub fn cards_position(self) -> CardsPosition {
-        match self {
-            CardSelector::PushLast(p)
-            | CardSelector::Last(p)
-            | CardSelector::First(p)
-            | CardSelector::Index { position: p, .. } => p,
-        }
-    }
-
+impl CardSelectorCase {
     pub fn index(self, cards_len: usize) -> usize {
         match self {
-            CardSelector::Last(_) => cards_len.saturating_sub(1),
-            CardSelector::First(_) => 0,
-            CardSelector::Index { index, .. } => index,
-            CardSelector::PushLast(_) => cards_len,
+            CardSelectorCase::Last => cards_len.saturating_sub(1),
+            CardSelectorCase::First => 0,
+            CardSelectorCase::Index { index, .. } => index,
+            CardSelectorCase::PushLast => cards_len,
         }
     }
 }
@@ -77,7 +73,9 @@ impl Card {
 
 pub enum CardType {
     Normal,
-    Special { flare_cost: u32 },
+    Special {
+        flare_cost: u32,
+    },
 }
 
 pub struct CardData {
@@ -88,7 +86,9 @@ pub struct CardData {
 }
 
 pub enum CardPlayData {
-    AttackCard { attack: Attack },
+    AttackCard {
+        attack: Attack,
+    },
 }
 
 pub enum CardSubType {

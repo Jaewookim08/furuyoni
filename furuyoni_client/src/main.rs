@@ -2,32 +2,35 @@ mod game_logic;
 mod networking;
 mod systems;
 
+use std::f32::consts::PI;
+
 use crate::game_logic::GameLogicError;
 use crate::networking::post_office::spawn_post_office;
 use crate::systems::board_system::{
-    BoardPlugin, CardsRelativePosition, PetalsRelativePosition, PlayerRelativePos, StateLabel,
+    BoardPlugin,
+    CardsRelativePosition,
+    PetalsRelativePosition,
+    PlayerRelativePos,
+    StateLabel,
     StateStringPicker,
 };
-use crate::systems::picker::{Pickable, PickerButton, PickerPlugin};
+use crate::systems::picker::{ Pickable, PickerButton, PickerPlugin };
 use bevy::app::AppExit;
 use bevy::color::palettes::css::GREEN;
 use bevy::prelude::*;
 use bevy::text::TextStyle;
 use bevy::ui::PositionType;
 use bevy::DefaultPlugins;
-use bevy_tokio_tasks::{TaskContext, TokioTasksPlugin, TokioTasksRuntime};
-use furuyoni_lib::net::frames::*;
-use furuyoni_lib::net::message_sender::IntoMessageMap;
+use bevy_tokio_tasks::{ TaskContext, TokioTasksPlugin, TokioTasksRuntime };
 use furuyoni_lib::rules::player_actions::BasicAction;
+use systems::board_system::{ DeckObject, HandObject };
 use thiserror::Error;
 use tokio::net::TcpStream;
 
 #[derive(Debug, Error)]
 pub(crate) enum Error {
-    #[error("Failed to connect to the server.")]
-    ConnectionFailed(tokio::io::Error),
-    #[error("{0}")]
-    GameLogicError(#[from] GameLogicError),
+    #[error("Failed to connect to the server.")] ConnectionFailed(tokio::io::Error),
+    #[error("{0}")] GameLogicError(#[from] GameLogicError),
 }
 
 fn main() {
@@ -42,7 +45,7 @@ fn main() {
 }
 
 pub(crate) fn spawn_logic_thread(runtime: ResMut<TokioTasksRuntime>) {
-    runtime.spawn_background_task(|mut ctx| async move {
+    runtime.spawn_background_task(|ctx| async move {
         let result = run_logic_thread(ctx.clone()).await;
         match result {
             Ok(_) => {}
@@ -50,38 +53,38 @@ pub(crate) fn spawn_logic_thread(runtime: ResMut<TokioTasksRuntime>) {
                 error!("{e}");
                 ctx.run_on_main_thread(move |ctx| {
                     ctx.world.send_event(AppExit::Success);
-                })
-                .await;
+                }).await;
             }
         }
     });
 }
 
 pub(crate) async fn run_logic_thread(ctx: TaskContext) -> Result<(), Error> {
-    let socket = TcpStream::connect("127.0.0.1:4255")
-        .await
-        .map_err(|e| Error::ConnectionFailed(e))?;
+    let socket = TcpStream::connect("127.0.0.1:4255").await.map_err(|e|
+        Error::ConnectionFailed(e)
+    )?;
 
     let (player_to_game_requester, player_to_game_responder, post_office_task) =
         spawn_post_office(socket);
 
-    game_logic::run_game(player_to_game_responder, ctx).await?;
+    let ret = game_logic::run_game(player_to_game_responder, ctx).await;
 
-    // unreachable.
-    // Todo: run_game이 에러난 경우에도 실행되게...
     post_office_task.abort();
 
+    ret?;
     Ok(())
 }
 
-fn load_scene(asset_server: Res<AssetServer>, mut scene_spawner: ResMut<SceneSpawner>) {
+fn _load_scene(asset_server: Res<AssetServer>, mut scene_spawner: ResMut<SceneSpawner>) {
     let ff: Handle<Font> = asset_server.load("fonts/Fira_Sans/FiraSans-Regular.ttf");
     std::mem::forget(ff);
 
     scene_spawner.spawn_dynamic(asset_server.load("scenes/main_scene.scn.ron"));
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Query<&mut Window>) {
+    let mut window = windows.single_mut();
+    window.resolution.set(1920.0, 1080.0);
     commands.spawn(Camera2dBundle::default());
 
     let font = asset_server.load("fonts/Fira_Sans/FiraSans-Regular.ttf");
@@ -89,107 +92,104 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mut spawn_label = |l, t, str: &str, picker| {
         commands.spawn((
             TextBundle::from_sections([
-                TextSection::new(
-                    str.to_string() + ": ",
-                    TextStyle {
-                        font: font.clone(),
-                        font_size: 50.0,
-                        ..default()
-                    },
-                ),
-                TextSection::new(
-                    "",
-                    TextStyle {
-                        font: font.clone(),
-                        font_size: 50.0,
-                        color: GREEN.into(),
-                    },
-                ),
+                TextSection::new(str.to_string() + ": ", TextStyle {
+                    font: font.clone(),
+                    font_size: 50.0,
+                    ..default()
+                }),
+                TextSection::new("", TextStyle {
+                    font: font.clone(),
+                    font_size: 50.0,
+                    color: GREEN.into(),
+                }),
             ])
-            .with_text_justify(JustifyText::Left)
-            .with_style(Style {
-                position_type: PositionType::Absolute,
-                top: Val::Percent(t),
-                left: Val::Percent(l),
-                ..default()
-            }),
+                .with_text_justify(JustifyText::Left)
+                .with_style(Style {
+                    position_type: PositionType::Absolute,
+                    top: Val::Percent(t),
+                    left: Val::Percent(l),
+                    ..default()
+                }),
             StateLabel::new(1, picker),
         ));
     };
 
-    const LH: f32 = 6.;
+    const LH: f32 = 6.0;
     spawn_label(
-        10.,
-        10.,
+        10.0,
+        10.0,
         "Life",
-        StateStringPicker::PetalsCount(PetalsRelativePosition::Life(PlayerRelativePos::Opponent)),
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Life(PlayerRelativePos::Opponent))
     );
     spawn_label(
-        10.,
-        10. + LH * 1.,
+        10.0,
+        10.0 + LH * 1.0,
         "Flare",
-        StateStringPicker::PetalsCount(PetalsRelativePosition::Flare(PlayerRelativePos::Opponent)),
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Flare(PlayerRelativePos::Opponent))
     );
 
     spawn_label(
-        10.,
-        10. + LH * 2.,
+        10.0,
+        10.0 + LH * 2.0,
         "Aura",
-        StateStringPicker::PetalsCount(PetalsRelativePosition::Aura(PlayerRelativePos::Opponent)),
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Aura(PlayerRelativePos::Opponent))
     );
 
     spawn_label(
-        10.,
-        10. + LH * 3.,
+        10.0,
+        10.0 + LH * 3.0,
         "Vigor",
-        StateStringPicker::Vigor(PlayerRelativePos::Opponent),
+        StateStringPicker::Vigor(PlayerRelativePos::Opponent)
+        
     );
-
+    
     spawn_label(
-        83.,
-        70.,
-        "Life",
-        StateStringPicker::PetalsCount(PetalsRelativePosition::Life(PlayerRelativePos::Me)),
-    );
-
-    spawn_label(
-        83.,
-        70. + LH * 1.,
-        "Flare",
-        StateStringPicker::PetalsCount(PetalsRelativePosition::Flare(PlayerRelativePos::Me)),
-    );
-
-    spawn_label(
-        83.,
-        70. + LH * 2.,
-        "Aura",
-        StateStringPicker::PetalsCount(PetalsRelativePosition::Aura(PlayerRelativePos::Me)),
-    );
-    spawn_label(
-        83.,
-        70. + LH * 3.,
-        "Vigor",
-        StateStringPicker::Vigor(PlayerRelativePos::Me),
-    );
-    spawn_label(
-        75.,
-        60.,
+        18.0,
+        20.0 + LH * 3.0,
         "Deck",
-        StateStringPicker::CardsCount(CardsRelativePosition::Deck(PlayerRelativePos::Me)),
+        StateStringPicker::CardsCount(CardsRelativePosition::Deck(PlayerRelativePos::Opponent))
     );
 
-    spawn_label(85., 20., "Turn", StateStringPicker::Turn);
     spawn_label(
-        50.,
-        40.,
+        83.0,
+        70.0,
+        "Life",
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Life(PlayerRelativePos::Me))
+    );
+
+    spawn_label(
+        83.0,
+        70.0 + LH * 1.0,
+        "Flare",
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Flare(PlayerRelativePos::Me))
+    );
+
+    spawn_label(
+        83.0,
+        70.0 + LH * 2.0,
+        "Aura",
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Aura(PlayerRelativePos::Me))
+    );
+    spawn_label(83.0, 70.0 + LH * 3.0, "Vigor", StateStringPicker::Vigor(PlayerRelativePos::Me));
+    spawn_label(
+        75.0,
+        60.0,
+        "Deck",
+        StateStringPicker::CardsCount(CardsRelativePosition::Deck(PlayerRelativePos::Me))
+    );
+
+    spawn_label(85.0, 20.0, "Turn", StateStringPicker::Turn);
+    spawn_label(
+        50.0,
+        40.0,
         "Distance",
-        StateStringPicker::PetalsCount(PetalsRelativePosition::Distance),
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Distance)
     );
     spawn_label(
-        50.,
-        40. + LH * 1.,
+        50.0,
+        40.0 + LH * 1.0,
         "Dust",
-        StateStringPicker::PetalsCount(PetalsRelativePosition::Dust),
+        StateStringPicker::PetalsCount(PetalsRelativePosition::Dust)
     );
 
     commands
@@ -205,11 +205,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     // vertically center child text
                     align_items: AlignItems::Center,
                     position_type: PositionType::Absolute,
-                    right: Val::Percent(20.),
-                    bottom: Val::Percent(20.),
+                    right: Val::Percent(20.0),
+                    bottom: Val::Percent(20.0),
                     ..default()
                 },
-                background_color: Color::rgb(125. / 256., 13. / 256., 40.0 / 256.).into(),
+                background_color: Color::srgb(125.0 / 256.0, 13.0 / 256.0, 40.0 / 256.0).into(),
                 ..default()
             },
             PickerButton {
@@ -217,14 +217,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
         ))
         .with_children(|parent| {
-            parent.spawn(TextBundle::from_section(
-                "Cancel",
-                TextStyle {
+            parent.spawn(
+                TextBundle::from_section("Cancel", TextStyle {
                     font: font.clone(),
                     font_size: 40.0,
-                    color: Color::rgb(0.9, 0.9, 0.9),
-                },
-            ));
+                    color: Color::srgb(0.9, 0.9, 0.9),
+                })
+            );
         });
 
     commands
@@ -240,11 +239,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     // vertically center child text
                     align_items: AlignItems::Center,
                     position_type: PositionType::Absolute,
-                    right: Val::Percent(20.),
-                    bottom: Val::Percent(20.),
+                    right: Val::Percent(20.0),
+                    bottom: Val::Percent(20.0),
                     ..default()
                 },
-                background_color: Color::rgb(125. / 256., 13. / 256., 40.0 / 256.).into(),
+                background_color: Color::srgb(125.0 / 256.0, 13.0 / 256.0, 40.0 / 256.0).into(),
                 ..default()
             },
             PickerButton {
@@ -252,14 +251,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
         ))
         .with_children(|parent| {
-            parent.spawn(TextBundle::from_section(
-                "End Main",
-                TextStyle {
+            parent.spawn(
+                TextBundle::from_section("End Main", TextStyle {
                     font: font.clone(),
                     font_size: 40.0,
-                    color: Color::rgb(0.9, 0.9, 0.9),
-                },
-            ));
+                    color: Color::srgb(0.9, 0.9, 0.9),
+                })
+            );
         });
 
     commands.spawn((
@@ -279,7 +277,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 border: UiRect::all(Val::Px(4.0)),
                 ..default()
             },
-            background_color: Color::rgba(0.2, 0.5, 0.3, 0.3).into(),
+            background_color: Color::srgba(0.2, 0.5, 0.3, 0.3).into(),
             border_color: BorderColor(Color::WHITE),
 
             ..default()
@@ -307,7 +305,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         bottom: Val::Percent(bottom),
                         ..default()
                     },
-                    background_color: Color::rgb(0.2, 0.5, 0.3).into(),
+                    background_color: Color::srgb(0.2, 0.5, 0.3).into(),
                     ..default()
                 },
                 PickerButton {
@@ -315,19 +313,44 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 },
             ))
             .with_children(|parent| {
-                parent.spawn(TextBundle::from_section(
-                    str,
-                    TextStyle {
+                parent.spawn(
+                    TextBundle::from_section(str, TextStyle {
                         font: font.clone(),
                         font_size: 40.0,
-                        color: Color::rgb(0.9, 0.9, 0.9),
-                    },
-                ));
+                        color: Color::srgb(0.9, 0.9, 0.9),
+                    })
+                );
             });
     };
 
-    spawn_ba_button(20., 46., "Forward", BasicAction::MoveForward);
-    spawn_ba_button(10., 46., "Backward", BasicAction::MoveBackward);
-    spawn_ba_button(20., 33., "Focus", BasicAction::Focus);
-    spawn_ba_button(10., 33., "Recover", BasicAction::Recover);
+    spawn_ba_button(20.0, 46.0, "Forward", BasicAction::MoveForward);
+    spawn_ba_button(10.0, 46.0, "Backward", BasicAction::MoveBackward);
+    spawn_ba_button(20.0, 33.0, "Focus", BasicAction::Focus);
+    spawn_ba_button(10.0, 33.0, "Recover", BasicAction::Recover);
+
+    // spawn deck position indicators.
+    const DECK_CARDS_SCALE : Vec3 = Vec3::new(0.7, 0.7, 0.7);
+    commands.spawn((
+        TransformBundle::from_transform(Transform::from_xyz(800.0, -80.0, 0.0).with_scale(DECK_CARDS_SCALE)),
+        DeckObject::new(PlayerRelativePos::Me),
+    ));
+
+    commands.spawn((
+        TransformBundle::from_transform(
+            Transform::from_xyz(-800.0, 80.0, 0.0).with_rotation(Quat::from_rotation_z(PI)).with_scale(DECK_CARDS_SCALE)
+        ),
+        DeckObject::new(PlayerRelativePos::Opponent),
+    ));
+
+    // spawn card hands.
+    commands.spawn((
+        TransformBundle::from_transform(Transform::from_xyz(-150.0, -300.0, 0.0)),
+        HandObject::new(PlayerRelativePos::Me),
+    ));
+    commands.spawn((
+        TransformBundle::from_transform(
+            Transform::from_xyz(0.0, 300.0, 0.0).with_rotation(Quat::from_rotation_z(PI))
+        ),
+        HandObject::new(PlayerRelativePos::Opponent),
+    ));
 }

@@ -1,5 +1,5 @@
 use crate::game::states::player_state::PlayerState;
-use furuyoni_lib::rules::cards::{Card, CardSelector, Cards, CardsPosition};
+use furuyoni_lib::rules::cards::{Card, CardSelector, CardSelectorCase, Cards, CardsPosition};
 use furuyoni_lib::rules::events::UpdateGameState;
 use furuyoni_lib::rules::states::{Petals, PetalsPosition, Phase, PlayersData};
 use furuyoni_lib::rules::PlayerPos;
@@ -81,9 +81,9 @@ impl GameStateInner {
     }
 
     pub fn select_card(&self, selector: CardSelector) -> Option<Card> {
-        let cards = self.cards(selector.cards_position());
+        let cards = self.cards(selector.position);
 
-        let index = selector.index(cards.len());
+        let index = selector.case.index(cards.len());
         if index >= cards.len() {
             None
         } else {
@@ -150,17 +150,17 @@ impl GameState {
                 state.phase = phase;
             }
             UpdateGameState::TransferCard { from, to } => {
-                let cards_from = self.inner.cards_mut(from.cards_position());
+                let cards_from = self.inner.cards_mut(from.position);
 
-                let index_from = from.index(cards_from.len());
+                let index_from = from.case.index(cards_from.len());
                 if index_from >= cards_from.len() {
                     return Err(InvalidGameUpdateError::CardSelectorOutOfBounds);
                 }
 
                 let taken = cards_from.remove(index_from);
 
-                let cards_to = self.inner.cards_mut(to.cards_position());
-                let index_to = to.index(cards_to.len());
+                let cards_to = self.inner.cards_mut(to.position);
+                let index_to = to.case.index(cards_to.len());
 
                 if index_to > cards_to.len() {
                     return Err(InvalidGameUpdateError::CardSelectorOutOfBounds);
