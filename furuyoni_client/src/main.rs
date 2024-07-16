@@ -22,6 +22,7 @@ use bevy::text::TextStyle;
 use bevy::ui::PositionType;
 use bevy::DefaultPlugins;
 use bevy_tokio_tasks::{ TaskContext, TokioTasksPlugin, TokioTasksRuntime };
+use bevy_tweening::TweeningPlugin;
 use furuyoni_lib::rules::player_actions::BasicAction;
 use systems::board_system::{ DeckObject, HandObject };
 use thiserror::Error;
@@ -39,6 +40,7 @@ fn main() {
         .add_plugins(PickerPlugin)
         .add_plugins(BoardPlugin)
         .add_plugins(TokioTasksPlugin::default())
+        .add_plugins(TweeningPlugin)
         .add_systems(Startup, (setup, spawn_logic_thread))
         // .add_systems(Startup, load_scene)
         .run();
@@ -59,7 +61,7 @@ pub(crate) fn spawn_logic_thread(runtime: ResMut<TokioTasksRuntime>) {
     });
 }
 
-pub(crate) async fn run_logic_thread(ctx: TaskContext) -> Result<(), Error> {
+async fn run_logic_thread(ctx: TaskContext) -> Result<(), Error> {
     let socket = TcpStream::connect("127.0.0.1:4255").await.map_err(|e|
         Error::ConnectionFailed(e)
     )?;
@@ -344,12 +346,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Qu
 
     // spawn card hands.
     commands.spawn((
-        TransformBundle::from_transform(Transform::from_xyz(-150.0, -300.0, 0.0)),
+        TransformBundle::from_transform(Transform::from_xyz(-150.0, -450.0, 200.0)),
         HandObject::new(PlayerRelativePos::Me),
     ));
     commands.spawn((
         TransformBundle::from_transform(
-            Transform::from_xyz(0.0, 300.0, 0.0).with_rotation(Quat::from_rotation_z(PI))
+            Transform::from_xyz(0.0, 450.0, 0.0).with_rotation(Quat::from_rotation_z(PI)).with_scale(DECK_CARDS_SCALE)
         ),
         HandObject::new(PlayerRelativePos::Opponent),
     ));

@@ -1,5 +1,12 @@
+use std::time::Duration;
+
 use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::*;
+use bevy_tweening::lens::TransformPositionLens;
+use bevy_tweening::lens::TransformScaleLens;
+use bevy_tweening::Animator;
+use bevy_tweening::EaseFunction;
+use bevy_tweening::Tween;
 use furuyoni_lib::rules::cards::Card;
 use furuyoni_lib::rules::events::GameEvent;
 use furuyoni_lib::rules::states::StateView;
@@ -43,31 +50,9 @@ pub(crate) async fn apply_event(
                         let world = ctx.world;
                         let card_id = get_card_entity(from, world, me, card);
                         let slot_id = get_slot_entity(to, world, me);
-                        world.run_system_once(
-                            move |
-                                mut commands: Commands,
-                                mut transform_params: ParamSet<
-                                    (TransformHelper, Query<&mut Transform>)
-                                >
-                            | {
-                                // Put the card as a child of the slot while retaining the card's global position.
-                                // Note that set_parent_in_place doesn't work because the 'GlobalPosition's are not yet evaluated.
-                                let card_global = transform_params
-                                    .p0()
-                                    .compute_global_transform(card_id)
-                                    .unwrap();
-                                let slot_global = transform_params
-                                    .p0()
-                                    .compute_global_transform(slot_id)
-                                    .unwrap();
-                                let mut transforms = transform_params.p1();
-                                let mut card_local = transforms.get_mut(card_id).unwrap();
-                                *card_local = card_global.reparented_to(&slot_global);
-
-                                commands.entity(card_id).set_parent(slot_id);
-                            }
-                        );
+                        animate_card(world, card_id, slot_id);
                     }).await;
+                    tokio::time::sleep(Duration::from_millis(500)).await;
                 }
                 _ => /* TODO */ (),
             }
@@ -78,6 +63,56 @@ pub(crate) async fn apply_event(
         }
     }
     Ok(())
+}
+
+fn animate_card(world: &mut World, card_id: Entity, slot_id: Entity) {
+    world.run_system_once(
+        move |
+            mut commands: Commands,
+            mut transform_params: ParamSet<
+                (TransformHelper, Query<&mut Transform>)
+            >
+        | {
+            // Put the card as a child of the slot while retaining the card's global position.
+            // Note that set_parent_in_place doesn't work because the 'GlobalPosition's are not yet evaluated.
+            let card_global = transform_params
+                .p0()
+                .compute_global_transform(card_id)
+                .unwrap();
+            let slot_global = transform_params
+                .p0()
+                .compute_global_transform(slot_id)
+                .unwrap();
+            let mut transforms = transform_params.p1();
+            let mut card_local = transforms.get_mut(card_id).unwrap();
+            *card_local = card_global.reparented_to(&slot_global);
+
+            commands.entity(card_id).set_parent(slot_id);
+            
+            let tween_translation = Tween::new(
+                EaseFunction::QuadraticOut,
+                Duration::from_secs(1),
+                TransformPositionLens {
+                    start: card_local.translation,
+                    end: Vec3::ZERO,
+                },
+            );
+            
+            let tween_scale = Tween::new(
+                EaseFunction::QuarticOut,
+                Duration::from_secs(1),
+                TransformScaleLens {
+                    start: card_local.scale,
+                    end: Vec3::ONE,
+                },
+            );
+            
+            let tween = bevy_tweening::Tracks::new([tween_translation, tween_scale]);
+            
+            
+            commands.entity(card_id).insert(Animator::new(tween));
+        }
+    );
 }
 
 pub(crate) fn get_slot_entity(
@@ -111,7 +146,7 @@ pub(crate) fn get_card_entity(
     me: PlayerPos,
     card: Card
 ) -> Entity {
-    match from {
+    return match from {
         CardsPosition::Deck(p) =>
             world.run_system_once(
                 move |
@@ -141,7 +176,7 @@ pub(crate) fn get_card_entity(
         CardsPosition::Discards(_) => todo!(),
         CardsPosition::Playing(_) | CardsPosition::Enhancements(_) | CardsPosition::Played(_) =>
             panic!("Impossible event."),
-    }
+    };
 }
 
 pub(crate) async fn check_game_state(ctx: &TaskContext, state: StateView) {
