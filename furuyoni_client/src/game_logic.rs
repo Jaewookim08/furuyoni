@@ -1,7 +1,7 @@
 use crate::game_logic::GameLogicError::InvalidRequest;
-use crate::systems::board_system::BoardError;
+use crate::systems::board_plugin::BoardError;
 use crate::systems::picker::{ PickBasicActionResult, PickMainPhaseActionResult };
-use crate::systems::{ board_system, picker };
+use crate::systems::{ board_plugin, picker };
 use bevy::prelude::*;
 use bevy_tokio_tasks::*;
 use furuyoni_lib::net::frames::{ GameToPlayerRequest, PlayerToGameResponse };
@@ -53,7 +53,7 @@ pub(crate) async fn run_game(
 
     // initialize in the main thread.
     ctx.run_on_main_thread(move |ctx| {
-        board_system::initialize_board(ctx.world, state, me);
+        board_plugin::initialize_board(ctx.world, state, me);
     }).await;
 
     // notify that the client has successfully started the game.
@@ -63,7 +63,7 @@ pub(crate) async fn run_game(
     let result = loop {
         match responder.receive().await? {
             GameToPlayerRequest::NotifyEvent(event) => {
-                board_system::apply_event(&ctx, event, me).await?;
+                board_plugin::apply_event(&ctx, event, me).await?;
 
                 if let GameEvent::GameEnd { result } = event {
                     break result;
@@ -106,7 +106,7 @@ pub(crate) async fn run_game(
                 responder.send(PlayerToGameResponse::MainPhaseAction(action))?;
             }
             GameToPlayerRequest::CheckGameState(state) => {
-                board_system::check_game_state(&ctx, state).await;
+                board_plugin::check_game_state(&ctx, state).await;
             }
             r => {
                 return Err(InvalidRequest(r));

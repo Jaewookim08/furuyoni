@@ -1,16 +1,24 @@
-use furuyoni_lib::rules::states::{InvalidGameViewUpdateError, StateView};
+use furuyoni_lib::rules::states::{ InvalidGameViewUpdateError, StateView };
 use bevy::prelude::*;
 use furuyoni_lib::rules::cards::Card;
 use furuyoni_lib::rules::PlayerPos;
 
-mod labels_update_system;
 mod relative_positions;
 mod requests_handler;
+mod hand_animator;
+mod labels_update_system;
 
+use hand_animator::animate_hand_cards;
 use labels_update_system::update_labels;
+
+pub(crate) use hand_animator::HandAnimation;
 pub(crate) use labels_update_system::{ StateLabel, StateStringPicker };
-pub(crate) use relative_positions::{ CardsRelativePosition, PetalsRelativePosition, PlayerRelativePos };
-pub(crate) use requests_handler::{apply_event, check_game_state, initialize_board};
+pub(crate) use relative_positions::{
+    CardsRelativePosition,
+    PetalsRelativePosition,
+    PlayerRelativePos,
+};
+pub(crate) use requests_handler::{ apply_event, check_game_state, initialize_board };
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -22,12 +30,10 @@ pub(crate) enum BoardError {
 
 pub(crate) struct BoardPlugin;
 
-
 #[derive(Debug, Component)]
 pub(crate) struct CardObject {
     card: Card,
 }
-
 
 #[derive(Debug, Component)]
 pub(crate) struct HandObject {
@@ -67,6 +73,7 @@ impl Plugin for BoardPlugin {
                 update_labels
                     .run_if(resource_exists::<BoardState>)
                     .run_if(resource_exists::<SelfPlayerPos>)
-            );
+            )
+            .add_systems(Update, animate_hand_cards);
     }
 }

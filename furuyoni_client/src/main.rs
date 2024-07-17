@@ -6,7 +6,7 @@ use std::f32::consts::PI;
 
 use crate::game_logic::GameLogicError;
 use crate::networking::post_office::spawn_post_office;
-use crate::systems::board_system::{
+use crate::systems::board_plugin::{
     BoardPlugin,
     CardsRelativePosition,
     PetalsRelativePosition,
@@ -25,7 +25,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_tokio_tasks::{ TaskContext, TokioTasksPlugin, TokioTasksRuntime };
 use bevy_tweening::TweeningPlugin;
 use furuyoni_lib::rules::player_actions::BasicAction;
-use systems::board_system::{ DeckObject, HandObject };
+use systems::board_plugin::{ DeckObject, HandAnimation, HandObject };
 use thiserror::Error;
 use tokio::net::TcpStream;
 
@@ -144,9 +144,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Qu
         10.0 + LH * 3.0,
         "Vigor",
         StateStringPicker::Vigor(PlayerRelativePos::Opponent)
-        
     );
-    
+
     spawn_label(
         18.0,
         20.0 + LH * 3.0,
@@ -333,28 +332,40 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Qu
     spawn_ba_button(10.0, 33.0, "Recover", BasicAction::Recover);
 
     // spawn deck position indicators.
-    const DECK_CARDS_SCALE : Vec3 = Vec3::new(0.7, 0.7, 0.7);
+    const DECK_CARDS_SCALE: Vec3 = Vec3::new(0.7, 0.7, 0.7);
     commands.spawn((
-        TransformBundle::from_transform(Transform::from_xyz(800.0, -80.0, 0.0).with_scale(DECK_CARDS_SCALE)),
+        Name::new("Deck(Opponent)"),
+        TransformBundle::from_transform(
+            Transform::from_xyz(800.0, -80.0, 0.0).with_scale(DECK_CARDS_SCALE)
+        ),
         DeckObject::new(PlayerRelativePos::Me),
     ));
 
     commands.spawn((
+        Name::new("Deck(Opponent)"),
         TransformBundle::from_transform(
-            Transform::from_xyz(-800.0, 80.0, 0.0).with_rotation(Quat::from_rotation_z(PI)).with_scale(DECK_CARDS_SCALE)
+            Transform::from_xyz(-800.0, 80.0, 0.0)
+                .with_rotation(Quat::from_rotation_z(PI))
+                .with_scale(DECK_CARDS_SCALE)
         ),
         DeckObject::new(PlayerRelativePos::Opponent),
     ));
 
     // spawn card hands.
     commands.spawn((
-        TransformBundle::from_transform(Transform::from_xyz(-150.0, -450.0, 200.0)),
+        Name::new("Hand(Me)"),
+        SpatialBundle::from_transform(Transform::from_xyz(0., -450.0, 200.0)),
         HandObject::new(PlayerRelativePos::Me),
+        HandAnimation::new(600.0, 7),
     ));
     commands.spawn((
-        TransformBundle::from_transform(
-            Transform::from_xyz(0.0, 450.0, 0.0).with_rotation(Quat::from_rotation_z(PI)).with_scale(DECK_CARDS_SCALE)
+        Name::new("Hand(Opponent)"),
+        SpatialBundle::from_transform(
+            Transform::from_xyz(0.0, 450.0, 0.0)
+                .with_rotation(Quat::from_rotation_z(PI))
+                .with_scale(DECK_CARDS_SCALE)
         ),
         HandObject::new(PlayerRelativePos::Opponent),
+        HandAnimation::new(600.0, 7),
     ));
 }

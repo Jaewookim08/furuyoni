@@ -1,2 +1,2 @@
-pub mod board_system;
+pub mod board_plugin;
 pub mod picker;
