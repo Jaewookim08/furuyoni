@@ -3,8 +3,6 @@ name = "furuyoni_client"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 tokio = { version = "1.38", features = ["full"] }
 furuyoni_lib = { path = "../furuyoni_lib" }
@@ -16,3 +14,4 @@ serde_json = "1.0"
 futures-lite = "2.3"
 bevy-tokio-tasks = { version = "0.14", git = "https://github.com/Jaewookim08/bevy-tokio-tasks.git" }
 bevy_tweening = { version = "0.11.0", features = ["bevy_asset", "bevy_sprite", "bevy_ui", "bevy_text"] }
+bevy-inspector-egui = { version="0.25", features = ["highlight_changes", "bevy_pbr"]}

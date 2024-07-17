@@ -21,6 +21,7 @@ use bevy::prelude::*;
 use bevy::text::TextStyle;
 use bevy::ui::PositionType;
 use bevy::DefaultPlugins;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_tokio_tasks::{ TaskContext, TokioTasksPlugin, TokioTasksRuntime };
 use bevy_tweening::TweeningPlugin;
 use furuyoni_lib::rules::player_actions::BasicAction;
@@ -41,6 +42,7 @@ fn main() {
         .add_plugins(BoardPlugin)
         .add_plugins(TokioTasksPlugin::default())
         .add_plugins(TweeningPlugin)
+        .add_plugins(WorldInspectorPlugin::new())
         .add_systems(Startup, (setup, spawn_logic_thread))
         // .add_systems(Startup, load_scene)
         .run();
