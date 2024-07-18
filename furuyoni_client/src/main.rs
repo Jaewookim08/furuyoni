@@ -25,7 +25,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_tokio_tasks::{ TaskContext, TokioTasksPlugin, TokioTasksRuntime };
 use bevy_tweening::TweeningPlugin;
 use furuyoni_lib::rules::player_actions::BasicAction;
-use systems::board_plugin::{ DeckObject, Spread, HandObject };
+use systems::board_plugin::{ CardInspectPosition, DeckObject, HandObject, Spread };
 use thiserror::Error;
 use tokio::net::TcpStream;
 
@@ -369,5 +369,15 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Qu
         ),
         HandObject::new(PlayerRelativePos::Opponent),
         Spread::new(600.0, 7),
+    ));
+
+    const INSPECTOR_SCALE: Vec3 = Vec3::splat(2.0);
+
+    commands.spawn((
+        Name::new("InspectorPosition"),
+        TransformBundle::from_transform(
+            Transform::from_xyz(700.0, -20.0, 100.0).with_scale(INSPECTOR_SCALE)
+        ),
+        CardInspectPosition {},
     ));
 }

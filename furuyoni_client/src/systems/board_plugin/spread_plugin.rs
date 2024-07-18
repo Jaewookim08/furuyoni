@@ -54,7 +54,7 @@ pub(crate) fn add_spread_child(
     entity: Entity,
     spread: &Spread,
     op_children: Option<&Children>,
-    delay: f32
+    delay: Duration
 ) -> Entity {
     let children_count = match op_children {
         Some(children) => children.len(),
@@ -68,7 +68,7 @@ pub(crate) fn add_spread_child(
                     element_position(spread, children_count, children_count + 1)
                 )
             ),
-            SpreadElement { activate_timer: Timer::from_seconds(delay, TimerMode::Once) },
+            SpreadElement { activate_timer: Timer::new(delay, TimerMode::Once) },
         ))
         .id();
     commands.entity(entity).add_child(new);
@@ -99,7 +99,7 @@ fn animate_spread(
         let elements_count = elements.len();
         for (i, &(child, _, child_transform)) in elements.iter().enumerate() {
             let tween: Tween<Transform> = Tween::new(
-                EaseFunction::QuadraticInOut,
+                EaseFunction::QuadraticOut,
                 Duration::from_millis(650),
                 TransformPositionLens {
                     // start from the child's initial position.

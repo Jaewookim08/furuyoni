@@ -75,6 +75,11 @@ impl DeckObject {
     }
 }
 
+
+#[derive(Debug, Component)]
+pub(crate) struct CardInspectPosition;
+
+
 #[derive(Resource)]
 struct BoardState(pub StateView);
 
