@@ -1,17 +1,16 @@
 use furuyoni_lib::rules::states::{ InvalidGameViewUpdateError, StateView };
 use bevy::prelude::*;
-use furuyoni_lib::rules::cards::Card;
 use furuyoni_lib::rules::PlayerPos;
 
 mod relative_positions;
 mod requests_handler;
-mod spread_system;
+mod spread_plugin;
 mod labels_update_system;
 
-use spread_system::animate_spread;
+use spread_plugin::SpreadPlugin;
 use labels_update_system::update_labels;
 
-pub(crate) use spread_system::Spread;
+pub(crate) use spread_plugin::Spread;
 pub(crate) use labels_update_system::{ StateLabel, StateStringPicker };
 pub(crate) use relative_positions::{
     CardsRelativePosition,
@@ -64,11 +63,11 @@ impl Plugin for BoardPlugin {
             .register_type::<StateStringPicker>()
             .register_type::<PlayerRelativePos>()
             .add_systems(
-                Update,
+                PostUpdate,
                 update_labels
                     .run_if(resource_exists::<BoardState>)
                     .run_if(resource_exists::<SelfPlayerPos>)
             )
-            .add_systems(Update, animate_spread);
+            .add_plugins(SpreadPlugin);
     }
 }

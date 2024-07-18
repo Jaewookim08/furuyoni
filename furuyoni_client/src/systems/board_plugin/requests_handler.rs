@@ -9,8 +9,8 @@ use bevy_tweening::EaseFunction;
 use bevy_tweening::Tween;
 use furuyoni_lib::rules::events::GameEvent;
 use furuyoni_lib::rules::states::StateView;
-use super::spread_system;
-use super::spread_system::Spread;
+use super::spread_plugin;
+use super::spread_plugin::Spread;
 use super::BoardError;
 use super::DeckObject;
 use super::HandObject;
@@ -120,11 +120,12 @@ pub(crate) fn get_slot_entity(
                         .iter()
                         .find(|&(_, h, _, _)| { h.relative_pos.into_absolute(me) == p })
                         .unwrap();
-                    let new = spread_system::add_spread_child(
+                    let new = spread_plugin::add_spread_child(
                         commands,
                         hand_id,
                         hand_animation,
-                        children
+                        children,
+                        0.35,
                     );
                     new
                 }
