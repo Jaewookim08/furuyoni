@@ -1,16 +1,20 @@
-use crate::rules::cards::{Card, Cards, CardsPosition};
+use crate::rules::cards::{ Card, Cards, CardsPosition };
 use crate::rules::events::UpdateGameState;
 use crate::rules::states::petals::Petals;
 use crate::rules::states::players_data::PlayersData;
-use crate::rules::states::{PetalsPosition, Phase};
+use crate::rules::states::{ PetalsPosition, Phase };
 use crate::rules::PlayerPos;
-use serde::{Deserialize, Serialize};
+use serde::{ Deserialize, Serialize };
 use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum CardsView {
-    Open { cards: Cards },
-    Hidden { length: usize },
+    Open {
+        cards: Cards,
+    },
+    Hidden {
+        length: usize,
+    },
 }
 
 impl CardsView {
@@ -43,8 +47,12 @@ impl CardsView {
 
 #[derive(Debug)]
 enum CardsViewMutRef<'a> {
-    Open { cards: &'a mut Cards },
-    Hidden { length: &'a mut usize },
+    Open {
+        cards: &'a mut Cards,
+    },
+    Hidden {
+        length: &'a mut usize,
+    },
 }
 
 impl<'a> From<&'a mut Cards> for CardsViewMutRef<'a> {
@@ -64,8 +72,12 @@ impl<'a> CardsViewMutRef<'a> {
 
 #[derive(Debug, Copy, Clone)]
 pub enum CardsViewRef<'a> {
-    Open { cards: &'a Cards },
-    Hidden { length: &'a usize },
+    Open {
+        cards: &'a Cards,
+    },
+    Hidden {
+        length: &'a usize,
+    },
 }
 
 impl<'a> CardsViewRef<'a> {
@@ -92,7 +104,9 @@ impl<'a> CardsViewMutRef<'a> {
                 }
                 cards_to.insert(index, card);
             }
-            CardsViewMutRef::Hidden { length } => **length += 1,
+            CardsViewMutRef::Hidden { length } => {
+                **length += 1;
+            }
         }
         Ok(())
     }
@@ -185,13 +199,12 @@ impl StateView {
     // Todo: client의 board가 apply_update하고 자기가 보여주는 board를 GameStateView로 뽑을 수 있도록.
     pub fn apply_update(
         &mut self,
-        update: UpdateGameState,
+        update: UpdateGameState
     ) -> Result<(), InvalidGameViewUpdateError> {
         match update {
             UpdateGameState::TransferPetals { from, to, amount } => {
                 let from_petals = self.petals_mut(from);
-                from_petals.count = from_petals
-                    .count
+                from_petals.count = from_petals.count
                     .checked_sub(amount)
                     .ok_or(InvalidGameViewUpdateError::InvalidPetalTransfer)?;
 
@@ -237,8 +250,19 @@ impl StateView {
 
                 *cards_from_len -= 1;
 
-                let mut cards_to = self.cards_view_mut(to.position);
-                cards_to.insert_card(to.case.index(cards_to.len()), card.clone())?;
+                match self.cards_view_mut(to.position) {
+                    mut cards_to @ CardsViewMutRef::Open { .. } => {
+                        let card = card.ok_or(InvalidGameViewUpdateError::VisibilityMismatch)?;
+                        // FIXME: weird code structure (we do the same match in 'insert_card'). Should have a separate function that handles only the 'Open' case?
+                        cards_to.insert_card(to.case.index(cards_to.len()), card)?;
+                    }
+                    CardsViewMutRef::Hidden { length } => {
+                        if !card.is_none() {
+                            return Err(InvalidGameViewUpdateError::VisibilityMismatch);
+                        }
+                        *length += 1;
+                    }
+                }
             }
         }
 

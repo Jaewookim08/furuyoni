@@ -30,7 +30,7 @@ pub enum UpdateGameState {
     TransferCardFromHidden {
         from: CardsPosition,
         to: CardSelector,
-        card: Card,
+        card: Option<Card>,
     },
 }
 

@@ -7,13 +7,11 @@ use bevy_tweening::lens::TransformScaleLens;
 use bevy_tweening::Animator;
 use bevy_tweening::EaseFunction;
 use bevy_tweening::Tween;
-use furuyoni_lib::rules::cards::Card;
 use furuyoni_lib::rules::events::GameEvent;
 use furuyoni_lib::rules::states::StateView;
 use super::hand_animator;
 use super::hand_animator::HandAnimation;
 use super::BoardError;
-use super::CardObject;
 use super::DeckObject;
 use super::HandObject;
 use furuyoni_lib::rules::cards::CardsPosition;
@@ -48,7 +46,7 @@ pub(crate) async fn apply_event(
                 UpdateGameState::TransferCardFromHidden { from, to, card } => {
                     ctx.run_on_main_thread(move |ctx| {
                         let world = ctx.world;
-                        let card_id = get_card_entity(from, world, me, card);
+                        let card_id = get_card_entity(from, world, me);
                         let slot_id = get_slot_entity(to, world, me);
                         animate_card(world, card_id, slot_id);
                     }).await;
@@ -144,7 +142,6 @@ pub(crate) fn get_card_entity(
     from: CardsPosition,
     world: &mut World,
     me: PlayerPos,
-    card: Card
 ) -> Entity {
     match from {
         CardsPosition::Deck(p) =>
@@ -165,7 +162,6 @@ pub(crate) fn get_card_entity(
                                 texture: asset_server.load("sprites/cardback_normal.png"),
                                 ..default()
                             },
-                            CardObject { card },
                         ))
                         .set_parent(deck_id)
                         .id();

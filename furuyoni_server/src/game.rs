@@ -578,15 +578,8 @@ fn filter_event(
                 | u @ UpdateGameState::TransferPetals { .. }
                 | u @ UpdateGameState::AddToVigor { .. } => u,
                 u @ UpdateGameState::TransferCard { from, to } => {
-                    let is_from_open = match from.position {
-                        CardsPosition::Deck(_) => can_view_master,
-
-                        CardsPosition::Discards(p) | CardsPosition::Hand(p) => can_view_p[p],
-
-                        | CardsPosition::Playing(_)
-                        | CardsPosition::Enhancements(_)
-                        | CardsPosition::Played(_) => true,
-                    };
+                    let is_from_open = is_open(can_view_master, &can_view_p, &from.position);
+                    let is_to_open = is_open(can_view_master, &can_view_p, &to.position);
 
                     if is_from_open {
                         u
@@ -594,7 +587,11 @@ fn filter_event(
                         UpdateGameState::TransferCardFromHidden {
                             from: from.position,
                             to,
-                            card: state.select_card(from).ok_or(EventFilterError(e))?,
+                            card: if is_to_open {
+                                Some(state.select_card(from).ok_or(EventFilterError(e))?)
+                            } else {
+                                None
+                            },
                         }
                     }
                 }
@@ -607,6 +604,19 @@ fn filter_event(
     };
 
     Ok(e)
+}
+
+fn is_open(
+    can_view_master: bool,
+    can_view_p: &PlayersData<bool>,
+    position: &CardsPosition
+) -> bool {
+    match position {
+        CardsPosition::Deck(_) => can_view_master,
+        CardsPosition::Discards(p) | CardsPosition::Hand(p) => can_view_p[p],
+        CardsPosition::Playing(_) | CardsPosition::Enhancements(_) | CardsPosition::Played(_) =>
+            true,
+    }
 }
 
 fn initialize_game_states() -> GameState {

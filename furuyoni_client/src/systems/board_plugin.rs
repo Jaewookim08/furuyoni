@@ -31,11 +31,6 @@ pub(crate) enum BoardError {
 pub(crate) struct BoardPlugin;
 
 #[derive(Debug, Component)]
-pub(crate) struct CardObject {
-    card: Card,
-}
-
-#[derive(Debug, Component)]
 pub(crate) struct HandObject {
     relative_pos: PlayerRelativePos,
 }
