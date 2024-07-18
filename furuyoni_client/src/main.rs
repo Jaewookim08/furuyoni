@@ -25,7 +25,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_tokio_tasks::{ TaskContext, TokioTasksPlugin, TokioTasksRuntime };
 use bevy_tweening::TweeningPlugin;
 use furuyoni_lib::rules::player_actions::BasicAction;
-use systems::board_plugin::{ DeckObject, HandAnimation, HandObject };
+use systems::board_plugin::{ DeckObject, Spread, HandObject };
 use thiserror::Error;
 use tokio::net::TcpStream;
 
@@ -356,7 +356,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Qu
         Name::new("Hand(Me)"),
         SpatialBundle::from_transform(Transform::from_xyz(0., -450.0, 200.0)),
         HandObject::new(PlayerRelativePos::Me),
-        HandAnimation::new(600.0, 7),
+        Spread::new(600.0, 7),
     ));
     commands.spawn((
         Name::new("Hand(Opponent)"),
@@ -366,6 +366,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Qu
                 .with_scale(DECK_CARDS_SCALE)
         ),
         HandObject::new(PlayerRelativePos::Opponent),
-        HandAnimation::new(600.0, 7),
+        Spread::new(600.0, 7),
     ));
 }

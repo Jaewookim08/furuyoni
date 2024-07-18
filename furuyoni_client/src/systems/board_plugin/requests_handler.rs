@@ -9,8 +9,8 @@ use bevy_tweening::EaseFunction;
 use bevy_tweening::Tween;
 use furuyoni_lib::rules::events::GameEvent;
 use furuyoni_lib::rules::states::StateView;
-use super::hand_animator;
-use super::hand_animator::HandAnimation;
+use super::spread_system;
+use super::spread_system::Spread;
 use super::BoardError;
 use super::DeckObject;
 use super::HandObject;
@@ -114,13 +114,13 @@ pub(crate) fn get_slot_entity(
             world.run_system_once(
                 move |
                     commands: Commands,
-                    hand_objects: Query<(Entity, &HandObject, &HandAnimation, Option<&Children>)>
+                    hand_objects: Query<(Entity, &HandObject, &Spread, Option<&Children>)>
                 | {
                     let (hand_id, _, hand_animation, children) = hand_objects
                         .iter()
                         .find(|&(_, h, _, _)| { h.relative_pos.into_absolute(me) == p })
                         .unwrap();
-                    let new = hand_animator::add_hand_child(
+                    let new = spread_system::add_spread_child(
                         commands,
                         hand_id,
                         hand_animation,

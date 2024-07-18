@@ -5,13 +5,13 @@ use furuyoni_lib::rules::PlayerPos;
 
 mod relative_positions;
 mod requests_handler;
-mod hand_animator;
+mod spread_system;
 mod labels_update_system;
 
-use hand_animator::animate_hand_cards;
+use spread_system::animate_spread;
 use labels_update_system::update_labels;
 
-pub(crate) use hand_animator::HandAnimation;
+pub(crate) use spread_system::Spread;
 pub(crate) use labels_update_system::{ StateLabel, StateStringPicker };
 pub(crate) use relative_positions::{
     CardsRelativePosition,
@@ -69,6 +69,6 @@ impl Plugin for BoardPlugin {
                     .run_if(resource_exists::<BoardState>)
                     .run_if(resource_exists::<SelfPlayerPos>)
             )
-            .add_systems(Update, animate_hand_cards);
+            .add_systems(Update, animate_spread);
     }
 }
