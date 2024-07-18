@@ -1,4 +1,4 @@
-use furuyoni_lib::rules::states::{ InvalidGameViewUpdateError, StateView };
+use furuyoni_lib::rules::{cards::Card, states::{ InvalidGameViewUpdateError, StateView }};
 use bevy::prelude::*;
 use furuyoni_lib::rules::PlayerPos;
 
@@ -33,6 +33,30 @@ pub(crate) struct BoardPlugin;
 pub(crate) struct HandObject {
     relative_pos: PlayerRelativePos,
 }
+
+#[derive(Debug, Component)]
+pub(crate) struct OpenCardObject {
+    card: Card,
+}
+
+impl OpenCardObject {
+    pub(crate) fn new(card: Card) -> Self {
+        Self { card }
+    }
+}
+
+#[derive(Debug, Component)]
+pub(crate) struct CardObject {
+    owner: PlayerPos,
+}
+
+impl CardObject {
+    pub(crate) fn new(owner: PlayerPos) -> Self {
+        Self { owner }
+    }
+}
+
+
 
 impl HandObject {
     pub(crate) fn new(relative_pos: PlayerRelativePos) -> Self {

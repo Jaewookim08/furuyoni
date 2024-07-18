@@ -332,7 +332,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Qu
     spawn_ba_button(10.0, 33.0, "Recover", BasicAction::Recover);
 
     // spawn deck position indicators.
-    const DECK_CARDS_SCALE: Vec3 = Vec3::new(0.7, 0.7, 0.7);
+    const DECK_CARDS_SCALE: Vec3 = Vec3::splat(0.7);
     commands.spawn((
         Name::new("Deck(Opponent)"),
         TransformBundle::from_transform(
@@ -354,7 +354,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Qu
     // spawn card hands.
     commands.spawn((
         Name::new("Hand(Me)"),
-        SpatialBundle::from_transform(Transform::from_xyz(0., -450.0, 200.0)),
+        SpatialBundle::from_transform(
+            Transform::from_xyz(0.0, -450.0, 200.0).with_scale(DECK_CARDS_SCALE)
+        ),
         HandObject::new(PlayerRelativePos::Me),
         Spread::new(600.0, 7),
     ));

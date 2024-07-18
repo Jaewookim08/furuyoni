@@ -7,11 +7,14 @@ use bevy_tweening::lens::TransformScaleLens;
 use bevy_tweening::Animator;
 use bevy_tweening::EaseFunction;
 use bevy_tweening::Tween;
+use furuyoni_lib::rules::cards::Card;
 use furuyoni_lib::rules::events::GameEvent;
 use furuyoni_lib::rules::states::StateView;
 use super::spread_plugin;
 use super::spread_plugin::Spread;
 use super::BoardError;
+use super::CardObject;
+use super::OpenCardObject;
 use super::DeckObject;
 use super::HandObject;
 use furuyoni_lib::rules::cards::CardsPosition;
@@ -46,7 +49,7 @@ pub(crate) async fn apply_event(
                 UpdateGameState::TransferCardFromHidden { from, to, card } => {
                     ctx.run_on_main_thread(move |ctx| {
                         let world = ctx.world;
-                        let card_id = get_card_entity(from, world, me);
+                        let card_id = get_card_entity(from, world, me, card);
                         let slot_id = get_slot_entity(to, world, me);
                         animate_card(world, card_id, slot_id);
                     }).await;
@@ -125,7 +128,7 @@ pub(crate) fn get_slot_entity(
                         hand_id,
                         hand_animation,
                         children,
-                        0.35,
+                        0.35
                     );
                     new
                 }
@@ -143,37 +146,45 @@ pub(crate) fn get_card_entity(
     from: CardsPosition,
     world: &mut World,
     me: PlayerPos,
+    card: Option<Card>
 ) -> Entity {
-    match from {
+    let owner = from.player_pos();
+    let spawn_from = match from {
         CardsPosition::Deck(p) =>
             world.run_system_once(
-                move |
-                    mut commands: Commands,
-                    asset_server: Res<AssetServer>,
-                    deck_objects: Query<(Entity, &DeckObject)>
-                | {
+                move |mut commands: Commands, deck_objects: Query<(Entity, &DeckObject)>| {
                     let (deck_id, _) = deck_objects
                         .iter()
                         .find(|&(_, d)| { d.relative_pos.into_absolute(me) == p })
                         .unwrap();
 
-                    let card_id = commands
-                        .spawn((
-                            SpriteBundle {
-                                texture: asset_server.load("sprites/cardback_normal.png"),
-                                ..default()
-                            },
-                        ))
-                        .set_parent(deck_id)
-                        .id();
-                    card_id
+                    deck_id
                 }
             ),
         CardsPosition::Hand(_) => todo!(),
         CardsPosition::Discards(_) => todo!(),
         CardsPosition::Playing(_) | CardsPosition::Enhancements(_) | CardsPosition::Played(_) =>
             panic!("Impossible event."),
-    }
+    };
+
+    world.run_system_once(move |mut commands: Commands, asset_server: Res<AssetServer>| {
+        let texture = match card {
+            Some(_) => asset_server.load("sprites/cardfront_empty.png"),
+            None => asset_server.load("sprites/cardback_normal.png"),
+        };
+
+        let mut new = commands.spawn((
+            SpriteBundle {
+                texture,
+                ..default()
+            },
+            CardObject::new(owner),
+        ));
+        if let Some(card) = card {
+            new.insert(OpenCardObject::new(card));
+        }
+        new.set_parent(spawn_from).id()
+    })
 }
 
 pub(crate) async fn check_game_state(ctx: &TaskContext, state: StateView) {
