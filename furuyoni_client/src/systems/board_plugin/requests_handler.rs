@@ -2,6 +2,9 @@ use std::time::Duration;
 
 use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::*;
+use bevy_mod_billboard::BillboardMeshHandle;
+use bevy_mod_billboard::BillboardTextureBundle;
+use bevy_mod_billboard::BillboardTextureHandle;
 use bevy_tweening::lens::TransformPositionLens;
 use bevy_tweening::lens::TransformScaleLens;
 use bevy_tweening::Animator;
@@ -152,18 +155,25 @@ pub(crate) fn get_card_entity(
                 move |
                     mut commands: Commands,
                     asset_server: Res<AssetServer>,
-                    deck_objects: Query<(Entity, &DeckObject)>
+                    deck_objects: Query<(Entity, &DeckObject)>,
+                    mut meshes: ResMut<Assets<Mesh>>
                 | {
                     let (deck_id, _) = deck_objects
                         .iter()
                         .find(|&(_, d)| { d.relative_pos.into_absolute(me) == p })
                         .unwrap();
 
+                    let card_back = asset_server.load("sprites/cardback_normal.png");
+                    // let card_front = asset_server.load("sprites/cardfront_empty.png");
+
                     let card_id = commands
                         .spawn((
-                            SpriteBundle {
-                                texture: asset_server.load("sprites/cardback_normal.png"),
-                                ..default()
+                            BillboardTextureBundle {
+                                texture: BillboardTextureHandle(card_back),
+                                mesh: BillboardMeshHandle(
+                                    meshes.add(Rectangle::from_size(Vec2::splat(400.0)))
+                                ),
+                                ..Default::default()
                             },
                             CardObject { card },
                         ))

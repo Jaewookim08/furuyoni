@@ -16,12 +16,21 @@ use crate::systems::board_plugin::{
 };
 use crate::systems::picker::{ Pickable, PickerButton, PickerPlugin };
 use bevy::app::AppExit;
+use bevy::color::palettes;
 use bevy::color::palettes::css::GREEN;
 use bevy::prelude::*;
 use bevy::text::TextStyle;
 use bevy::ui::PositionType;
 use bevy::DefaultPlugins;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_mod_billboard::plugin::BillboardPlugin;
+use bevy_mod_billboard::{
+    BillboardLockAxis,
+    BillboardMeshHandle,
+    BillboardTextBundle,
+    BillboardTextureBundle,
+    BillboardTextureHandle,
+};
 use bevy_tokio_tasks::{ TaskContext, TokioTasksPlugin, TokioTasksRuntime };
 use bevy_tweening::TweeningPlugin;
 use furuyoni_lib::rules::player_actions::BasicAction;
@@ -42,6 +51,7 @@ fn main() {
         .add_plugins(BoardPlugin)
         .add_plugins(TokioTasksPlugin::default())
         .add_plugins(TweeningPlugin)
+        .add_plugins(BillboardPlugin)
         .add_plugins(WorldInspectorPlugin::new())
         .add_systems(Startup, (setup, spawn_logic_thread))
         // .add_systems(Startup, load_scene)
@@ -86,12 +96,81 @@ fn _load_scene(asset_server: Res<AssetServer>, mut scene_spawner: ResMut<SceneSp
     scene_spawner.spawn_dynamic(asset_server.load("scenes/main_scene.scn.ron"));
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Query<&mut Window>) {
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut windows: Query<&mut Window>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>
+) {
     let mut window = windows.single_mut();
     window.resolution.set(1920.0, 1080.0);
-    commands.spawn(Camera2dBundle::default());
+    // commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera3dBundle {
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 10.0)).looking_at(
+            Vec3::ZERO,
+            Vec3::Y
+        ),
+        ..default()
+    });
 
     let font = asset_server.load("fonts/Fira_Sans/FiraSans-Regular.ttf");
+
+    // let image_handle = asset_server.load("sprites/cardback_normal.png");
+    commands
+        .spawn((
+            Name::new("test billboard"),
+            BillboardTextBundle {
+                transform: Transform::from_scale(Vec3::splat(0.0085)).looking_at(
+                    Vec3::splat(5.0),
+                    Vec3::Y
+                ),
+                text: Text::from_sections([
+                    TextSection {
+                        value: "asdsd".to_string(),
+                        style: TextStyle {
+                            font_size: 60.0,
+                            font: font.clone(),
+                            color: palettes::css::ORANGE.into(),
+                        },
+                    },
+                    TextSection {
+                        value: " WHITE".to_string(),
+                        style: TextStyle {
+                            font_size: 60.0,
+                            font: font.clone(),
+                            color: palettes::css::WHITE.into(),
+                        },
+                    },
+                ]).with_justify(JustifyText::Center),
+                ..default()
+            },
+            // BillboardLockAxis {
+            //     rotation: true,
+            //     y_axis: true,
+            // },
+        ))
+        .with_children(|parent| {
+            parent.spawn(
+                TextBundle::from_section("ASDF", TextStyle {
+                    font: font.clone(),
+                    font_size: 50.0,
+                    ..default()
+                })
+                    .with_style(Style {
+                        position_type: PositionType::Absolute,
+                        bottom: Val::ZERO,
+                        ..default()
+                    })
+                    .with_no_wrap()
+            );
+        });
+
+    // commands.spawn(PbrBundle {
+    //     mesh: meshes.add(Cuboid::default()),
+    //     material: materials.add(Color::Srgba(palettes::css::RED)),
+    //     ..default()
+    // });
 
     let mut spawn_label = |l, t, str: &str, picker| {
         commands.spawn((
@@ -354,7 +433,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut windows: Qu
     // spawn card hands.
     commands.spawn((
         Name::new("Hand(Me)"),
-        SpatialBundle::from_transform(Transform::from_xyz(0., -450.0, 200.0)),
+        SpatialBundle::from_transform(
+            Transform::from_xyz(0.0, -450.0, 200.0).with_scale(DECK_CARDS_SCALE)
+        ),
         HandObject::new(PlayerRelativePos::Me),
         HandAnimation::new(600.0, 7),
     ));
